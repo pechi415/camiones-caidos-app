@@ -1,0 +1,745 @@
+:root {
+  /* Paleta Corporativa y Temática Glass */
+  --bg-dark: #0A0C10;
+  --bg-surface: rgba(18, 22, 31, 0.75);
+  --bg-surface-elevated: rgba(28, 34, 48, 0.85);
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+
+  /* Colores de Marca */
+  --brand-red: #E52E2E;
+  --brand-red-glow: rgba(229, 46, 46, 0.4);
+  --brand-red-dark: #991B1B;
+  --brand-black: #0B0D10;
+  --brand-white: #FFFFFF;
+  --brand-beige: #F3EBDD;
+  --brand-beige-accent: #E5D5BC;
+  --brand-beige-text: #F7F3EB;
+
+  /* Estados */
+  --status-down: #FF3B30;
+  --status-down-bg: rgba(255, 59, 48, 0.15);
+  --status-down-glow: rgba(255, 59, 48, 0.35);
+  
+  --status-operativo: #10B981;
+  --status-operativo-bg: rgba(16, 185, 129, 0.15);
+  --status-operativo-glow: rgba(16, 185, 129, 0.35);
+
+  --status-warning: #F59E0B;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+
+  /* Bordes Glass */
+  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-border-light: 1px solid rgba(255, 255, 255, 0.15);
+  --glass-border-red: 1px solid rgba(229, 46, 46, 0.4);
+  --glass-border-beige: 1px solid rgba(229, 213, 188, 0.3);
+
+  /* Sombras Glass */
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --glass-shadow-lg: 0 16px 48px 0 rgba(0, 0, 0, 0.6);
+  --glow-red: 0 0 20px rgba(229, 46, 46, 0.4);
+
+  /* Fuentes */
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-dark);
+  color: var(--brand-white);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(229, 46, 46, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(229, 213, 188, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(15, 17, 21, 0.8) 0%, #0A0C10 100%);
+  background-attachment: fixed;
+}
+
+/* Bloqueo Global de Scroll de Fondo al abrir modales en Vertical y Horizontal */
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.modal-overlay {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.modal-content {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Efectos de Cristal / Glassmorphism */
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 16px;
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--glass-border);
+  border-radius: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border: var(--glass-border-light);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.glass-input {
+  width: 100%;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--glass-border);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: var(--brand-white);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 42px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+/* Animación Marquee para Texto Guía de Inicio Instantáneo */
+@keyframes marqueeText {
+  0% { transform: translateX(0%); }
+  50% { transform: translateX(-70%); }
+  100% { transform: translateX(0%); }
+}
+
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.marquee-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marqueeText 10s ease-in-out infinite;
+}
+
+select.glass-input {
+  height: 42px;
+  padding: 0 14px;
+  line-height: normal;
+}
+
+textarea.glass-input {
+  height: auto;
+  line-height: 1.4;
+  padding: 10px 14px;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.09);
+  border: var(--glass-border-red);
+  box-shadow: 0 0 12px rgba(229, 46, 46, 0.25);
+}
+
+.glass-input option {
+  background-color: #13171F;
+  color: var(--brand-white);
+  padding: 8px;
+}
+
+/* Filas de Tablas y Sombreado Continuo */
+.table-row-hover {
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.2s ease;
+}
+
+.table-row-hover > td {
+  background: inherit;
+  vertical-align: middle;
+}
+
+.table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+.table-row-hover:hover > td {
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Botones con estilo Liquid Glass y Animaciones */
+.btn-primary {
+  background: linear-gradient(135deg, #E52E2E 0%, #B91C1C 100%);
+  color: var(--brand-white);
+  border: none;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(229, 46, 46, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(229, 46, 46, 0.5);
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-beige {
+  background: linear-gradient(135deg, var(--brand-beige) 0%, var(--brand-beige-accent) 100%);
+  color: var(--brand-black);
+  border: none;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px rgba(229, 213, 188, 0.25);
+  transition: all 0.25s ease;
+}
+
+.btn-beige:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(229, 213, 188, 0.4);
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--brand-white);
+  border: var(--glass-border);
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border: var(--glass-border-light);
+}
+
+/* Badges Neón */
+.badge-down {
+  background: var(--status-down-bg);
+  color: var(--status-down);
+  border: 1px solid rgba(255, 59, 48, 0.4);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px var(--status-down-glow);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-operativo {
+  background: var(--status-operativo-bg);
+  color: var(--status-operativo);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px var(--status-operativo-glow);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Pulsación Neón animada */
+.pulse-dot-red {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--status-down);
+  box-shadow: 0 0 8px var(--status-down);
+  animation: pulseRed 1.8s infinite;
+}
+
+.pulse-dot-green {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--status-operativo);
+  box-shadow: 0 0 8px var(--status-operativo);
+  animation: pulseGreen 1.8s infinite;
+}
+
+@keyframes pulseRed {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(255, 59, 48, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Modal overlay animado */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 10, 0.82);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-content {
+  background: var(--bg-surface-elevated);
+  border: var(--glass-border-light);
+  box-shadow: var(--glass-shadow-lg);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Scrollbar Personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-red);
+}
+
+/* Encabezado Flotante Cristal Líquido (Liquid Glass) */
+.navbar-floating {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 10px !important;
+  z-index: 1000 !important;
+  margin: 10px 16px 12px 16px !important;
+  border-radius: 20px !important;
+  background: rgba(18, 18, 22, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Base Filtros en Gestión de Usuarios u Operadores (Escritorio: Alineados a la derecha en 1 sola línea) */
+.user-filters-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.user-filters-search {
+  position: relative;
+  width: 260px;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.user-filters-selects {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Media Queries Responsivos y Optimización Móvil (Retiene diseño táctil en modo vertical y horizontal) */
+@media (max-width: 768px), (pointer: coarse) and (max-height: 550px) {
+  html {
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
+    width: 100% !important;
+  }
+
+  .navbar-floating {
+    margin: 6px 10px 12px 10px !important;
+    border-radius: 16px !important;
+    padding: 10px 12px !important;
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 6px !important;
+  }
+
+  /* Filtros Responsivos Móvil/Landscape: Buscar arriba (100%), Selects/Fechas abajo en 100% simétrico */
+  .table-filters-container,
+  .user-filters-container {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .table-filters-search,
+  .user-filters-search {
+    position: relative !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  .table-filters-selects,
+  .user-filters-selects {
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .table-filters-selects > *,
+  .user-filters-selects > * {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .table-filters-selects select,
+  .user-filters-selects select {
+    width: 100% !important;
+    padding: 0 8px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  /* Modales en móvil: aislamiento de desplazamiento y centrado de tarjetas en vertical y horizontal */
+  .modal-overlay {
+    padding: 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overscroll-behavior: contain !important;
+  }
+
+  .modal-content {
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    border-radius: 18px !important;
+    padding: 18px 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Ajustes Específicos para Modales en Modo Landscape / Horizontal */
+  @media (orientation: landscape) and (max-height: 550px) {
+    .modal-overlay {
+      align-items: center !important;
+    }
+
+    .modal-content {
+      max-height: 92vh !important;
+      border-radius: 16px !important;
+      padding: 14px 18px !important;
+    }
+  }
+
+  /* Formularios en cuadrícula: pasar automáticamente de 2 o 3 columnas a 1 columna vertical en móvil */
+  .form-grid-2,
+  .form-grid-3,
+  .modal-content form > div[style*="gridTemplateColumns"],
+  .modal-content div[style*="gridTemplateColumns"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Asegurar que las tablas tengan scroll horizontal limpio sin romper la estructura de la página */
+  table {
+    min-width: 650px;
+  }
+}
+
+@media (min-width: 769px) and (min-height: 551px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* Estilos Estandarizados de Filtros en Historial General */
+.history-filters-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.history-filters-top {
+  width: 100%;
+}
+
+.history-filters-bottom {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.history-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.history-filter-item label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  display: block;
+}
+
+.history-filter-item input.glass-input,
+.history-filter-item select.glass-input,
+.history-filters-top input.glass-input {
+  width: 100% !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  line-height: 38px !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  font-size: 0.82rem !important;
+  border-radius: 8px !important;
+  margin: 0 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+.history-filters-top input.glass-input {
+  padding-left: 38px !important;
+}
+
+/* Fix para picker de fecha en WebKit (Chrome/Android/iOS) */
+.history-filter-item input[type="date"].glass-input::-webkit-date-and-time-value {
+  min-height: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+@media (max-width: 768px), (pointer: coarse) and (max-height: 550px) {
+  .history-filters-container {
+    flex-direction: column !important;
+  }
+
+  .history-filters-bottom {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .history-filters-selects-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .history-filters-dates-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) and (min-height: 551px) {
+  .history-filters-container {
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .history-filters-top {
+    width: 240px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .history-filters-bottom {
+    display: flex !important;
+    align-items: flex-end !important;
+    gap: 10px !important;
+    width: auto !important;
+  }
+
+  .history-filters-selects-row,
+  .history-filters-dates-row {
+    display: flex !important;
+    align-items: flex-end !important;
+    gap: 10px !important;
+  }
+
+  .history-filter-item {
+    width: 130px !important;
+    flex: none !important;
+  }
+}
+
+/* Disposición Responsiva Móvil (Badges en 1 Línea Horizontal en Vertical y 1 Fila Completa en Landscape) */
+.operator-card-content,
+.user-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@media (min-width: 520px), (orientation: landscape) {
+  .operator-card-content,
+  .user-card-content {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+}
+
+/* Botón Flotante FAB & Navegación Móvil */
+@keyframes fabPulse {
+  0% {
+    box-shadow: 0 6px 20px rgba(229, 46, 46, 0.5), 0 0 0 0 rgba(229, 46, 46, 0.4);
+  }
+  70% {
+    box-shadow: 0 6px 24px rgba(229, 46, 46, 0.7), 0 0 0 10px rgba(229, 46, 46, 0);
+  }
+  100% {
+    box-shadow: 0 6px 20px rgba(229, 46, 46, 0.5), 0 0 0 0 rgba(229, 46, 46, 0);
+  }
+}
+
+.mobile-fab-btn {
+  animation: fabPulse 2.5s infinite;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.mobile-fab-btn:active {
+  transform: scale(0.94);
+}
+
+.mobile-nav-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  padding: 4px 0;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.mobile-nav-btn:active {
+  transform: scale(0.92);
+}
+
+/* Adaptación Responsiva para Orientación Horizontal (Landscape Móvil) */
+@media (orientation: landscape) and (max-height: 550px) {
+  .mobile-fab-btn {
+    padding: 9px 16px !important;
+    font-size: 0.80rem !important;
+    border-radius: 26px !important;
+  }
+
+  .mobile-nav-pill {
+    bottom: 8px !important;
+    left: 20px !important;
+    right: 20px !important;
+    max-width: 440px !important;
+    padding: 6px 6px !important;
+  }
+
+  .mobile-nav-item-btn {
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding: 3px 2px !important;
+  }
+}
+
