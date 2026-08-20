@@ -104,11 +104,11 @@ export function ReportProvider({ children }) {
   const [dbStatus, setDbStatus] = useState('connecting'); // connecting | online | error
   const isSyncingRef = React.useRef(false);
 
-  // Helper con timeout de 6 segundos para evitar peticiones colgadas
-  const withTimeout = (promise, ms = 6000) => {
+  // Helper con timeout de 12 segundos para evitar falsas alarmas en redes móviles
+  const withTimeout = (promise, ms = 12000) => {
     return Promise.race([
       promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexión')), ms))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexión a la nube')), ms))
     ]);
   };
 
@@ -117,13 +117,13 @@ export function ReportProvider({ children }) {
     if (isSyncingRef.current) return;
     isSyncingRef.current = true;
     try {
-      // Cargar Reportes con timeout
+      // Cargar Reportes con timeout de 12s
       const repPromise = supabase
         .from('truck_reports')
         .select('*')
         .order('created_at', { ascending: false });
 
-      const { data: dbReports, error: repErr } = await withTimeout(repPromise, 6000);
+      const { data: dbReports, error: repErr } = await withTimeout(repPromise, 12000);
 
       if (repErr) {
         console.warn('Error leyendo truck_reports de Supabase:', repErr.message);
@@ -137,7 +137,7 @@ export function ReportProvider({ children }) {
 
       // Cargar Operadores
       const opsPromise = supabase.from('operators').select('*');
-      const { data: dbOps, error: opErr } = await withTimeout(opsPromise, 6000).catch(() => ({ data: null, error: true }));
+      const { data: dbOps, error: opErr } = await withTimeout(opsPromise, 12000).catch(() => ({ data: null, error: true }));
       if (!opErr && Array.isArray(dbOps) && dbOps.length > 0) {
         const mappedOps = dbOps.map(mapSupabaseOperator);
         setOperators(mappedOps);
@@ -151,19 +151,23 @@ export function ReportProvider({ children }) {
     }
   };
 
-  // Cargar al montar y activar WebSockets Realtime en tiempo real (SIN polling para no agotar la cuota de Supabase)
+  // Cargar al montar y activar WebSockets Realtime en tiempo real
   useEffect(() => {
     loadInitialData();
 
-    // Suscripción Realtime instantánea para Reportes
+    // Suscripción Realtime para Reportes
     const reportsChannel = supabase
       .channel('public:truck_reports')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'truck_reports' }, () => {
         loadInitialData();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setDbStatus('online');
+        }
+      });
 
-    // Suscripción Realtime instantánea para Operadores
+    // Suscripción Realtime para Operadores
     const operatorsChannel = supabase
       .channel('public:operators')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'operators' }, () => {
