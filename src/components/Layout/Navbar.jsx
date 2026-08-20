@@ -443,7 +443,7 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
         </div>
       </div>
 
-      {/* Tira de Filtros Móvil (Mina, Turno, Fecha) - Solo visible en el Dashboard principal */}
+      {/* Tira de Filtros Móvil (Mina, Turno, Fecha) - Solo visible en teléfonos móviles */}
       {activeTab === 'dashboard' && (
         <div
           className="mobile-only"
@@ -452,7 +452,6 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             marginTop: '8px',
             paddingTop: '8px',
             borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '6px',

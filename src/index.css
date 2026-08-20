@@ -415,27 +415,43 @@ textarea.glass-input {
   gap: 10px;
 }
 
-/* Media Queries Responsivos y Optimización Móvil (Retiene diseño táctil en modo vertical y horizontal) */
-@media (max-width: 768px), (pointer: coarse) and (max-height: 550px) {
-  html {
-    overflow-x: clip;
-  }
+/* Media Queries Responsivos y Optimización Móvil */
 
-  body {
+/* Reglas Estrictas de Visibilidad:
+   .mobile-only: OCULTO por defecto en PC, Laptops y Tablets (>= 601px).
+   .hidden-mobile: VISIBLE por defecto en PC, Laptops y Tablets (>= 601px). */
+.mobile-only {
+  display: none !important;
+}
+
+.hidden-mobile {
+  display: flex !important;
+}
+
+/* En teléfonos móviles pequeños (< 601px en modo vertical) invertimos la visibilidad */
+@media (max-width: 600px) {
+  html, body {
     overflow-x: clip;
     width: 100% !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .hidden-mobile {
+    display: none !important;
   }
 
   .navbar-floating {
     margin: 6px 10px 12px 10px !important;
     border-radius: 16px !important;
     padding: 10px 12px !important;
-    position: -webkit-sticky !important;
     position: sticky !important;
     top: 6px !important;
   }
 
-  /* Filtros Responsivos Móvil/Landscape: Buscar arriba (100%), Selects/Fechas abajo en 100% simétrico */
+  /* Filtros Responsivos Móvil */
   .table-filters-container,
   .user-filters-container {
     display: flex !important;
@@ -476,11 +492,6 @@ textarea.glass-input {
     font-size: 0.8rem !important;
   }
 
-  .hidden-mobile {
-    display: none !important;
-  }
-
-  /* Modales en móvil: aislamiento de desplazamiento y centrado de tarjetas en vertical y horizontal */
   .modal-overlay {
     padding: 12px !important;
     align-items: center !important;
@@ -497,20 +508,8 @@ textarea.glass-input {
     box-sizing: border-box !important;
     overscroll-behavior: contain !important;
     -webkit-overflow-scrolling: touch !important;
-  /* Ajustes Específicos para Modales en Modo Landscape / Horizontal */
-  @media (orientation: landscape) and (max-height: 550px) {
-    .modal-overlay {
-      align-items: center !important;
-    }
-
-    .modal-content {
-      max-height: 92vh !important;
-      border-radius: 16px !important;
-      padding: 14px 18px !important;
-    }
   }
 
-  /* Formularios en cuadrícula: pasar automáticamente de 2 o 3 columnas a 1 columna vertical en móvil */
   .form-grid-2,
   .form-grid-3,
   .modal-content form > div[style*="gridTemplateColumns"],
@@ -520,38 +519,32 @@ textarea.glass-input {
     gap: 12px !important;
   }
 
-  /* Asegurar que las tablas tengan scroll horizontal limpio sin romper la estructura de la página */
   table {
     min-width: 650px;
   }
 }
 
-/* Ajuste de Navbar para Tablets en orientación vertical y pantallas medianas (769px a 1024px) */
+/* Modales en Landscape de Teléfonos Móviles */
+@media (orientation: landscape) and (max-height: 550px) {
+  .modal-overlay {
+    align-items: center !important;
+  }
+
+  .modal-content {
+    max-height: 92vh !important;
+    border-radius: 16px !important;
+    padding: 14px 18px !important;
+  }
+}
+
 /* Layout Principal Adaptativo */
 .main-content-layout {
   padding-bottom: 20px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .main-content-layout {
     padding-bottom: 85px;
-  }
-}
-
-/* Regla Estricta para Componentes Móviles (Cápsula Inferior y Botón Flotante Registrar):
-   ÚNICAMENTE visibles en teléfonos móviles (ancho de pantalla <= 768px).
-   NUNCA visibles en PC, Laptop o Tablet (> 768px). */
-@media (min-width: 769px) {
-  .mobile-only {
-    display: none !important;
-  }
-}
-
-/* Regla para Componentes Escritorio/Tablet (Sidebar lateral y Selectores del Navbar):
-   Visibles en PC, Laptop y Tablet (> 768px). Ocultos en Teléfono Móvil (<= 768px). */
-@media (max-width: 768px) {
-  .hidden-mobile {
-    display: none !important;
   }
 }
 
