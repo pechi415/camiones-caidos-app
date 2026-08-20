@@ -8,36 +8,49 @@ const ReportContext = createContext();
 const INITIAL_TRUCK_REPORTS = [];
 const INITIAL_OPERATORS = INITIAL_OPERATORS_808;
 
-// Mapeos de Reportes
-const mapSupabaseReport = (r) => ({
-  id: r.id,
-  truckId: r.truck_id || r.truckId,
-  mine: r.mine,
-  shift: r.shift,
-  operator: r.operator,
-  system: r.system,
-  detail: r.detail,
-  location: r.location,
-  status: r.status,
-  downTime: r.down_time || r.downTime,
-  estimatedReturnTime: r.estimated_return_time || r.estimatedReturnTime,
-  actualReturnTime: r.actual_return_time || r.actualReturnTime,
-  date: r.date,
-  createdAt: r.created_at || r.createdAt,
-  updatedAt: r.updated_at || r.updatedAt
-});
+// Mapeos de Reportes (Soporta nombres de Supabase y alias de la UI)
+const mapSupabaseReport = (r) => {
+  const operatorVal = r.operator || r.operatorName || '';
+  const systemVal = r.system || r.systemCategory || '';
+  const detailVal = r.detail || r.failureDescription || '';
+  const locationVal = r.location || r.bayLocation || '';
+  const downTimeVal = r.down_time || r.downTime || r.reportTime || '';
+
+  return {
+    id: r.id,
+    truckId: r.truck_id || r.truckId,
+    mine: r.mine,
+    shift: r.shift,
+    operator: operatorVal,
+    operatorName: operatorVal,
+    system: systemVal,
+    systemCategory: systemVal,
+    detail: detailVal,
+    failureDescription: detailVal,
+    location: locationVal,
+    bayLocation: locationVal,
+    status: r.status,
+    downTime: downTimeVal,
+    reportTime: downTimeVal,
+    estimatedReturnTime: r.estimated_return_time || r.estimatedReturnTime || '',
+    actualReturnTime: r.actual_return_time || r.actualReturnTime || null,
+    date: r.date,
+    createdAt: r.created_at || r.createdAt,
+    updatedAt: r.updated_at || r.updatedAt
+  };
+};
 
 const mapAppReportToSupabase = (r) => ({
   id: r.id,
   truck_id: r.truckId,
   mine: r.mine,
   shift: r.shift || 'Diurno',
-  operator: r.operator || '',
-  system: r.system || '',
-  detail: r.detail || '',
-  location: r.location || '',
+  operator: r.operatorName || r.operator || '',
+  system: r.systemCategory || r.system || '',
+  detail: r.failureDescription || r.detail || '',
+  location: r.bayLocation || r.location || '',
   status: r.status || 'DOWN',
-  down_time: r.downTime || '',
+  down_time: r.reportTime || r.downTime || '',
   estimated_return_time: r.estimatedReturnTime || '',
   actual_return_time: r.actualReturnTime || null,
   date: r.date || getOperationalDateISO(),
