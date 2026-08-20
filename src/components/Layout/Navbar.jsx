@@ -1,13 +1,47 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
-import { Truck, Sun, Moon, Shield, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw } from 'lucide-react';
+import { Truck, Sun, Moon, Shield, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw, Download } from 'lucide-react';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const { user, isAdmin, logout, switchUser, preseededUsers, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
   const { dbStatus, refreshData } = useReports();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const avatarInputRef = useRef(null);
+
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(true);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstallable(false);
+      }
+      setDeferredPrompt(null);
+    } else {
+      alert('📱 Para instalar "Camiones Caídos" en tu dispositivo:\n\n1. En Android (Chrome/Edge): Presiona el menú (⋮) y selecciona "Agregar a la pantalla principal" o "Instalar aplicación".\n\n2. En iPhone/iPad (Safari): Toca el botón Compartir (⎋) y selecciona "Agregar a inicio".');
+    }
+  };
 
   const canSelectPribbenow = isAdmin || user?.mine === 'Pribbenow';
   const canSelectElDescanso = isAdmin || user?.mine === 'El Descanso';
@@ -259,8 +293,31 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
           onChange={handleSelfAvatarUpload}
         />
 
-        {/* Usuario y Selector de Rol */}
+        {/* Usuario, Botón Instalar PWA y Selector de Rol */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isInstallable && (
+            <button
+              onClick={handleInstallPWA}
+              title="Instalar aplicación en la pantalla de inicio"
+              style={{
+                background: 'linear-gradient(135deg, rgba(229, 46, 46, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%)',
+                border: '1px solid rgba(229, 46, 46, 0.5)',
+                color: '#FFFFFF',
+                padding: '6px 12px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 0 12px rgba(229, 46, 46, 0.2)'
+              }}
+            >
+              <Download size={14} color="#FBBF24" /> Instalar App
+            </button>
+          )}
+
           <div
             onClick={() => avatarInputRef.current?.click()}
             title="Haz clic para cambiar tu foto de perfil"
