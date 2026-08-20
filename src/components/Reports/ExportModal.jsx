@@ -8,6 +8,7 @@ import { X, FileSpreadsheet, FileText, ShieldCheck, Eye, Share2, MessageSquare, 
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
+import { downloadOrOpenPdf, sharePdfDoc } from '../../utils/pdfUtils';
 import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
 import { CAT_HEADER_LOGO_BASE64 } from '../../assets/catHeaderLogoBase64';
 import drummondLogo from '../../assets/drummond-logo.png';
@@ -226,85 +227,36 @@ export default function ExportModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // 1. Exportar / Descargar PDF directamente al dispositivo (Seguro para WebKit iOS)
+  // 1. Exportar / Descargar PDF directamente al dispositivo
   const handleExportPDF = () => {
     setDownloading(true);
     try {
       const doc = generatePdfDoc();
       const fileName = `Reporte_Camiones_Caidos_${activeMine.replace(/\s+/g, '_')}_Turno_${activeShift}_${new Date().toISOString().slice(0,10)}.pdf`;
-
-      // Detectar iOS para prevenir WebKitBlobResourceError 1
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      if (isIOS) {
-        const dataUri = doc.output('datauristring');
-        const link = document.createElement('a');
-        link.href = dataUri;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        doc.save(fileName);
-      }
+      downloadOrOpenPdf(doc, fileName);
     } catch (err) {
       console.error(err);
-      alert('Error descargando reporte PDF.');
+      alert('Error descargando reporte PDF: ' + (err.message || ''));
     } finally {
       setDownloading(false);
     }
   };
 
-  // 2. Compartir el Archivo PDF Nativo (Técnica de 2 Clics rct_app para iOS/Android)
+  // 2. Compartir el Archivo PDF Nativo mediante Web Share API (1 Clic directo para iOS/Android)
   const handleSharePDF = async () => {
-    const fileName = `RCT_${activeMine.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}_Turno_${activeShift}.pdf`;
-
-    // CASO B: SEGUNDO CLIC -> El Blob ya existe en memoria cachedBlob.
-    // Se ejecuta de forma 100% síncrona en 0ms para librar el bloqueo de iOS Safari.
-    if (cachedBlob) {
-      try {
-        const file = new File([cachedBlob], fileName, { type: 'application/pdf' });
-        const canShareFiles = typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
-
-        if (navigator.share && canShareFiles) {
-          // Entorno HTTPS Seguro / Producción: Abrir hoja nativa de compartir con archivo PDF
-          await navigator.share({ files: [file] });
-        } else {
-          // Entorno HTTP Local sin SSL o navegador sin soporte de archivos adjuntos:
-          // Forzar descarga/apertura directa del PDF
-          handleExportPDF();
-        }
-      } catch (e) {
-        if (e.name !== 'AbortError') {
-          console.warn("Share abortado o error:", e);
-          alert("Info: " + (e.message || 'No se pudo compartir el archivo'));
-        }
-      }
-      return;
-    }
-
-    // CASO A: PRIMER CLIC -> Generar y guardar el blob en memoria sin abrir el PDF.
+    setDownloading(true);
     try {
-      setShareBtnState('preparing');
-      setTimeout(() => {
-        try {
-          const doc = generatePdfDoc();
-          const pdfArrayBuffer = doc.output('arraybuffer');
-          const blob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+      const doc = generatePdfDoc();
+      const fileName = `RCT_${activeMine.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}_Turno_${activeShift}.pdf`;
+      const title = `Reporte Camiones Caídos ${activeMine} - Turno ${activeShift}`;
+      const text = `Consolidado de Camiones Caídos - Mina ${activeMine}, Turno ${activeShift} (${formattedDate})`;
 
-          // Guardar en memoria y actualizar botón a "✅ Enviar ahora"
-          setCachedBlob(blob);
-          setShareBtnState('ready');
-          // NOTA CRÍTICA: No llamamos a doc.save() ni redirigimos.
-          // El usuario ahora presionará "✅ Enviar ahora" (2do clic síncrono).
-        } catch (err) {
-          console.error("Error generando PDF:", err);
-          setShareBtnState('idle');
-          alert("Error al preparar PDF: " + err.message);
-        }
-      }, 50);
-    } catch (shareErr) {
-      setShareBtnState('idle');
-      console.error("Error en evento de compartido:", shareErr);
+      await sharePdfDoc(doc, fileName, title, text);
+    } catch (err) {
+      console.error("Error en evento de compartido:", err);
+      alert("Error al compartir PDF: " + (err.message || ''));
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -422,14 +374,12 @@ export default function ExportModal({ isOpen, onClose }) {
             <FileText size={18} /> Exportar PDF
           </button>
 
-          {/* 2. Compartir PDF (Técnica rct_app de 2 Pasos para iOS Safari) */}
+          {/* 2. Compartir PDF (Web Share API Nativo) */}
           <button
             onClick={handleSharePDF}
             disabled={downloading || (totalCount === 0 && totalCarryoverCount === 0)}
             style={{
-              background: shareBtnState === 'ready'
-                ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
-                : 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
               color: '#FFFFFF',
               border: 'none',
               padding: '14px',
@@ -442,15 +392,14 @@ export default function ExportModal({ isOpen, onClose }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              boxShadow: shareBtnState === 'ready' ? '0 4px 20px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(37, 211, 102, 0.35)',
+              boxShadow: '0 4px 16px rgba(37, 211, 102, 0.35)',
               whiteSpace: 'nowrap',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              opacity: (downloading || (totalCount === 0 && totalCarryoverCount === 0)) ? 0.6 : 1
             }}
           >
             <Share2 size={18} />
-            {shareBtnState === 'preparing' && '⏳ Preparando PDF...'}
-            {shareBtnState === 'ready' && '✅ Enviar ahora'}
-            {shareBtnState === 'idle' && 'Compartir PDF'}
+            {downloading ? '⏳ Procesando...' : 'Compartir PDF'}
           </button>
 
           {/* 3. Exportar Excel */}

@@ -3,6 +3,7 @@ import { X, History, Truck, Wrench, Clock, Calendar, MapPin, Search, AlertTriang
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getLocalDateISO } from '../../utils/dateUtils';
+import { downloadOrOpenPdf } from '../../utils/pdfUtils';
 import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
 import { CAT_HEADER_LOGO_BASE64 } from '../../assets/catHeaderLogoBase64';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
@@ -128,7 +129,7 @@ export default function TruckHistoryModal({ isOpen, onClose, initialTruckId, rep
         alternateRowStyles: { fillColor: [245, 245, 245] }
       });
 
-      doc.save(`Historial_Camion_${currentTruckId}_${new Date().toISOString().split('T')[0]}.pdf`);
+      downloadOrOpenPdf(doc, `Historial_Camion_${currentTruckId}_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (e) {
       console.error('Error al exportar historial:', e);
     }

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { getShortName } from '../../utils/aiCorrector';
+import { downloadOrOpenPdf } from '../../utils/pdfUtils';
 import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
 import { CAT_HEADER_LOGO_BASE64 } from '../../assets/catHeaderLogoBase64';
 import * as XLSX from 'xlsx';
@@ -261,7 +262,7 @@ const getShortSystemCategory = (name) => {
         }
       });
 
-      doc.save(`Bitacora_Histórica_Camiones_${new Date().toISOString().slice(0, 10)}.pdf`);
+      downloadOrOpenPdf(doc, `Bitacora_Historica_Camiones_${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
       console.error(err);
       alert('Error generando PDF del historial.');
