@@ -88,77 +88,60 @@ export function ReportProvider({ children }) {
     }
   });
 
-  // Cargar Reportes y Operadores desde Supabase y activar Realtime
-  useEffect(() => {
-    async function loadInitialData() {
-      try {
-        // Cargar Reportes
-        const { data: dbReports, error: repErr } = await supabase.from('truck_reports').select('*').order('created_at', { ascending: false });
-        if (!repErr && dbReports && dbReports.length > 0) {
-          const mappedReps = dbReports.map(mapSupabaseReport);
-          setReports(mappedReps);
-          localStorage.setItem('camiones_reports', JSON.stringify(mappedReps));
-        }
+  // Función síncrona de carga desde Supabase
+  const loadInitialData = async () => {
+    try {
+      // Cargar Reportes
+      const { data: dbReports, error: repErr } = await supabase
+        .from('truck_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        // Cargar Operadores
-        const { data: dbOps, error: opErr } = await supabase.from('operators').select('*');
-        if (!opErr && dbOps && dbOps.length > 0) {
-          const mappedOps = dbOps.map(mapSupabaseOperator);
-          setOperators(mappedOps);
-          localStorage.setItem('camiones_operators', JSON.stringify(mappedOps));
-        }
-      } catch (err) {
-        console.warn('Excepción cargando datos desde Supabase:', err);
+      if (!repErr && dbReports && dbReports.length > 0) {
+        const mappedReps = dbReports.map(mapSupabaseReport);
+        setReports(mappedReps);
+        localStorage.setItem('camiones_reports', JSON.stringify(mappedReps));
       }
-    }
 
+      // Cargar Operadores
+      const { data: dbOps, error: opErr } = await supabase.from('operators').select('*');
+      if (!opErr && dbOps && dbOps.length > 0) {
+        const mappedOps = dbOps.map(mapSupabaseOperator);
+        setOperators(mappedOps);
+        localStorage.setItem('camiones_operators', JSON.stringify(mappedOps));
+      }
+    } catch (err) {
+      console.warn('Excepción cargando datos desde Supabase:', err);
+    }
+  };
+
+  // Cargar al montar y activar Polling Auto-Sync (cada 3 segundos) + WebSockets Realtime
+  useEffect(() => {
     loadInitialData();
+
+    // Auto-Sync constante en segundo plano (Polling rápido cada 3s)
+    const interval = setInterval(() => {
+      loadInitialData();
+    }, 3000);
 
     // Suscripción Realtime para Reportes
     const reportsChannel = supabase
       .channel('truck_reports_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'truck_reports' }, (payload) => {
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-          const updatedRep = mapSupabaseReport(payload.new);
-          setReports(prev => {
-            const exists = prev.some(r => r.id === updatedRep.id);
-            const newReps = exists ? prev.map(r => (r.id === updatedRep.id ? updatedRep : r)) : [updatedRep, ...prev];
-            localStorage.setItem('camiones_reports', JSON.stringify(newReps));
-            return newReps;
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setReports(prev => {
-            const newReps = prev.filter(r => r.id !== payload.old.id);
-            localStorage.setItem('camiones_reports', JSON.stringify(newReps));
-            return newReps;
-          });
-        }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'truck_reports' }, () => {
+        loadInitialData();
       })
       .subscribe();
 
     // Suscripción Realtime para Operadores
     const operatorsChannel = supabase
       .channel('operators_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'operators' }, (payload) => {
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-          const updatedOp = mapSupabaseOperator(payload.new);
-          setOperators(prev => {
-            const exists = prev.some(op => op.id === updatedOp.id);
-            const newOps = exists ? prev.map(op => (op.id === updatedOp.id ? updatedOp : op)) : [...prev, updatedOp];
-            localStorage.setItem('camiones_operators', JSON.stringify(newOps));
-            return newOps;
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setOperators(prev => {
-            const newOps = prev.filter(op => op.id !== payload.old.id);
-            localStorage.setItem('camiones_operators', JSON.stringify(newOps));
-            return newOps;
-          });
-        }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'operators' }, () => {
+        loadInitialData();
       })
       .subscribe();
 
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(reportsChannel);
       supabase.removeChannel(operatorsChannel);
     };
@@ -190,6 +173,7 @@ export function ReportProvider({ children }) {
 
     try {
       await supabase.from('truck_reports').insert([mapAppReportToSupabase(newReport)]);
+      setTimeout(loadInitialData, 300);
     } catch (e) {
       console.warn('Error insertando reporte en Supabase:', e);
     }
@@ -219,6 +203,7 @@ export function ReportProvider({ children }) {
           actual_return_time: updatedTarget.actualReturnTime,
           updated_at: updatedTarget.updatedAt
         }).eq('id', id);
+        setTimeout(loadInitialData, 300);
       } catch (e) {
         console.warn('Error actualizando estado en Supabase:', e);
       }
@@ -239,6 +224,7 @@ export function ReportProvider({ children }) {
     if (updatedTarget) {
       try {
         await supabase.from('truck_reports').update(mapAppReportToSupabase(updatedTarget)).eq('id', id);
+        setTimeout(loadInitialData, 300);
       } catch (e) {
         console.warn('Error editando reporte en Supabase:', e);
       }
@@ -249,6 +235,7 @@ export function ReportProvider({ children }) {
     setReports(prev => prev.filter(rep => rep.id !== id));
     try {
       await supabase.from('truck_reports').delete().eq('id', id);
+      setTimeout(loadInitialData, 300);
     } catch (e) {
       console.warn('Error eliminando reporte en Supabase:', e);
     }
@@ -265,6 +252,7 @@ export function ReportProvider({ children }) {
 
     try {
       await supabase.from('operators').insert([mapAppOperatorToSupabase(newOp)]);
+      setTimeout(loadInitialData, 300);
     } catch (e) {
       console.warn('Error insertando operador en Supabase:', e);
     }
@@ -283,6 +271,7 @@ export function ReportProvider({ children }) {
     if (updatedTarget) {
       try {
         await supabase.from('operators').update(mapAppOperatorToSupabase(updatedTarget)).eq('id', id);
+        setTimeout(loadInitialData, 300);
       } catch (e) {
         console.warn('Error editando operador en Supabase:', e);
       }
@@ -293,6 +282,7 @@ export function ReportProvider({ children }) {
     setOperators(prev => prev.filter(op => op.id !== id));
     try {
       await supabase.from('operators').delete().eq('id', id);
+      setTimeout(loadInitialData, 300);
     } catch (e) {
       console.warn('Error eliminando operador en Supabase:', e);
     }
@@ -308,7 +298,8 @@ export function ReportProvider({ children }) {
       operators,
       addOperator,
       editOperator,
-      deleteOperator
+      deleteOperator,
+      refreshData: loadInitialData
     }}>
       {children}
     </ReportContext.Provider>

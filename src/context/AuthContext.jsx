@@ -89,55 +89,44 @@ export function AuthProvider({ children }) {
     avatar: u.avatar || ''
   });
 
-  // Cargar usuarios desde Supabase y escuchar cambios en tiempo real
-  useEffect(() => {
-    async function loadUsersFromSupabase() {
-      try {
-        const { data, error } = await supabase.from('app_users').select('*');
-        if (error) {
-          console.warn('Error leyendo usuarios de Supabase:', error.message);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const mapped = data.map(mapSupabaseUser);
-          setUsersList(mapped);
-          localStorage.setItem('camiones_all_users', JSON.stringify(mapped));
-        } else {
-          // Si la tabla está vacía en Supabase, sembrar usuarios iniciales
-          const seedData = PRESEEDED_USERS.map(mapAppUserToSupabase);
-          await supabase.from('app_users').upsert(seedData);
-        }
-      } catch (err) {
-        console.warn('Excepción al conectar con Supabase:', err);
+  const loadUsersFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('app_users').select('*');
+      if (error) {
+        console.warn('Error leyendo usuarios de Supabase:', error.message);
+        return;
       }
-    }
 
+      if (data && data.length > 0) {
+        const mapped = data.map(mapSupabaseUser);
+        setUsersList(mapped);
+        localStorage.setItem('camiones_all_users', JSON.stringify(mapped));
+      } else {
+        const seedData = PRESEEDED_USERS.map(mapAppUserToSupabase);
+        await supabase.from('app_users').upsert(seedData);
+      }
+    } catch (err) {
+      console.warn('Excepción al conectar con Supabase:', err);
+    }
+  };
+
+  // Cargar usuarios desde Supabase y escuchar cambios en tiempo real + Polling
+  useEffect(() => {
     loadUsersFromSupabase();
 
-    // Suscripción Realtime en Supabase
+    const interval = setInterval(() => {
+      loadUsersFromSupabase();
+    }, 3000);
+
     const channel = supabase
       .channel('app_users_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_users' }, (payload) => {
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-          const updatedUser = mapSupabaseUser(payload.new);
-          setUsersList(prev => {
-            const exists = prev.some(u => u.id === updatedUser.id);
-            const newList = exists ? prev.map(u => (u.id === updatedUser.id ? updatedUser : u)) : [...prev, updatedUser];
-            localStorage.setItem('camiones_all_users', JSON.stringify(newList));
-            return newList;
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setUsersList(prev => {
-            const newList = prev.filter(u => u.id !== payload.old.id);
-            localStorage.setItem('camiones_all_users', JSON.stringify(newList));
-            return newList;
-          });
-        }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_users' }, () => {
+        loadUsersFromSupabase();
       })
       .subscribe();
 
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -161,19 +150,18 @@ export function AuthProvider({ children }) {
     localStorage.setItem('camiones_mine', activeMine);
   }, [activeMine]);
 
-  // Guardar lista completa en Supabase
   const updateUsersListGlobal = async (newList) => {
     setUsersList(newList);
     localStorage.setItem('camiones_all_users', JSON.stringify(newList));
     try {
       const dbPayload = newList.map(mapAppUserToSupabase);
       await supabase.from('app_users').upsert(dbPayload);
+      setTimeout(loadUsersFromSupabase, 300);
     } catch (e) {
       console.warn('Error guardando usuario en Supabase:', e);
     }
   };
 
-  // Login por Cédula + Contraseña
   const login = (nationalId, inputPassword) => {
     const cleanId = nationalId.trim();
     const foundUser = usersList.find(u => u.nationalId === cleanId);
@@ -195,7 +183,6 @@ export function AuthProvider({ children }) {
     };
   };
 
-  // Cambiar Contraseña
   const changePassword = async (userId, newPassword) => {
     const updatedUsers = usersList.map(u => {
       if (u.id === userId) {
@@ -219,7 +206,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Restablecer contraseña
   const resetUserPassword = async (userId) => {
     const updatedUsers = usersList.map(u => {
       if (u.id === userId) {
@@ -244,7 +230,6 @@ export function AuthProvider({ children }) {
     return true;
   };
 
-  // Actualizar avatar
   const updateUserAvatar = async (userId, newAvatar) => {
     const updatedUsers = usersList.map(u => {
       if (u.id === userId) {
