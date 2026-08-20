@@ -118,32 +118,16 @@ export function ReportProvider({ children }) {
       } else if (Array.isArray(dbReports)) {
         setDbStatus('online');
         const mappedReps = dbReports.map(mapSupabaseReport);
-        setReports(prev => {
-          const map = new Map();
-          mappedReps.forEach(r => map.set(r.id, r));
-          prev.forEach(r => {
-            if (!map.has(r.id)) map.set(r.id, r);
-          });
-          const merged = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-          localStorage.setItem('camiones_reports', JSON.stringify(merged));
-          return merged;
-        });
+        setReports(mappedReps);
+        localStorage.setItem('camiones_reports', JSON.stringify(mappedReps));
       }
 
       // Cargar Operadores
       const { data: dbOps, error: opErr } = await supabase.from('operators').select('*');
-      if (!opErr && Array.isArray(dbOps)) {
+      if (!opErr && Array.isArray(dbOps) && dbOps.length > 0) {
         const mappedOps = dbOps.map(mapSupabaseOperator);
-        setOperators(prev => {
-          const map = new Map();
-          mappedOps.forEach(op => map.set(op.id, op));
-          prev.forEach(op => {
-            if (!map.has(op.id)) map.set(op.id, op);
-          });
-          const merged = Array.from(map.values());
-          localStorage.setItem('camiones_operators', JSON.stringify(merged));
-          return merged;
-        });
+        setOperators(mappedOps);
+        localStorage.setItem('camiones_operators', JSON.stringify(mappedOps));
       }
     } catch (err) {
       console.warn('Excepción cargando datos desde Supabase:', err);
