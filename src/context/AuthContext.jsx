@@ -110,13 +110,9 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Cargar usuarios desde Supabase y escuchar cambios en tiempo real + Polling
+  // Cargar usuarios desde Supabase y escuchar cambios en tiempo real (sin polling)
   useEffect(() => {
     loadUsersFromSupabase();
-
-    const interval = setInterval(() => {
-      loadUsersFromSupabase();
-    }, 3000);
 
     const channel = supabase
       .channel('app_users_realtime')
@@ -126,7 +122,6 @@ export function AuthProvider({ children }) {
       .subscribe();
 
     return () => {
-      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -251,6 +246,23 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const deleteUser = async (userId) => {
+    const updatedUsers = usersList.filter(u => u.id !== userId);
+    setUsersList(updatedUsers);
+    localStorage.setItem('camiones_all_users', JSON.stringify(updatedUsers));
+
+    try {
+      const { error } = await supabase.from('app_users').delete().eq('id', userId);
+      if (error) {
+        console.error('Error eliminando usuario en Supabase:', error.message);
+      } else {
+        setTimeout(loadUsersFromSupabase, 300);
+      }
+    } catch (e) {
+      console.warn('Excepción eliminando usuario de Supabase:', e);
+    }
+  };
+
   const logout = () => {
     setUser(null);
   };
@@ -277,6 +289,7 @@ export function AuthProvider({ children }) {
       changePassword,
       resetUserPassword,
       updateUserAvatar,
+      deleteUser,
       usersList,
       setUsersList: updateUsersListGlobal,
       preseededUsers: PRESEEDED_USERS,

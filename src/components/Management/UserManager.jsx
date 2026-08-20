@@ -5,7 +5,7 @@ import { autoCapitalizeName } from '../../utils/aiCorrector';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 
 export default function UserManager() {
-  const { user, isAdmin, usersList, setUsersList, resetUserPassword } = useAuth();
+  const { user, isAdmin, usersList, setUsersList, resetUserPassword, deleteUser } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [mineFilter, setMineFilter] = useState(() => (!isAdmin && user?.mine ? user.mine : 'ALL'));
@@ -89,13 +89,21 @@ export default function UserManager() {
     setEditingUser(null);
   };
 
-  const handleDeleteUser = (id) => {
+  const handleDeleteUser = async (id) => {
     if (usersList.length <= 1) {
       alert('Debe permanecer al menos un usuario en el sistema.');
       return;
     }
-    const updatedList = usersList.filter(u => u.id !== id);
-    saveUsersToStorage(updatedList);
+    const targetUser = usersList.find(u => u.id === id);
+    const confirmMsg = targetUser ? `¿Está seguro de eliminar al usuario "${targetUser.name}"?` : '¿Está seguro de eliminar este usuario?';
+    if (window.confirm(confirmMsg)) {
+      if (deleteUser) {
+        await deleteUser(id);
+      } else {
+        const updatedList = usersList.filter(u => u.id !== id);
+        saveUsersToStorage(updatedList);
+      }
+    }
   };
 
   const filteredUsers = usersList.filter(u => {
