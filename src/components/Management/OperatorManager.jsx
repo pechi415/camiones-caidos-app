@@ -15,6 +15,7 @@ export default function OperatorManager() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOp, setEditingOp] = useState(null);
+  const [deleteConfirmOp, setDeleteConfirmOp] = useState(null);
 
   const [newOpData, setNewOpData] = useState({
     name: '',
@@ -236,7 +237,7 @@ export default function OperatorManager() {
                 </button>
 
                 <button
-                  onClick={() => deleteOperator(op.id)}
+                  onClick={() => setDeleteConfirmOp(op)}
                   title="Eliminar Operador"
                   style={{
                     background: 'rgba(239, 68, 68, 0.15)',
@@ -337,7 +338,7 @@ export default function OperatorManager() {
                       </button>
 
                       <button
-                        onClick={() => deleteOperator(op.id)}
+                        onClick={() => setDeleteConfirmOp(op)}
                         title="Eliminar Operador"
                         style={{
                           background: 'rgba(239, 68, 68, 0.15)',
@@ -429,6 +430,62 @@ export default function OperatorManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación de Eliminación de Operador */}
+      {deleteConfirmOp && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirmOp(null)}>
+          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '440px', textAlign: 'center' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#EF4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <Trash2 size={28} />
+            </div>
+
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+              Eliminar Operador
+            </h3>
+
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '20px', lineHeight: '1.5' }}>
+              ¿Está seguro de eliminar al operador <strong style={{ color: '#FFFFFF' }}>{deleteConfirmOp.name}</strong>?
+              <br />
+              <span style={{ fontSize: '0.82rem', color: 'var(--brand-beige)', display: 'block', marginTop: '8px' }}>
+                📍 {deleteConfirmOp.mine} • {deleteConfirmOp.group || 'Grupo 1'}
+              </span>
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOp(null)}
+                className="btn-glass"
+                style={{ padding: '10px 20px' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteOperator(deleteConfirmOp.id);
+                  setDeleteConfirmOp(null);
+                }}
+                className="btn-primary"
+                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFFFFF', fontWeight: 700 }}
+              >
+                Sí, Eliminar
+              </button>
+            </div>
           </div>
         </div>
       )}
