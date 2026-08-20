@@ -57,10 +57,24 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
   });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (editingReport) {
-      setFormData(editingReport);
+      setFormData({
+        truckId: editingReport.truckId || '',
+        operatorId: editingReport.operatorId || '',
+        operatorName: editingReport.operatorName || editingReport.operator || '',
+        mine: editingReport.mine || activeMine,
+        shift: editingReport.shift || getCurrentShiftByTime(),
+        reportTime: editingReport.reportTime || editingReport.downTime || '',
+        actualReturnTime: editingReport.actualReturnTime || '',
+        systemCategory: editingReport.systemCategory || editingReport.system || SYSTEM_CATEGORIES[0],
+        failureDescription: editingReport.failureDescription || editingReport.detail || '',
+        bayLocation: editingReport.bayLocation || editingReport.location || '',
+        status: editingReport.status || 'DOWN'
+      });
       setErrorMsg('');
-    } else if (isOpen) {
+    } else {
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const targetMine = activeMine || user?.mine || 'Pribbenow';
       const calculatedShift = getCurrentShiftByTime();
@@ -86,7 +100,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
       });
       setErrorMsg('');
     }
-  }, [editingReport, isOpen, activeMine, operators, user]);
+  }, [editingReport, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
