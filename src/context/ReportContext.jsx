@@ -75,6 +75,25 @@ const mapAppOperatorToSupabase = (op) => ({
   status: op.status || 'Activo'
 });
 
+// Helper para fusionar lista inicial de 808 operadores con registros de Supabase
+const mergeOperators = (baseList, dbOps) => {
+  const map = new Map();
+  if (Array.isArray(baseList)) {
+    baseList.forEach(op => map.set(op.id, op));
+  }
+  if (Array.isArray(dbOps)) {
+    dbOps.forEach(raw => {
+      const mapped = mapSupabaseOperator(raw);
+      if (mapped.status === 'Eliminado') {
+        map.delete(mapped.id);
+      } else {
+        map.set(mapped.id, mapped);
+      }
+    });
+  }
+  return Array.from(map.values());
+};
+
 export function ReportProvider({ children }) {
   const [reports, setReports] = useState(() => {
     const saved = localStorage.getItem('camiones_reports');
@@ -135,13 +154,13 @@ export function ReportProvider({ children }) {
         localStorage.setItem('camiones_reports', JSON.stringify(mappedReps));
       }
 
-      // Cargar Operadores
+      // Cargar Operadores (Fusionando con la base de 808 sin borrado masivo)
       const opsPromise = supabase.from('operators').select('*');
       const { data: dbOps, error: opErr } = await withTimeout(opsPromise, 12000).catch(() => ({ data: null, error: true }));
-      if (!opErr && Array.isArray(dbOps) && dbOps.length > 0) {
-        const mappedOps = dbOps.map(mapSupabaseOperator);
-        setOperators(mappedOps);
-        localStorage.setItem('camiones_operators', JSON.stringify(mappedOps));
+      if (!opErr && Array.isArray(dbOps)) {
+        const mergedOps = mergeOperators(INITIAL_OPERATORS, dbOps);
+        setOperators(mergedOps);
+        localStorage.setItem('camiones_operators', JSON.stringify(mergedOps));
       }
     } catch (err) {
       console.warn('Excepción o timeout cargando datos desde Supabase:', err.message);
@@ -328,12 +347,20 @@ export function ReportProvider({ children }) {
   };
 
   const deleteOperator = async (id) => {
+    const targetOp = operators.find(op => op.id === id);
     setOperators(prev => prev.filter(op => op.id !== id));
     try {
-      const { error } = await supabase.from('operators').delete().eq('id', id);
-      if (!error) {
-        setTimeout(loadInitialData, 200);
+      if (targetOp) {
+        await supabase.from('operators').upsert([{
+          id: targetOp.id,
+          name: targetOp.name,
+          mine: targetOp.mine,
+          group_name: targetOp.group || 'Grupo 1',
+          status: 'Eliminado'
+        }]);
       }
+      await supabase.from('operators').delete().eq('id', id);
+      setTimeout(loadInitialData, 200);
     } catch (e) {
       console.warn('Error eliminando operador en Supabase:', e);
     }
