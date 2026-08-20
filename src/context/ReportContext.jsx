@@ -102,15 +102,28 @@ export function ReportProvider({ children }) {
   });
 
   const [dbStatus, setDbStatus] = useState('connecting'); // connecting | online | error
+  const isSyncingRef = React.useRef(false);
+
+  // Helper con timeout de 6 segundos para evitar peticiones colgadas
+  const withTimeout = (promise, ms = 6000) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de conexión')), ms))
+    ]);
+  };
 
   // Función de carga y fusión de datos desde Supabase
   const loadInitialData = async () => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
     try {
-      // Cargar Reportes
-      const { data: dbReports, error: repErr } = await supabase
+      // Cargar Reportes con timeout
+      const repPromise = supabase
         .from('truck_reports')
         .select('*')
         .order('created_at', { ascending: false });
+
+      const { data: dbReports, error: repErr } = await withTimeout(repPromise, 6000);
 
       if (repErr) {
         console.warn('Error leyendo truck_reports de Supabase:', repErr.message);
@@ -123,28 +136,31 @@ export function ReportProvider({ children }) {
       }
 
       // Cargar Operadores
-      const { data: dbOps, error: opErr } = await supabase.from('operators').select('*');
+      const opsPromise = supabase.from('operators').select('*');
+      const { data: dbOps, error: opErr } = await withTimeout(opsPromise, 6000).catch(() => ({ data: null, error: true }));
       if (!opErr && Array.isArray(dbOps) && dbOps.length > 0) {
         const mappedOps = dbOps.map(mapSupabaseOperator);
         setOperators(mappedOps);
         localStorage.setItem('camiones_operators', JSON.stringify(mappedOps));
       }
     } catch (err) {
-      console.warn('Excepción cargando datos desde Supabase:', err);
+      console.warn('Excepción o timeout cargando datos desde Supabase:', err.message);
       setDbStatus('error');
+    } finally {
+      isSyncingRef.current = false;
     }
   };
 
-  // Cargar al montar y activar Polling Auto-Sync (cada 2 segundos) + WebSockets Realtime
+  // Cargar al montar y activar Polling Auto-Sync (cada 15s como respaldo) + WebSockets Realtime en tiempo real
   useEffect(() => {
     loadInitialData();
 
-    // Auto-Sync rápido constante en segundo plano (cada 2s)
+    // Auto-Sync de respaldo (cada 15s) para evitar saturación de la API de Supabase
     const interval = setInterval(() => {
       loadInitialData();
-    }, 2000);
+    }, 15000);
 
-    // Suscripción Realtime para Reportes
+    // Suscripción Realtime instantánea para Reportes
     const reportsChannel = supabase
       .channel('public:truck_reports')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'truck_reports' }, () => {
@@ -152,7 +168,7 @@ export function ReportProvider({ children }) {
       })
       .subscribe();
 
-    // Suscripción Realtime para Operadores
+    // Suscripción Realtime instantánea para Operadores
     const operatorsChannel = supabase
       .channel('public:operators')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'operators' }, () => {
