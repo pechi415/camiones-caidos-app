@@ -61,13 +61,12 @@ function MainContent() {
       />
 
       {/* Main Content Layout */}
-      <div style={{
+      <div className="main-content-layout" style={{
         display: 'flex',
         flex: 1,
         maxWidth: '1600px',
         width: '100%',
         margin: '0 auto',
-        paddingBottom: '80px', // Space for MobileNav
         minWidth: 0,
         overflowX: 'hidden'
       }}>

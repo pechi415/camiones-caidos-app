@@ -527,22 +527,37 @@ textarea.glass-input {
 }
 
 /* Ajuste de Navbar para Tablets en orientación vertical y pantallas medianas (769px a 1024px) */
-@media (max-width: 1024px) {
-  .navbar-floating {
-    margin: 8px 8px 0 8px !important;
-    padding: 10px 12px !important;
+/* Layout Principal Adaptativo */
+.main-content-layout {
+  padding-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .main-content-layout {
+    padding-bottom: 85px;
   }
 }
 
-@media (min-width: 769px) and (min-height: 551px) {
+/* Regla Estricta para Componentes Móviles (Cápsula Inferior y Botón Flotante Registrar):
+   ÚNICAMENTE visibles en teléfonos móviles (ancho de pantalla <= 768px).
+   NUNCA visibles en PC, Laptop o Tablet (> 768px). */
+@media (min-width: 769px) {
   .mobile-only {
     display: none !important;
   }
 }
 
+/* Regla para Componentes Escritorio/Tablet (Sidebar lateral y Selectores del Navbar):
+   Visibles en PC, Laptop y Tablet (> 768px). Ocultos en Teléfono Móvil (<= 768px). */
+@media (max-width: 768px) {
+  .hidden-mobile {
+    display: none !important;
+  }
+}
+
 /* Control de Visibilidad del Nombre/Mina del Usuario en Navbar:
-   Se oculta únicamente en pantallas estrechas verticales (móvil portrait < 600px).
-   Se MUESTRA SIEMPRE en modo Horizontal (Landscape) y Pantallas Medianas/Grandes. */
+   Se oculta únicamente en teléfonos en orientación vertical (< 600px en portrait).
+   Se MUESTRA SIEMPRE en modo Horizontal (Landscape) y en Tablets / PC. */
 @media (max-width: 600px) and (orientation: portrait) {
   .user-profile-info {
     display: none !important;
