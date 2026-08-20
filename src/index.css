@@ -497,8 +497,6 @@ textarea.glass-input {
     box-sizing: border-box !important;
     overscroll-behavior: contain !important;
     -webkit-overflow-scrolling: touch !important;
-  }
-
   /* Ajustes Específicos para Modales en Modo Landscape / Horizontal */
   @media (orientation: landscape) and (max-height: 550px) {
     .modal-overlay {
@@ -525,6 +523,14 @@ textarea.glass-input {
   /* Asegurar que las tablas tengan scroll horizontal limpio sin romper la estructura de la página */
   table {
     min-width: 650px;
+  }
+}
+
+/* Ajuste de Navbar para Tablets en orientación vertical y pantallas medianas (769px a 1024px) */
+@media (max-width: 1024px) {
+  .navbar-floating {
+    margin: 8px 8px 0 8px !important;
+    padding: 10px 12px !important;
   }
 }
 

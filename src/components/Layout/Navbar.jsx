@@ -1,47 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
-import { Truck, Sun, Moon, Shield, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw, Download } from 'lucide-react';
+import { Truck, Sun, Moon, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw } from 'lucide-react';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const { user, isAdmin, logout, switchUser, preseededUsers, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
   const { dbStatus, refreshData } = useReports();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const avatarInputRef = useRef(null);
-
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstallable, setIsInstallable] = useState(true);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-      setIsInstallable(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallPWA = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstallable(false);
-      }
-      setDeferredPrompt(null);
-    } else {
-      alert('📱 Para instalar "Camiones Caídos" en tu dispositivo:\n\n1. En Android (Chrome/Edge): Presiona el menú (⋮) y selecciona "Agregar a la pantalla principal" o "Instalar aplicación".\n\n2. En iPhone/iPad (Safari): Toca el botón Compartir (⎋) y selecciona "Agregar a inicio".');
-    }
-  };
 
   const canSelectPribbenow = isAdmin || user?.mine === 'Pribbenow';
   const canSelectElDescanso = isAdmin || user?.mine === 'El Descanso';
@@ -77,12 +43,12 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
       WebkitBackdropFilter: 'blur(20px)'
     }}>
       {/* Fila Principal Superior (Logo, Filtros Desktop, Perfil) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '10px' }}>
         {/* Brand Identity */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           <div style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
             borderRadius: '12px',
             background: 'linear-gradient(135deg, #E52E2E 0%, #991B1B 100%)',
             display: 'flex',
@@ -90,52 +56,55 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             justifyContent: 'center',
             boxShadow: '0 0 18px rgba(229, 46, 46, 0.4)'
           }}>
-            <Truck size={24} color="#FFFFFF" style={{ animation: 'bounce 2s infinite' }} />
+            <Truck size={22} color="#FFFFFF" style={{ animation: 'bounce 2s infinite' }} />
           </div>
           <div>
             <h1 style={{
               fontFamily: 'var(--font-heading)',
-              fontSize: '1.25rem',
+              fontSize: '1.18rem',
               fontWeight: 800,
               color: '#FFFFFF'
             }}>
               CAMIONES CAÍDOS
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+              <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
                 Control de Flota en Campo
               </p>
-              <button
-                onClick={() => refreshData && refreshData()}
-                title={dbStatus === 'online' ? 'Base de datos Supabase sincronizada en tiempo real' : 'Reintentar conexión con la nube'}
-                style={{
-                  background: dbStatus === 'online' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  border: dbStatus === 'online' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                  color: dbStatus === 'online' ? '#34D399' : '#F87171',
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <span className={dbStatus === 'online' ? 'pulse-dot-green' : 'pulse-dot-red'} style={{ width: '6px', height: '6px' }}></span>
-                {dbStatus === 'online' ? 'Nube Conectada' : 'Reconectar Nube'}
-                <RefreshCw size={10} />
-              </button>
+              {/* Botón de Nube Conectada (Visible únicamente para Rol Administrador) */}
+              {isAdmin && (
+                <button
+                  onClick={() => refreshData && refreshData()}
+                  title={dbStatus === 'online' ? 'Base de datos Supabase sincronizada en tiempo real' : 'Reintentar conexión con la nube'}
+                  style={{
+                    background: dbStatus === 'online' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    border: dbStatus === 'online' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                    color: dbStatus === 'online' ? '#34D399' : '#F87171',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span className={dbStatus === 'online' ? 'pulse-dot-green' : 'pulse-dot-red'} style={{ width: '6px', height: '6px' }}></span>
+                  {dbStatus === 'online' ? 'Nube Conectada' : 'Reconectar Nube'}
+                  <RefreshCw size={10} />
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Selectores de Mina, Turno y Fecha (Desktop) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }} className="hidden-mobile">
+        {/* Selectores de Mina, Turno y Fecha (Desktop y Tablet) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }} className="hidden-mobile">
           {/* Switcher de Mina */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.05)',
-            padding: '4px',
+            padding: '3px',
             borderRadius: '12px',
             border: 'var(--glass-border)',
             display: 'flex',
@@ -149,20 +118,20 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeMine === 'Pribbenow' ? 'var(--brand-red)' : 'transparent',
                 color: canSelectPribbenow ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
                 border: 'none',
-                padding: '6px 14px',
+                padding: '5px 10px',
                 borderRadius: '8px',
                 fontWeight: 700,
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 cursor: canSelectPribbenow ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 transition: 'all 0.2s ease',
                 opacity: canSelectPribbenow ? 1 : 0.4,
                 boxShadow: activeMine === 'Pribbenow' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none'
               }}
             >
-              {canSelectPribbenow ? <MapPin size={14} /> : <Lock size={13} />} Pribbenow
+              {canSelectPribbenow ? <MapPin size={13} /> : <Lock size={12} />} Pribbenow
             </button>
 
             <button
@@ -173,27 +142,27 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeMine === 'El Descanso' ? 'var(--brand-red)' : 'transparent',
                 color: canSelectElDescanso ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
                 border: 'none',
-                padding: '6px 14px',
+                padding: '5px 10px',
                 borderRadius: '8px',
                 fontWeight: 700,
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 cursor: canSelectElDescanso ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 transition: 'all 0.2s ease',
                 opacity: canSelectElDescanso ? 1 : 0.4,
                 boxShadow: activeMine === 'El Descanso' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none'
               }}
             >
-              {canSelectElDescanso ? <MapPin size={14} /> : <Lock size={13} />} El Descanso
+              {canSelectElDescanso ? <MapPin size={13} /> : <Lock size={12} />} El Descanso
             </button>
           </div>
 
           {/* Switcher de Turno */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.05)',
-            padding: '4px',
+            padding: '3px',
             borderRadius: '12px',
             border: 'var(--glass-border)',
             display: 'flex',
@@ -205,17 +174,17 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeShift === 'Diurno' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
                 color: activeShift === 'Diurno' ? '#FBBF24' : 'rgba(255, 255, 255, 0.7)',
                 border: activeShift === 'Diurno' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
-                padding: '6px 12px',
+                padding: '5px 10px',
                 borderRadius: '8px',
                 fontWeight: 600,
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '5px'
               }}
             >
-              <Sun size={14} /> Diurno
+              <Sun size={13} /> Diurno
             </button>
             <button
               onClick={() => setActiveShift('Nocturno')}
@@ -223,31 +192,31 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeShift === 'Nocturno' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
                 color: activeShift === 'Nocturno' ? '#818CF8' : 'rgba(255, 255, 255, 0.7)',
                 border: activeShift === 'Nocturno' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid transparent',
-                padding: '6px 12px',
+                padding: '5px 10px',
                 borderRadius: '8px',
                 fontWeight: 600,
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '5px'
               }}
             >
-              <Moon size={14} /> Nocturno
+              <Moon size={13} /> Nocturno
             </button>
           </div>
 
           {/* Selector de Fecha */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.05)',
-            padding: '4px 10px',
+            padding: '3px 8px',
             borderRadius: '12px',
             border: 'var(--glass-border)',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }} title="Filtrar reporte por fecha de turno">
-            <Calendar size={15} color="var(--brand-beige)" />
+            <Calendar size={14} color="var(--brand-beige)" />
             <input
               type="date"
               value={selectedDate}
@@ -256,7 +225,7 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: 'transparent',
                 border: 'none',
                 color: '#FFFFFF',
-                fontSize: '0.82rem',
+                fontSize: '0.78rem',
                 fontWeight: 600,
                 outline: 'none',
                 fontFamily: 'inherit',
@@ -271,10 +240,10 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                   background: 'rgba(229, 46, 46, 0.25)',
                   border: '1px solid rgba(229, 46, 46, 0.4)',
                   color: '#FF6B6B',
-                  fontSize: '0.72rem',
+                  fontSize: '0.70rem',
                   fontWeight: 700,
-                  padding: '3px 8px',
-                  borderRadius: '6px',
+                  padding: '2px 6px',
+                  borderRadius: '5px',
                   cursor: 'pointer'
                 }}
               >
@@ -293,31 +262,8 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
           onChange={handleSelfAvatarUpload}
         />
 
-        {/* Usuario, Botón Instalar PWA y Selector de Rol */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {isInstallable && (
-            <button
-              onClick={handleInstallPWA}
-              title="Instalar aplicación en la pantalla de inicio"
-              style={{
-                background: 'linear-gradient(135deg, rgba(229, 46, 46, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%)',
-                border: '1px solid rgba(229, 46, 46, 0.5)',
-                color: '#FFFFFF',
-                padding: '6px 12px',
-                borderRadius: '12px',
-                fontWeight: 700,
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 0 12px rgba(229, 46, 46, 0.2)'
-              }}
-            >
-              <Download size={14} color="#FBBF24" /> Instalar App
-            </button>
-          )}
-
+        {/* Usuario y Selector de Rol */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <div
             onClick={() => avatarInputRef.current?.click()}
             title="Haz clic para cambiar tu foto de perfil"
@@ -366,22 +312,23 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             style={{
               background: 'rgba(255, 255, 255, 0.07)',
               border: 'var(--glass-border-light)',
-              padding: '6px 12px',
+              padding: '5px 10px',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               cursor: 'pointer',
               color: '#FFFFFF'
             }}
           >
             <div style={{ textAlign: 'left' }} className="hidden-mobile">
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FFFFFF' }}>{user.name}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Shield size={10} /> {user.role}
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>{user.name}</div>
+              {/* Muestra Mina y Grupo en lugar del Rol */}
+              <div style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={10} /> {user?.mine || 'Pribbenow'} - {user?.group || 'Grupo 1'}
               </div>
             </div>
-            <ChevronDown size={16} color="rgba(255,255,255,0.7)" />
+            <ChevronDown size={15} color="rgba(255,255,255,0.7)" />
           </button>
 
           {/* Dropdown menú de perfil y simulación de rol */}
@@ -459,7 +406,7 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                   )}
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{u.name}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--brand-beige)' }}>{u.role} - {u.mine}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--brand-beige)' }}>{u.mine} - {u.group || 'Grupo 1'}</div>
                   </div>
                 </button>
               ))}
@@ -511,156 +458,156 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             paddingBottom: '2px'
           }}
         >
-        {/* Switcher de Mina (Abreviado: PB / ED) */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          padding: '3px',
-          borderRadius: '10px',
-          border: 'var(--glass-border)',
-          display: 'flex',
-          alignItems: 'center',
-          flexShrink: 0
-        }}>
-          <button
-            onClick={() => canSelectPribbenow && setActiveMine('Pribbenow')}
-            disabled={!canSelectPribbenow}
-            title="Pribbenow (PB)"
-            style={{
-              background: activeMine === 'Pribbenow' ? 'var(--brand-red)' : 'transparent',
-              color: canSelectPribbenow ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
-              border: 'none',
-              padding: '4px 10px',
-              borderRadius: '7px',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              cursor: canSelectPribbenow ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            {canSelectPribbenow ? <MapPin size={12} /> : <Lock size={12} />} PB
-          </button>
-          <button
-            onClick={() => canSelectElDescanso && setActiveMine('El Descanso')}
-            disabled={!canSelectElDescanso}
-            title="El Descanso (ED)"
-            style={{
-              background: activeMine === 'El Descanso' ? 'var(--brand-red)' : 'transparent',
-              color: canSelectElDescanso ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
-              border: 'none',
-              padding: '4px 10px',
-              borderRadius: '7px',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              cursor: canSelectElDescanso ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            {canSelectElDescanso ? <MapPin size={12} /> : <Lock size={12} />} ED
-          </button>
-        </div>
-
-        {/* Switcher de Turno (Abreviado: D / N) */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          padding: '3px',
-          borderRadius: '10px',
-          border: 'var(--glass-border)',
-          display: 'flex',
-          alignItems: 'center',
-          flexShrink: 0
-        }}>
-          <button
-            onClick={() => setActiveShift('Diurno')}
-            title="Turno Diurno (06:00 - 17:59)"
-            style={{
-              background: activeShift === 'Diurno' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
-              color: activeShift === 'Diurno' ? '#FBBF24' : 'rgba(255, 255, 255, 0.7)',
-              border: activeShift === 'Diurno' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
-              padding: '4px 8px',
-              borderRadius: '7px',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <Sun size={12} /> D
-          </button>
-          <button
-            onClick={() => setActiveShift('Nocturno')}
-            title="Turno Nocturno (18:00 - 05:59)"
-            style={{
-              background: activeShift === 'Nocturno' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
-              color: activeShift === 'Nocturno' ? '#818CF8' : 'rgba(255, 255, 255, 0.7)',
-              border: activeShift === 'Nocturno' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid transparent',
-              padding: '4px 8px',
-              borderRadius: '7px',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <Moon size={12} /> N
-          </button>
-        </div>
-
-        {/* Selector de Fecha */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          padding: '3px 8px',
-          borderRadius: '10px',
-          border: 'var(--glass-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          flexShrink: 0
-        }}>
-          <Calendar size={13} color="var(--brand-beige)" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#FFFFFF',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              outline: 'none',
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              width: '110px'
-            }}
-          />
-          {selectedDate !== getTodayISO() && (
+          {/* Switcher de Mina (Abreviado: PB / ED) */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            padding: '3px',
+            borderRadius: '10px',
+            border: 'var(--glass-border)',
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0
+          }}>
             <button
-              onClick={() => setSelectedDate(getTodayISO())}
+              onClick={() => canSelectPribbenow && setActiveMine('Pribbenow')}
+              disabled={!canSelectPribbenow}
+              title="Pribbenow (PB)"
               style={{
-                background: 'rgba(229, 46, 46, 0.25)',
-                border: '1px solid rgba(229, 46, 46, 0.4)',
-                color: '#FF6B6B',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                padding: '2px 6px',
-                borderRadius: '5px',
-                cursor: 'pointer'
+                background: activeMine === 'Pribbenow' ? 'var(--brand-red)' : 'transparent',
+                color: canSelectPribbenow ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: '7px',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                cursor: canSelectPribbenow ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
               }}
             >
-              Hoy
+              {canSelectPribbenow ? <MapPin size={12} /> : <Lock size={12} />} PB
             </button>
-          )}
+            <button
+              onClick={() => canSelectElDescanso && setActiveMine('El Descanso')}
+              disabled={!canSelectElDescanso}
+              title="El Descanso (ED)"
+              style={{
+                background: activeMine === 'El Descanso' ? 'var(--brand-red)' : 'transparent',
+                color: canSelectElDescanso ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: '7px',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                cursor: canSelectElDescanso ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              {canSelectElDescanso ? <MapPin size={12} /> : <Lock size={12} />} ED
+            </button>
+          </div>
+
+          {/* Switcher de Turno (Abreviado: D / N) */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            padding: '3px',
+            borderRadius: '10px',
+            border: 'var(--glass-border)',
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0
+          }}>
+            <button
+              onClick={() => setActiveShift('Diurno')}
+              title="Turno Diurno (06:00 - 17:59)"
+              style={{
+                background: activeShift === 'Diurno' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
+                color: activeShift === 'Diurno' ? '#FBBF24' : 'rgba(255, 255, 255, 0.7)',
+                border: activeShift === 'Diurno' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
+                padding: '4px 8px',
+                borderRadius: '7px',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Sun size={12} /> D
+            </button>
+            <button
+              onClick={() => setActiveShift('Nocturno')}
+              title="Turno Nocturno (18:00 - 05:59)"
+              style={{
+                background: activeShift === 'Nocturno' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                color: activeShift === 'Nocturno' ? '#818CF8' : 'rgba(255, 255, 255, 0.7)',
+                border: activeShift === 'Nocturno' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid transparent',
+                padding: '4px 8px',
+                borderRadius: '7px',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Moon size={12} /> N
+            </button>
+          </div>
+
+          {/* Selector de Fecha */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            padding: '3px 8px',
+            borderRadius: '10px',
+            border: 'var(--glass-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            flexShrink: 0
+          }}>
+            <Calendar size={13} color="var(--brand-beige)" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#FFFFFF',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                outline: 'none',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                width: '110px'
+              }}
+            />
+            {selectedDate !== getTodayISO() && (
+              <button
+                onClick={() => setSelectedDate(getTodayISO())}
+                style={{
+                  background: 'rgba(229, 46, 46, 0.25)',
+                  border: '1px solid rgba(229, 46, 46, 0.4)',
+                  color: '#FF6B6B',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Hoy
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-    )}
-  </header>
+      )}
+    </header>
   );
 }
