@@ -151,14 +151,9 @@ export function ReportProvider({ children }) {
     }
   };
 
-  // Cargar al montar y activar Polling Auto-Sync (cada 15s como respaldo) + WebSockets Realtime en tiempo real
+  // Cargar al montar y activar WebSockets Realtime en tiempo real (SIN polling para no agotar la cuota de Supabase)
   useEffect(() => {
     loadInitialData();
-
-    // Auto-Sync de respaldo (cada 15s) para evitar saturación de la API de Supabase
-    const interval = setInterval(() => {
-      loadInitialData();
-    }, 15000);
 
     // Suscripción Realtime instantánea para Reportes
     const reportsChannel = supabase
@@ -177,7 +172,6 @@ export function ReportProvider({ children }) {
       .subscribe();
 
     return () => {
-      clearInterval(interval);
       supabase.removeChannel(reportsChannel);
       supabase.removeChannel(operatorsChannel);
     };
