@@ -564,14 +564,26 @@ textarea.glass-input {
 }
 
 /* Ajuste de Filtros en Navbar para Tablets (ancho <= 1024px):
-   Oculta los textos completos dejando únicamente los ÍCONOS y abreviados para no saturar el Navbar */
+   Oculta los textos completos dejando únicamente los ÍCONOS y abreviados para no saturar el Navbar,
+   y mantiene Mina, Turno y Fecha perfectamente CENTRADOS en 1 sola fila sin saltos. */
 @media (max-width: 1024px) {
+  .nav-center-filters {
+    gap: 4px !important;
+    justify-content: center !important;
+  }
+
   .nav-filter-text {
     display: none !important;
   }
 
   .nav-filter-short {
     display: inline !important;
+  }
+
+  .nav-date-input {
+    max-width: 110px !important;
+    font-size: 0.72rem !important;
+    padding: 0 !important;
   }
 }
 

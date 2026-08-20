@@ -101,8 +101,8 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
           </div>
         </div>
 
-        {/* Selectores de Mina, Turno y Fecha (Desktop y Tablet) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }} className="hidden-mobile">
+        {/* Selectores de Mina, Turno y Fecha (Desktop y Tablet - Centrados en 1 sola fila) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap', flex: 1 }} className="hidden-mobile nav-center-filters">
           {/* Switcher de Mina */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.05)',
@@ -110,7 +110,8 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             borderRadius: '12px',
             border: 'var(--glass-border)',
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexShrink: 0
           }}>
             <button
               onClick={() => canSelectPribbenow && setActiveMine('Pribbenow')}
@@ -120,17 +121,18 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeMine === 'Pribbenow' ? 'var(--brand-red)' : 'transparent',
                 color: canSelectPribbenow ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
                 border: 'none',
-                padding: '5px 10px',
+                padding: '5px 9px',
                 borderRadius: '8px',
                 fontWeight: 700,
                 fontSize: '0.78rem',
                 cursor: canSelectPribbenow ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '4px',
                 transition: 'all 0.2s ease',
                 opacity: canSelectPribbenow ? 1 : 0.4,
-                boxShadow: activeMine === 'Pribbenow' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none'
+                boxShadow: activeMine === 'Pribbenow' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none',
+                whiteSpace: 'nowrap'
               }}
             >
               {canSelectPribbenow ? <MapPin size={13} /> : <Lock size={12} />}
@@ -146,17 +148,18 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeMine === 'El Descanso' ? 'var(--brand-red)' : 'transparent',
                 color: canSelectElDescanso ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
                 border: 'none',
-                padding: '5px 10px',
+                padding: '5px 9px',
                 borderRadius: '8px',
                 fontWeight: 700,
                 fontSize: '0.78rem',
                 cursor: canSelectElDescanso ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '4px',
                 transition: 'all 0.2s ease',
                 opacity: canSelectElDescanso ? 1 : 0.4,
-                boxShadow: activeMine === 'El Descanso' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none'
+                boxShadow: activeMine === 'El Descanso' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none',
+                whiteSpace: 'nowrap'
               }}
             >
               {canSelectElDescanso ? <MapPin size={13} /> : <Lock size={12} />}
@@ -172,7 +175,8 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             borderRadius: '12px',
             border: 'var(--glass-border)',
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexShrink: 0
           }}>
             <button
               onClick={() => setActiveShift('Diurno')}
@@ -181,14 +185,15 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeShift === 'Diurno' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
                 color: activeShift === 'Diurno' ? '#FBBF24' : 'rgba(255, 255, 255, 0.7)',
                 border: activeShift === 'Diurno' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
-                padding: '5px 10px',
+                padding: '5px 9px',
                 borderRadius: '8px',
                 fontWeight: 600,
                 fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px'
+                gap: '4px',
+                whiteSpace: 'nowrap'
               }}
             >
               <Sun size={14} />
@@ -201,14 +206,15 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 background: activeShift === 'Nocturno' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
                 color: activeShift === 'Nocturno' ? '#818CF8' : 'rgba(255, 255, 255, 0.7)',
                 border: activeShift === 'Nocturno' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid transparent',
-                padding: '5px 10px',
+                padding: '5px 9px',
                 borderRadius: '8px',
                 fontWeight: 600,
                 fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px'
+                gap: '4px',
+                whiteSpace: 'nowrap'
               }}
             >
               <Moon size={14} />
@@ -224,13 +230,15 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             border: 'var(--glass-border)',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '5px',
+            flexShrink: 0
           }} title="Filtrar reporte por fecha de turno">
             <Calendar size={14} color="var(--brand-beige)" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
+              className="nav-date-input"
               style={{
                 background: 'transparent',
                 border: 'none',
