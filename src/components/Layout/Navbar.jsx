@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Truck, Sun, Moon, Shield, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera } from 'lucide-react';
+import { useReports } from '../../context/ReportContext';
+import { Truck, Sun, Moon, Shield, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw } from 'lucide-react';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const { user, isAdmin, logout, switchUser, preseededUsers, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
+  const { dbStatus, refreshData } = useReports();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const avatarInputRef = useRef(null);
 
@@ -65,9 +67,32 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             }}>
               CAMIONES CAÍDOS
             </h1>
-            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-              Control de Flota en Campo & Cierre de Turno
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                Control de Flota en Campo
+              </p>
+              <button
+                onClick={() => refreshData && refreshData()}
+                title={dbStatus === 'online' ? 'Base de datos Supabase sincronizada en tiempo real' : 'Reintentar conexión con la nube'}
+                style={{
+                  background: dbStatus === 'online' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  border: dbStatus === 'online' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                  color: dbStatus === 'online' ? '#34D399' : '#F87171',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span className={dbStatus === 'online' ? 'pulse-dot-green' : 'pulse-dot-red'} style={{ width: '6px', height: '6px' }}></span>
+                {dbStatus === 'online' ? 'Nube Conectada' : 'Reconectar Nube'}
+                <RefreshCw size={10} />
+              </button>
+            </div>
           </div>
         </div>
 
