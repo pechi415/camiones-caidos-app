@@ -28,6 +28,41 @@ const SYSTEM_CATEGORIES = [
   'VHF "Radio"'
 ];
 
+// Helper para convertir formato 12h (Ej: "07:30 AM", "02:15 p. m.") o 24h a "HH:mm" para input type="time"
+const formatTimeTo24H = (timeStr) => {
+  if (!timeStr) return '';
+  const str = String(timeStr).trim();
+  if (/^\d{2}:\d{2}$/.test(str)) return str;
+
+  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
+  const isPM = cleaned.includes('pm') || cleaned.includes('p m');
+  const isAM = cleaned.includes('am') || cleaned.includes('a m');
+
+  const match = cleaned.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  }
+
+  return '';
+};
+
+// Helper para convertir "HH:mm" (Ej: "14:30") a "02:30 PM" para guardar en el estado
+const formatTime12H = (time24) => {
+  if (!time24) return '';
+  const match = time24.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return time24;
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const period = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${String(hours).padStart(2, '0')}:${minutes} ${period}`;
+};
+
 export default function TruckReportModal({ isOpen, onClose, editingReport, onSuccess }) {
   const { user, activeMine, setActiveMine, setActiveShift, setSelectedDate, getTodayISO } = useAuth();
   const { addReport, editReport, operators } = useReports();
@@ -75,7 +110,8 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
       });
       setErrorMsg('');
     } else {
-      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const now24 = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const nowFormatted = formatTime12H(now24);
       const targetMine = activeMine || user?.mine || 'Pribbenow';
       const calculatedShift = getCurrentShiftByTime();
       const availableOps = operators.filter(op => {
@@ -91,7 +127,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
         operatorName: defaultOp?.name || '',
         mine: targetMine,
         shift: calculatedShift,
-        reportTime: now,
+        reportTime: nowFormatted,
         actualReturnTime: '',
         systemCategory: SYSTEM_CATEGORIES[0],
         failureDescription: '',
@@ -350,7 +386,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
           </div>
 
           {/* Fila 4: Estado del Equipo y Hora de Reporte */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: formData.status === 'OPERATIVO' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '14px' }}>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
                 Estado del Equipo
@@ -371,16 +407,31 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
 
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                Hora de Reporte de Falla
+                Hora de Reporte de Falla *
               </label>
               <input
-                type="text"
+                type="time"
                 className="glass-input"
-                placeholder="Ej: 07:30 AM"
-                value={formData.reportTime}
-                onChange={(e) => setFormData({ ...formData, reportTime: e.target.value })}
+                required
+                value={formatTimeTo24H(formData.reportTime)}
+                onChange={(e) => setFormData({ ...formData, reportTime: formatTime12H(e.target.value) })}
               />
             </div>
+
+            {formData.status === 'OPERATIVO' && (
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--status-operativo)', marginBottom: '6px', display: 'block' }}>
+                  Hora de Salida *
+                </label>
+                <input
+                  type="time"
+                  className="glass-input"
+                  required
+                  value={formatTimeTo24H(formData.actualReturnTime || formData.reportTime)}
+                  onChange={(e) => setFormData({ ...formData, actualReturnTime: formatTime12H(e.target.value) })}
+                />
+              </div>
+            )}
           </div>
 
           {/* Fila 5: Descripción de la Falla & Observaciones con Corrector IA Automático */}

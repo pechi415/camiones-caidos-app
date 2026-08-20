@@ -123,6 +123,7 @@ body.modal-open {
   outline: none;
   box-sizing: border-box;
   transition: all 0.25s ease;
+  color-scheme: dark;
 }
 
 /* Animación Marquee para Texto Guía de Inicio Instantáneo */
