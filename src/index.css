@@ -540,6 +540,21 @@ textarea.glass-input {
   }
 }
 
+/* Control de Visibilidad del Nombre/Mina del Usuario en Navbar:
+   Se oculta únicamente en pantallas estrechas verticales (móvil portrait < 600px).
+   Se MUESTRA SIEMPRE en modo Horizontal (Landscape) y Pantallas Medianas/Grandes. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .user-profile-info {
+    display: none !important;
+  }
+}
+
+@media (orientation: landscape), (min-width: 601px) {
+  .user-profile-info {
+    display: block !important;
+  }
+}
+
 /* Estilos Estandarizados de Filtros en Historial General */
 .history-filters-container {
   display: flex;

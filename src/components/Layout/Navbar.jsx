@@ -323,7 +323,7 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
               color: '#FFFFFF'
             }}
           >
-            <div style={{ textAlign: 'left' }} className="hidden-mobile">
+            <div style={{ textAlign: 'left' }} className="user-profile-info">
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>{user.name}</div>
               {/* Muestra Mina y Grupo en lugar del Rol */}
               <div style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
