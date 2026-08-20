@@ -112,7 +112,7 @@ export default function UserManager() {
   return (
     <div className="glass-panel" style={{ padding: '24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '20px' }}>
+      <div className="management-header-container" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '20px' }}>
         <div>
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Users color="var(--brand-red)" size={24} /> Gestión de Usuarios
@@ -127,7 +127,7 @@ export default function UserManager() {
             setShowAddForm(!showAddForm);
             setEditingUser(null);
           }}
-          className="btn-primary"
+          className="btn-primary management-header-btn"
           style={{ fontSize: '0.85rem' }}
         >
           <UserPlus size={16} /> {showAddForm ? 'Cancelar' : 'Crear Nuevo Usuario'}
@@ -136,12 +136,12 @@ export default function UserManager() {
 
       {/* Formulario Agregar Usuario */}
       {showAddForm && (
-        <form onSubmit={handleAddSubmit} className="glass-card" style={{ padding: '20px', marginBottom: '24px', background: 'rgba(229, 46, 46, 0.05)', border: 'var(--glass-border-red)' }}>
+        <form onSubmit={handleAddSubmit} className="glass-card management-add-form" style={{ padding: '20px', marginBottom: '24px', background: 'rgba(229, 46, 46, 0.05)', border: 'var(--glass-border-red)' }}>
           <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <UserPlus size={18} color="var(--brand-red)" /> Registrar Nuevo Usuario
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+          <div className="management-form-grid user-form-grid">
             <div>
               <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
                 Nombre *
@@ -231,7 +231,7 @@ export default function UserManager() {
             </div>
 
             <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 20px' }}>
-              <Save size={16} /> Guardar
+              <Save size={16} /> Guardar Usuario
             </button>
           </div>
         </form>
