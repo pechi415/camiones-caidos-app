@@ -115,7 +115,7 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
             <button
               onClick={() => canSelectPribbenow && setActiveMine('Pribbenow')}
               disabled={!canSelectPribbenow}
-              title={!canSelectPribbenow ? `Restringido por Rol: Su sede asignada es ${user?.mine}` : 'Ver flota de Pribbenow'}
+              title={!canSelectPribbenow ? `Restringido por Rol: Su sede asignada es ${user?.mine}` : 'Mina Pribbenow (PB)'}
               style={{
                 background: activeMine === 'Pribbenow' ? 'var(--brand-red)' : 'transparent',
                 color: canSelectPribbenow ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
@@ -133,13 +133,15 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 boxShadow: activeMine === 'Pribbenow' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none'
               }}
             >
-              {canSelectPribbenow ? <MapPin size={13} /> : <Lock size={12} />} Pribbenow
+              {canSelectPribbenow ? <MapPin size={13} /> : <Lock size={12} />}
+              <span className="nav-filter-text"> Pribbenow</span>
+              <span className="nav-filter-short"> PB</span>
             </button>
 
             <button
               onClick={() => canSelectElDescanso && setActiveMine('El Descanso')}
               disabled={!canSelectElDescanso}
-              title={!canSelectElDescanso ? `Restringido por Rol: Su sede asignada es ${user?.mine}` : 'Ver flota de El Descanso'}
+              title={!canSelectElDescanso ? `Restringido por Rol: Su sede asignada es ${user?.mine}` : 'Mina El Descanso (ED)'}
               style={{
                 background: activeMine === 'El Descanso' ? 'var(--brand-red)' : 'transparent',
                 color: canSelectElDescanso ? '#FFFFFF' : 'rgba(255,255,255,0.3)',
@@ -157,7 +159,9 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 boxShadow: activeMine === 'El Descanso' ? '0 0 12px rgba(229, 46, 46, 0.4)' : 'none'
               }}
             >
-              {canSelectElDescanso ? <MapPin size={13} /> : <Lock size={12} />} El Descanso
+              {canSelectElDescanso ? <MapPin size={13} /> : <Lock size={12} />}
+              <span className="nav-filter-text"> El Descanso</span>
+              <span className="nav-filter-short"> ED</span>
             </button>
           </div>
 
@@ -172,6 +176,7 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
           }}>
             <button
               onClick={() => setActiveShift('Diurno')}
+              title="Turno Diurno (D)"
               style={{
                 background: activeShift === 'Diurno' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
                 color: activeShift === 'Diurno' ? '#FBBF24' : 'rgba(255, 255, 255, 0.7)',
@@ -186,10 +191,12 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 gap: '5px'
               }}
             >
-              <Sun size={13} /> Diurno
+              <Sun size={14} />
+              <span className="nav-filter-text"> Diurno</span>
             </button>
             <button
               onClick={() => setActiveShift('Nocturno')}
+              title="Turno Nocturno (N)"
               style={{
                 background: activeShift === 'Nocturno' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
                 color: activeShift === 'Nocturno' ? '#818CF8' : 'rgba(255, 255, 255, 0.7)',
@@ -204,7 +211,8 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                 gap: '5px'
               }}
             >
-              <Moon size={13} /> Nocturno
+              <Moon size={14} />
+              <span className="nav-filter-text"> Nocturno</span>
             </button>
           </div>
 

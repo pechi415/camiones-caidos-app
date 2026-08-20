@@ -563,6 +563,24 @@ textarea.glass-input {
   }
 }
 
+/* Ajuste de Filtros en Navbar para Tablets (ancho <= 1024px):
+   Oculta los textos completos dejando únicamente los ÍCONOS y abreviados para no saturar el Navbar */
+@media (max-width: 1024px) {
+  .nav-filter-text {
+    display: none !important;
+  }
+
+  .nav-filter-short {
+    display: inline !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .nav-filter-short {
+    display: none !important;
+  }
+}
+
 /* Estilos Estandarizados de Filtros en Historial General */
 .history-filters-container {
   display: flex;
