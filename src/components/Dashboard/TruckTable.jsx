@@ -10,6 +10,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | DOWN | OPERATIVO
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [deleteConfirmReport, setDeleteConfirmReport] = useState(null);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -181,7 +182,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
             {user.role === 'Administrador' && (
               <button
                 title="Eliminar"
-                onClick={() => onDeleteReport(report.id)}
+                onClick={() => setDeleteConfirmReport(report)}
                 style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#EF4444', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}
               >
                 <Trash2 size={16} />
@@ -395,7 +396,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                     {user.role === 'Administrador' && (
                       <button
                         title="Eliminar Registro"
-                        onClick={() => onDeleteReport(report.id)}
+                        onClick={() => setDeleteConfirmReport(report)}
                         style={{
                           background: 'rgba(239, 68, 68, 0.15)',
                           border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -536,6 +537,64 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
           renderTableRows(currentShiftReports, false)
         )}
       </div>
+
+      {/* Modal Confirmación de Eliminación de Reporte de Camión */}
+      {deleteConfirmReport && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirmReport(null)}>
+          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px', textAlign: 'center' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#EF4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <Trash2 size={28} />
+            </div>
+
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+              Eliminar Registro de Camión
+            </h3>
+
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '20px', lineHeight: '1.5' }}>
+              ¿Está seguro de eliminar el reporte del <strong style={{ color: 'var(--brand-beige)' }}>Camión {deleteConfirmReport.truckId}</strong>?
+              <br />
+              <span style={{ fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.6)', display: 'block', marginTop: '8px' }}>
+                👤 {deleteConfirmReport.operatorName} • 📍 {deleteConfirmReport.bayLocation || 'Sin Ubicación'}
+                <br />
+                🔧 Sistema: {deleteConfirmReport.systemCategory}
+              </span>
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmReport(null)}
+                className="btn-glass"
+                style={{ padding: '10px 20px' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteReport(deleteConfirmReport.id);
+                  setDeleteConfirmReport(null);
+                }}
+                className="btn-primary"
+                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFFFFF', fontWeight: 700 }}
+              >
+                Sí, Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

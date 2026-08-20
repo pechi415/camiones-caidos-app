@@ -15,6 +15,7 @@ export default function UserManager() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [resetConfirmUser, setResetConfirmUser] = useState(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [resetMsg, setResetMsg] = useState('');
 
   const [newUserData, setNewUserData] = useState({
@@ -89,21 +90,12 @@ export default function UserManager() {
     setEditingUser(null);
   };
 
-  const handleDeleteUser = async (id) => {
+  const handleDeleteUser = (targetUser) => {
     if (usersList.length <= 1) {
       alert('Debe permanecer al menos un usuario en el sistema.');
       return;
     }
-    const targetUser = usersList.find(u => u.id === id);
-    const confirmMsg = targetUser ? `¿Está seguro de eliminar al usuario "${targetUser.name}"?` : '¿Está seguro de eliminar este usuario?';
-    if (window.confirm(confirmMsg)) {
-      if (deleteUser) {
-        await deleteUser(id);
-      } else {
-        const updatedList = usersList.filter(u => u.id !== id);
-        saveUsersToStorage(updatedList);
-      }
-    }
+    setDeleteConfirmUser(targetUser);
   };
 
   const filteredUsers = usersList.filter(u => {
@@ -417,7 +409,7 @@ export default function UserManager() {
                 </button>
 
                 <button
-                  onClick={() => handleDeleteUser(u.id)}
+                  onClick={() => setDeleteConfirmUser(u)}
                   title="Eliminar Usuario"
                   style={{
                     background: 'rgba(239, 68, 68, 0.15)',
@@ -570,7 +562,7 @@ export default function UserManager() {
                       </button>
 
                       <button
-                        onClick={() => handleDeleteUser(u.id)}
+                        onClick={() => setDeleteConfirmUser(u)}
                         title="Eliminar Usuario"
                         style={{
                           background: 'rgba(239, 68, 68, 0.15)',
@@ -766,6 +758,60 @@ export default function UserManager() {
                 style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)', color: '#000000', fontWeight: 700 }}
               >
                 Sí, Restablecer Clave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Usuario */}
+      {deleteConfirmUser && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirmUser(null)}>
+          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '440px', textAlign: 'center' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#EF4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <Trash2 size={28} />
+            </div>
+
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+              Eliminar Usuario
+            </h3>
+
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '20px', lineHeight: '1.5' }}>
+              ¿Está seguro de eliminar al usuario <strong style={{ color: '#FFFFFF' }}>{deleteConfirmUser.name}</strong>?
+              <br />
+              Esta acción no se puede deshacer.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmUser(null)}
+                className="btn-glass"
+                style={{ padding: '10px 20px' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteUser(deleteConfirmUser.id);
+                  setDeleteConfirmUser(null);
+                }}
+                className="btn-primary"
+                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFFFFF', fontWeight: 700 }}
+              >
+                Sí, Eliminar
               </button>
             </div>
           </div>
