@@ -20,6 +20,7 @@ const SYSTEM_CATEGORIES = [
   'PTX "Sistema"',
   'Servicio',
   'Sin Combustible',
+  'Sistema de Dirección',
   'Sistema de Enfriamiento',
   'Sistema Hidraulico',
   'Suspension',
