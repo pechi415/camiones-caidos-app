@@ -4,7 +4,7 @@ import { useReports } from '../../context/ReportContext';
 import { Truck, Sun, Moon, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw } from 'lucide-react';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
-  const { user, isAdmin, logout, switchUser, preseededUsers, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
+  const { user, isAdmin, logout, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
   const { dbStatus, refreshData } = useReports();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const avatarInputRef = useRef(null);
@@ -16,16 +16,38 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      alert('La imagen seleccionada no debe superar los 3MB.');
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      if (user && user.id && updateUserAvatar) {
-        updateUserAvatar(user.id, reader.result);
-      }
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        if (user && user.id && updateUserAvatar) {
+          updateUserAvatar(user.id, compressed);
+        }
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -382,52 +404,13 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
-                  marginBottom: '8px',
+                  marginBottom: '4px',
                   fontSize: '0.82rem',
                   fontWeight: 700
                 }}
               >
                 <Camera size={16} color="var(--brand-beige)" /> Cambiar Foto de Perfil
               </button>
-
-              <div style={{ padding: '4px 10px 8px 10px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
-                Cambiar Rol / Usuario
-              </div>
-              {preseededUsers.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => {
-                    switchUser(u.id);
-                    setShowRoleMenu(false);
-                  }}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    background: user && user.id === u.id ? 'rgba(229, 46, 46, 0.2)' : 'transparent',
-                    border: user && user.id === u.id ? '1px solid rgba(229, 46, 46, 0.4)' : 'none',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    color: '#FFFFFF',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    marginBottom: '4px'
-                  }}
-                >
-                  {u.avatar ? (
-                    <img src={u.avatar} alt={u.name} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={14} color="#FFFFFF" />
-                    </div>
-                  )}
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{u.name}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--brand-beige)' }}>{u.mine} - {u.group || 'Grupo 1'}</div>
-                  </div>
-                </button>
-              ))}
 
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '6px', paddingTop: '6px' }}>
                 <button

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Users, Shield, MapPin, UserPlus, Search, Edit, Trash2, Save, X, IdCard, Sparkles, KeyRound, RotateCcw } from 'lucide-react';
+import { Users, Shield, MapPin, UserPlus, Search, Edit, Trash2, Save, X, IdCard, Sparkles, KeyRound, RotateCcw, Camera } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 
@@ -31,22 +31,48 @@ export default function UserManager() {
     setUsersList(updatedList);
   };
 
-  const handlePhotoUpload = (e, isEdit = false) => {
+  const handlePhotoUpload = (e, isEdit = false, targetUserId = null) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('La imagen no debe superar los 2MB.');
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      if (isEdit) {
-        setEditingUser(prev => ({ ...prev, avatar: reader.result }));
-      } else {
-        setNewUserData(prev => ({ ...prev, avatar: reader.result }));
-      }
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+
+        if (targetUserId) {
+          const updatedList = usersList.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u);
+          saveUsersToStorage(updatedList);
+        } else if (isEdit) {
+          setEditingUser(prev => ({ ...prev, avatar: compressed }));
+        } else {
+          setNewUserData(prev => ({ ...prev, avatar: compressed }));
+        }
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -334,13 +360,40 @@ export default function UserManager() {
             >
               <div className="user-card-content" style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
                 <div className="user-card-info" style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                  {u.avatar ? (
-                    <img src={u.avatar} alt={u.name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)', flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Users size={18} color="rgba(255, 255, 255, 0.6)" />
+                  <div
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'image/*';
+                      input.onchange = (e) => handlePhotoUpload(e, false, u.id);
+                      input.click();
+                    }}
+                    title="Haz clic para cambiar la foto de perfil"
+                    style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                  >
+                    {u.avatar ? (
+                      <img src={u.avatar} alt={u.name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Users size={18} color="rgba(255, 255, 255, 0.6)" />
+                      </div>
+                    )}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-2px',
+                      right: '-2px',
+                      background: 'var(--brand-red)',
+                      borderRadius: '50%',
+                      width: '14px',
+                      height: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid #1A1A1A'
+                    }}>
+                      <Camera size={8} color="#FFFFFF" />
                     </div>
-                  )}
+                  </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
@@ -462,13 +515,40 @@ export default function UserManager() {
                   {/* Nombre */}
                   <td style={{ padding: '14px 16px', borderRadius: '10px 0 0 10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {u.avatar ? (
-                        <img src={u.avatar} alt={u.name} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)' }} />
-                      ) : (
-                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Users size={16} color="rgba(255, 255, 255, 0.6)" />
+                      <div
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => handlePhotoUpload(e, false, u.id);
+                          input.click();
+                        }}
+                        title="Haz clic para cambiar la foto de perfil"
+                        style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        {u.avatar ? (
+                          <img src={u.avatar} alt={u.name} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)' }} />
+                        ) : (
+                          <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Users size={16} color="rgba(255, 255, 255, 0.6)" />
+                          </div>
+                        )}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '-2px',
+                          right: '-2px',
+                          background: 'var(--brand-red)',
+                          borderRadius: '50%',
+                          width: '13px',
+                          height: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px solid #1A1A1A'
+                        }}>
+                          <Camera size={7} color="#FFFFFF" />
                         </div>
-                      )}
+                      </div>
                       <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#FFFFFF' }}>
                         {u.name}
                       </div>
