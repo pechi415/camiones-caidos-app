@@ -1,9 +1,44 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Wrench, Edit, Trash2, Clock, ArrowRightLeft, History, AlertTriangle, MapPin } from 'lucide-react';
+import { Search, Wrench, Edit, Trash2, Clock, ArrowRightLeft, History, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truckUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
+
+// Helper para convertir formato 12h a "HH:mm"
+const formatTimeTo24H = (timeStr) => {
+  if (!timeStr) return '';
+  const str = String(timeStr).trim();
+  if (/^\d{2}:\d{2}$/.test(str)) return str;
+
+  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
+  const isPM = cleaned.includes('pm') || cleaned.includes('p m');
+  const isAM = cleaned.includes('am') || cleaned.includes('a m');
+
+  const match = cleaned.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  }
+
+  return '';
+};
+
+// Helper para convertir "HH:mm" a "02:30 PM"
+const formatTime12H = (time24) => {
+  if (!time24) return '';
+  const match = time24.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return time24;
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const period = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${String(hours).padStart(2, '0')}:${minutes} ${period}`;
+};
 
 export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDeleteReport, onViewHistory, activeMine, activeShift }) {
   const { user, selectedDate, setSelectedDate, getTodayISO, setActiveMine, setActiveShift } = useAuth();
@@ -11,6 +46,18 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | DOWN | OPERATIVO
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [deleteConfirmReport, setDeleteConfirmReport] = useState(null);
+  const [operativoConfirmReport, setOperativoConfirmReport] = useState(null);
+  const [returnTimeInput, setReturnTimeInput] = useState('');
+
+  const handleStatusClick = (report) => {
+    if (report.status === 'DOWN') {
+      const now24 = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      setReturnTimeInput(formatTime12H(now24));
+      setOperativoConfirmReport(report);
+    } else {
+      onUpdateStatus(report.id, 'DOWN');
+    }
+  };
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -142,7 +189,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
           {/* Acciones de la tarjeta */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
             <button
-              onClick={() => onUpdateStatus(report.id, report.status === 'DOWN' ? 'OPERATIVO' : 'DOWN')}
+              onClick={() => handleStatusClick(report)}
               style={{
                 flex: 1,
                 background: report.status === 'DOWN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 59, 48, 0.2)',
@@ -341,7 +388,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                     {/* Botón Rápido Cambiar Estado */}
                     <button
                       title={report.status === 'DOWN' ? 'Marcar como OPERATIVO' : 'Volver a marcar como DOWN'}
-                      onClick={() => onUpdateStatus(report.id, report.status === 'DOWN' ? 'OPERATIVO' : 'DOWN')}
+                      onClick={() => handleStatusClick(report)}
                       style={{
                         background: report.status === 'DOWN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 59, 48, 0.2)',
                         border: report.status === 'DOWN' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255, 59, 48, 0.4)',
@@ -537,6 +584,89 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
           renderTableRows(currentShiftReports, false)
         )}
       </div>
+
+      {/* Modal Confirmación para Marcar Equipo como OPERATIVO */}
+      {operativoConfirmReport && (
+        <div className="modal-overlay" onClick={() => setOperativoConfirmReport(null)}>
+          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px', textAlign: 'center' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              color: '#10B981',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <CheckCircle2 size={28} />
+            </div>
+
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+              Confirmar Equipo Operativo
+            </h3>
+
+            <p style={{ fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '16px', lineHeight: '1.5' }}>
+              ¿Está seguro de marcar el <strong style={{ color: 'var(--brand-beige)' }}>Camión {operativoConfirmReport.truckId}</strong> como <strong style={{ color: 'var(--status-operativo)' }}>OPERATIVO</strong>?
+            </p>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              textAlign: 'left',
+              fontSize: '0.83rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>👤 Operador:</span> <b>{operativoConfirmReport.operatorName}</b></div>
+              <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>🔧 Sistema:</span> <b>{operativoConfirmReport.systemCategory}</b></div>
+              <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>📍 Ubicación:</span> <b>{operativoConfirmReport.bayLocation || 'Sin Ubicación'}</b></div>
+              <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>🕒 Hora de Reporte:</span> <b>{operativoConfirmReport.reportTime}</b></div>
+            </div>
+
+            <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
+                Hora de Salida / Retorno *
+              </label>
+              <input
+                type="time"
+                className="glass-input"
+                value={formatTimeTo24H(returnTimeInput)}
+                onChange={(e) => setReturnTimeInput(formatTime12H(e.target.value))}
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setOperativoConfirmReport(null)}
+                className="btn-glass"
+                style={{ padding: '10px 20px', flex: 1 }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateStatus(operativoConfirmReport.id, 'OPERATIVO', returnTimeInput);
+                  setOperativoConfirmReport(null);
+                }}
+                className="btn-primary"
+                style={{ padding: '10px 20px', flex: 1, background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#FFFFFF', fontWeight: 700 }}
+              >
+                Sí, Marcar Operativo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Confirmación de Eliminación de Reporte de Camión */}
       {deleteConfirmReport && (

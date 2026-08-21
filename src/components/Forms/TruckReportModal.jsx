@@ -22,6 +22,7 @@ const SYSTEM_CATEGORIES = [
   'Sin Combustible',
   'Sistema de Dirección',
   'Sistema de Enfriamiento',
+  'Sistema de Levante',
   'Sistema Hidraulico',
   'Suspension',
   'Tolva',
