@@ -64,7 +64,8 @@ const mapSupabaseOperator = (op) => ({
   name: op.name,
   mine: op.mine,
   group: op.group_name || op.group || 'Grupo 1',
-  status: op.status || 'Activo'
+  status: op.status || 'Activo',
+  avatar: op.avatar || ''
 });
 
 const mapAppOperatorToSupabase = (op) => ({
@@ -72,7 +73,8 @@ const mapAppOperatorToSupabase = (op) => ({
   name: op.name,
   mine: op.mine,
   group_name: op.group || 'Grupo 1',
-  status: op.status || 'Activo'
+  status: op.status || 'Activo',
+  avatar: op.avatar || ''
 });
 
 // Helper para fusionar lista inicial de 808 operadores con registros de Supabase

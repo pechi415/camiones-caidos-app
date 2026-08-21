@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserCheck, UserPlus, Search, Trash2, Edit, Save, X, Users, MapPin, Sparkles } from 'lucide-react';
+import { UserCheck, UserPlus, Search, Trash2, Edit, Save, X, Users, MapPin, Sparkles, Camera } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 
@@ -20,8 +20,54 @@ export default function OperatorManager() {
   const [newOpData, setNewOpData] = useState({
     name: '',
     mine: user?.mine || 'Pribbenow',
-    group: 'Grupo 1'
+    group: 'Grupo 1',
+    avatar: ''
   });
+
+  const handlePhotoUpload = (e, isEdit = false, targetOpId = null) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+
+        if (targetOpId) {
+          editOperator(targetOpId, { avatar: compressed });
+        } else if (isEdit) {
+          setEditingOp(prev => ({ ...prev, avatar: compressed }));
+        } else {
+          setNewOpData(prev => ({ ...prev, avatar: compressed }));
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const filteredOperators = operators.filter(op => {
     const matchSearch = op.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,9 +85,10 @@ export default function OperatorManager() {
     addOperator({
       name: autoCapitalizeName(newOpData.name),
       mine: newOpData.mine,
-      group: newOpData.group || 'Grupo 1'
+      group: newOpData.group || 'Grupo 1',
+      avatar: newOpData.avatar || ''
     });
-    setNewOpData({ name: '', mine: 'Pribbenow', group: 'Grupo 1' });
+    setNewOpData({ name: '', mine: 'Pribbenow', group: 'Grupo 1', avatar: '' });
     setShowAddForm(false);
   };
 
@@ -51,7 +98,8 @@ export default function OperatorManager() {
     editOperator(editingOp.id, {
       name: autoCapitalizeName(editingOp.name),
       mine: editingOp.mine,
-      group: editingOp.group
+      group: editingOp.group,
+      avatar: editingOp.avatar !== undefined ? editingOp.avatar : ''
     });
     setEditingOp(null);
   };
@@ -133,7 +181,20 @@ export default function OperatorManager() {
               </select>
             </div>
 
-            <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 22px' }}>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
+                Foto de Perfil (Opcional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                className="glass-input"
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onChange={(e) => handlePhotoUpload(e, false)}
+              />
+            </div>
+
+            <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 22px', marginTop: 'auto' }}>
               <Save size={16} /> Guardar Operador
             </button>
           </div>
@@ -205,17 +266,54 @@ export default function OperatorManager() {
                 justifyContent: 'space-between'
               }}
             >
-              <div className="operator-card-content" style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
-                <div className="operator-card-name" style={{ fontWeight: 700, fontSize: '0.92rem', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {op.name}
+              <div className="operator-card-content" style={{ flex: 1, minWidth: 0, paddingRight: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (e) => handlePhotoUpload(e, false, op.id);
+                    input.click();
+                  }}
+                  title="Haz clic para cambiar la foto del operador"
+                  style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  {op.avatar ? (
+                    <img src={op.avatar} alt={op.name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Users size={18} color="rgba(255, 255, 255, 0.6)" />
+                    </div>
+                  )}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-2px',
+                    right: '-2px',
+                    background: 'var(--brand-red)',
+                    borderRadius: '50%',
+                    width: '14px',
+                    height: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #1A1A1A'
+                  }}>
+                    <Camera size={8} color="#FFFFFF" />
+                  </div>
                 </div>
-                <div className="operator-card-badges" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', flexWrap: 'nowrap' }}>
-                  <span className="badge-mine" style={{ background: 'rgba(243, 235, 221, 0.1)', color: 'var(--brand-beige)', border: 'var(--glass-border-beige)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                    📍 {op.mine === 'Pribbenow' ? 'PB' : op.mine === 'El Descanso' ? 'ED' : op.mine}
-                  </span>
-                  <span className="badge-group" style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#FFFFFF', border: 'var(--glass-border)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                    👥 {op.group ? op.group.replace('Grupo ', 'G') : 'G1'}
-                  </span>
+
+                <div style={{ minWidth: 0 }}>
+                  <div className="operator-card-name" style={{ fontWeight: 700, fontSize: '0.92rem', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {op.name}
+                  </div>
+                  <div className="operator-card-badges" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', flexWrap: 'nowrap', marginTop: '2px' }}>
+                    <span className="badge-mine" style={{ background: 'rgba(243, 235, 221, 0.1)', color: 'var(--brand-beige)', border: 'var(--glass-border-beige)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      📍 {op.mine === 'Pribbenow' ? 'PB' : op.mine === 'El Descanso' ? 'ED' : op.mine}
+                    </span>
+                    <span className="badge-group" style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#FFFFFF', border: 'var(--glass-border)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      👥 {op.group ? op.group.replace('Grupo ', 'G') : 'G1'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -287,8 +385,44 @@ export default function OperatorManager() {
                 >
                   {/* Nombre */}
                   <td style={{ padding: '14px 16px', borderRadius: '10px 0 0 10px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#FFFFFF' }}>
-                      {op.name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => handlePhotoUpload(e, false, op.id);
+                          input.click();
+                        }}
+                        title="Haz clic para cambiar la foto del operador"
+                        style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        {op.avatar ? (
+                          <img src={op.avatar} alt={op.name} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)' }} />
+                        ) : (
+                          <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Users size={16} color="rgba(255, 255, 255, 0.6)" />
+                          </div>
+                        )}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '-2px',
+                          right: '-2px',
+                          background: 'var(--brand-red)',
+                          borderRadius: '50%',
+                          width: '13px',
+                          height: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px solid #1A1A1A'
+                        }}>
+                          <Camera size={7} color="#FFFFFF" />
+                        </div>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#FFFFFF' }}>
+                        {op.name}
+                      </div>
                     </div>
                   </td>
 
@@ -419,6 +553,28 @@ export default function OperatorManager() {
                   <option value="Grupo 2">Grupo 2</option>
                   <option value="Grupo 3">Grupo 3</option>
                 </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
+                  Foto de Perfil (Avatar)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  {editingOp.avatar ? (
+                    <img src={editingOp.avatar} alt="Preview" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)' }} />
+                  ) : (
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Users size={22} color="rgba(255, 255, 255, 0.6)" />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="glass-input"
+                    style={{ padding: '8px 12px', fontSize: '0.82rem', flex: 1 }}
+                    onChange={(e) => handlePhotoUpload(e, true)}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>

@@ -101,6 +101,11 @@ export function AuthProvider({ children }) {
         const mapped = data.map(mapSupabaseUser);
         setUsersList(mapped);
         localStorage.setItem('camiones_all_users', JSON.stringify(mapped));
+        setUser(prevUser => {
+          if (!prevUser) return null;
+          const updatedSelf = mapped.find(u => u.id === prevUser.id || (u.nationalId && u.nationalId === prevUser.nationalId));
+          return updatedSelf ? updatedSelf : prevUser;
+        });
       } else {
         const seedData = PRESEEDED_USERS.map(mapAppUserToSupabase);
         await supabase.from('app_users').upsert(seedData);
@@ -148,10 +153,14 @@ export function AuthProvider({ children }) {
   const updateUsersListGlobal = async (newList) => {
     setUsersList(newList);
     localStorage.setItem('camiones_all_users', JSON.stringify(newList));
+    setUser(prevUser => {
+      if (!prevUser) return null;
+      const updatedSelf = newList.find(u => u.id === prevUser.id || (u.nationalId && u.nationalId === prevUser.nationalId));
+      return updatedSelf ? updatedSelf : prevUser;
+    });
     try {
       const dbPayload = newList.map(mapAppUserToSupabase);
       await supabase.from('app_users').upsert(dbPayload);
-      setTimeout(loadUsersFromSupabase, 300);
     } catch (e) {
       console.warn('Error guardando usuario en Supabase:', e);
     }
