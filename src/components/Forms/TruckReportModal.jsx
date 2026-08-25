@@ -16,6 +16,7 @@ const SYSTEM_CATEGORIES = [
   'Llantas',
   'Mando Final',
   'Motor',
+  'PM',
   'PTO',
   'PTX "Sistema"',
   'Servicio',
