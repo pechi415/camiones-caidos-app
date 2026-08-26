@@ -582,17 +582,17 @@ const getShortSystemCategory = (name) => {
 
             {/* Vista Escritorio: Tabla Completa Paginada */}
             <div className="hidden-mobile" style={{ overflowX: 'auto', width: '100%' }}>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+              <table style={{ width: '100%', minWidth: '960px', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                 <thead>
                   <tr style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', textAlign: 'left' }}>
-                    <th style={{ padding: '10px 14px' }}>Fecha / Hora</th>
-                    <th style={{ padding: '10px 14px' }}>N° Camión</th>
-                    <th style={{ padding: '10px 14px' }}>Mina / Turno</th>
-                    <th style={{ padding: '10px 14px' }}>Operador</th>
-                    <th style={{ padding: '10px 14px' }}>Sistema Afectado</th>
-                    <th style={{ padding: '10px 14px' }}>Descripción Falla</th>
-                    <th style={{ padding: '10px 14px' }}>Ubicación</th>
-                    <th style={{ padding: '10px 14px' }}>Reportado Por</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '125px' }}>Fecha / Hora</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '110px' }}>N° Camión</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '110px' }}>Mina / Turno</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '140px' }}>Operador</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '130px' }}>Sistema Afectado</th>
+                    <th style={{ padding: '10px 14px', minWidth: '200px' }}>Descripción Falla</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Ubicación</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Reportado Por</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -610,7 +610,7 @@ const getShortSystemCategory = (name) => {
                         }}
                       >
                         {/* Fecha / Hora */}
-                        <td style={{ padding: '14px', fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 600 }}>
+                        <td style={{ padding: '14px', fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 600, whiteSpace: 'nowrap' }}>
                           <div>{displayDate}</div>
                           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
                             🕒 {report.reportTime || 'N/A'}
@@ -618,7 +618,7 @@ const getShortSystemCategory = (name) => {
                         </td>
 
                         {/* N° Camión */}
-                        <td style={{ padding: '14px' }}>
+                        <td style={{ padding: '14px', whiteSpace: 'nowrap' }}>
                           <button
                             onClick={() => onViewHistory && onViewHistory(report.truckId)}
                             style={{
@@ -643,18 +643,18 @@ const getShortSystemCategory = (name) => {
                         </td>
 
                         {/* Mina / Turno */}
-                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap' }}>
                           <div style={{ fontWeight: 600 }}>{report.mine}</div>
                           <div style={{ fontSize: '0.72rem', color: 'var(--brand-beige)' }}>{report.shift}</div>
                         </td>
 
                         {/* Operador */}
-                        <td style={{ padding: '14px', fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 600 }}>
+                        <td style={{ padding: '14px', fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 600, whiteSpace: 'nowrap' }}>
                           {report.operatorName}
                         </td>
 
                         {/* Sistema */}
-                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'var(--brand-beige)', fontWeight: 600 }}>
+                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'var(--brand-beige)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                           {report.systemCategory}
                         </td>
 
@@ -664,7 +664,7 @@ const getShortSystemCategory = (name) => {
                         </td>
 
                         {/* Ubicación */}
-                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <MapPin size={12} />
                             {report.bayLocation || 'Sin asignación'}
@@ -672,7 +672,7 @@ const getShortSystemCategory = (name) => {
                         </td>
 
                         {/* Reportado Por */}
-                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
+                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                           {report.reportedBy || 'Sistema'}
                         </td>
                       </tr>

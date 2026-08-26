@@ -249,17 +249,17 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
 
       {/* Vista Escritorio */}
       <div className="hidden-mobile" style={{ overflowX: 'auto', width: '100%' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+        <table style={{ width: '100%', minWidth: '960px', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
           <thead>
             <tr style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', textAlign: 'left' }}>
-              <th style={{ padding: '10px 14px' }}>Número Camión</th>
-              <th style={{ padding: '10px 14px' }}>Operador</th>
-              <th style={{ padding: '10px 14px' }}>Sistema Afectado</th>
-              <th style={{ padding: '10px 14px' }}>Ubicación Campo</th>
-              <th style={{ padding: '10px 14px' }}>Descripción de Falla</th>
-              <th style={{ padding: '10px 14px' }}>{isCarryover ? 'Origen (Turno / Fecha)' : 'Hora de Reporte'}</th>
-              <th style={{ padding: '10px 14px' }}>Estado</th>
-              <th style={{ padding: '10px 14px', textAlign: 'right' }}>Acciones</th>
+              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Número Camión</th>
+              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '140px' }}>Operador</th>
+              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '130px' }}>Sistema Afectado</th>
+              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Ubicación Campo</th>
+              <th style={{ padding: '10px 14px', minWidth: '200px' }}>Descripción de Falla</th>
+              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '140px' }}>{isCarryover ? 'Origen (Turno / Fecha)' : 'Hora de Reporte'}</th>
+              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '100px' }}>Estado</th>
+              <th style={{ padding: '10px 14px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: '160px' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>

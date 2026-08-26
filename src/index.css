@@ -532,6 +532,10 @@ textarea.glass-input {
   }
 }
 
+.hidden-mobile table {
+  min-width: 960px;
+}
+
 /* Modales en Landscape de Teléfonos Móviles */
 @media (orientation: landscape) and (max-height: 550px) {
   .modal-overlay {
