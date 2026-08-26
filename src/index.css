@@ -452,7 +452,10 @@ textarea.glass-input {
     top: 6px !important;
   }
 
-  /* Filtros Responsivos Móvil */
+}
+
+/* Filtros Responsivos Móvil y Tablet (ancho <= 1024px) */
+@media (max-width: 1024px) {
   .table-filters-container,
   .user-filters-container {
     display: flex !important;
@@ -490,8 +493,12 @@ textarea.glass-input {
   .user-filters-selects select {
     width: 100% !important;
     padding: 0 8px !important;
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
   }
+}
+
+/* En teléfonos móviles pequeños (< 601px en modo vertical) invertimos la visibilidad */
+@media (max-width: 600px) {
 
   .modal-overlay {
     padding: 12px !important;
@@ -739,20 +746,28 @@ textarea.glass-input {
   align-items: center !important;
 }
 
-@media (max-width: 768px), (pointer: coarse) and (max-height: 550px) {
+@media (max-width: 1024px) {
   .history-filters-container {
+    display: flex !important;
     flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .history-filters-top {
+    width: 100% !important;
   }
 
   .history-filters-bottom {
     display: flex !important;
     flex-direction: column !important;
     gap: 8px !important;
+    width: 100% !important;
   }
 
   .history-filters-selects-row {
     display: grid !important;
-    grid-template-columns: 1fr 1fr 1fr !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px !important;
     width: 100% !important;
   }
@@ -763,9 +778,13 @@ textarea.glass-input {
     gap: 8px !important;
     width: 100% !important;
   }
+
+  .history-filter-item {
+    width: 100% !important;
+  }
 }
 
-@media (min-width: 769px) and (min-height: 551px) {
+@media (min-width: 1025px) {
   .history-filters-container {
     flex-direction: row !important;
     align-items: flex-end !important;
