@@ -9,6 +9,17 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const avatarInputRef = useRef(null);
 
+  // Helper para abreviar nombre largo (ej: Alexander Francisco Ramirez Cordoba -> Alexander Ramirez)
+  const getShortName = (fullName) => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 2) return fullName;
+    if (parts.length >= 4) {
+      return `${parts[0]} ${parts[2]}`;
+    }
+    return `${parts[0]} ${parts[1]}`;
+  };
+
   const canSelectPribbenow = isAdmin || user?.mine === 'Pribbenow';
   const canSelectElDescanso = isAdmin || user?.mine === 'El Descanso';
 
@@ -361,11 +372,16 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
               color: '#FFFFFF'
             }}
           >
-            <div style={{ textAlign: 'left' }} className="user-profile-info">
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>{user.name}</div>
+            <div style={{ textAlign: 'left', minWidth: 0 }} className="user-profile-info">
+              <div className="user-name-full" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '240px' }}>
+                {user.name}
+              </div>
+              <div className="user-name-short" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
+                {getShortName(user.name)}
+              </div>
               {/* Muestra Mina y Grupo en lugar del Rol */}
-              <div style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <MapPin size={10} /> {user?.mine || 'Pribbenow'} - {user?.group || 'Grupo 1'}
+              <div style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                <MapPin size={10} style={{ flexShrink: 0 }} /> {user?.mine || 'Pribbenow'} - {user?.group || 'Grupo 1'}
               </div>
             </div>
             <ChevronDown size={15} color="rgba(255,255,255,0.7)" />

@@ -549,9 +549,36 @@ textarea.glass-input {
   }
 }
 
-/* Control de Visibilidad del Nombre/Mina del Usuario en Navbar:
-   Se oculta únicamente en teléfonos en orientación vertical (< 600px en portrait).
-   Se MUESTRA SIEMPRE en modo Horizontal (Landscape) y en Tablets / PC. */
+/* Control de Visibilidad y Abreviado del Nombre del Usuario en Navbar:
+   - En PC / Pantallas Grandes (> 1024px): Muestra el nombre completo.
+   - En Tablets y Pantallas Medianas (<= 1024px): Muestra el nombre abreviado (ej. Alexander Ramirez).
+   - En Teléfonos en Orientación Vertical (< 600px portrait): Se oculta el texto dejando solo el avatar. */
+.user-name-full {
+  display: block;
+}
+
+.user-name-short {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .user-name-full {
+    display: none !important;
+  }
+  .user-name-short {
+    display: block !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .user-name-full {
+    display: block !important;
+  }
+  .user-name-short {
+    display: none !important;
+  }
+}
+
 @media (max-width: 600px) and (orientation: portrait) {
   .user-profile-info {
     display: none !important;
