@@ -226,7 +226,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               <Edit size={16} />
             </button>
 
-            {user.role === 'Administrador' && (
+            {(user.role === 'Administrador' || user.role === 'Encargado') && (
               <button
                 title="Eliminar"
                 onClick={() => setDeleteConfirmReport(report)}
@@ -439,8 +439,8 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                       <Edit size={15} />
                     </button>
 
-                    {/* Eliminar (Solo Admin) */}
-                    {user.role === 'Administrador' && (
+                    {/* Eliminar (Admin y Encargado) */}
+                    {(user.role === 'Administrador' || user.role === 'Encargado') && (
                       <button
                         title="Eliminar Registro"
                         onClick={() => setDeleteConfirmReport(report)}
