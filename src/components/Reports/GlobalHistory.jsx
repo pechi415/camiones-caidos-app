@@ -568,11 +568,6 @@ const getShortSystemCategory = (name) => {
                             <b style={{ color: 'var(--brand-beige)' }}>🔧 Falla:</b> {report.failureDescription}
                           </div>
                         </div>
-
-                        {/* Footer de la Tarjeta */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', paddingTop: '8px', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                          <div>✍️ Reportado por: {report.reportedBy || 'Sistema'}</div>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -585,14 +580,13 @@ const getShortSystemCategory = (name) => {
               <table style={{ width: '100%', minWidth: '960px', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                 <thead>
                   <tr style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', textAlign: 'left' }}>
-                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '125px' }}>Fecha / Hora</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '150px' }}>Fecha / Hora</th>
                     <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '110px' }}>N° Camión</th>
-                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '110px' }}>Mina / Turno</th>
-                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '140px' }}>Operador</th>
-                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '130px' }}>Sistema Afectado</th>
-                    <th style={{ padding: '10px 14px', minWidth: '200px' }}>Descripción Falla</th>
-                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Ubicación</th>
-                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Reportado Por</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '120px' }}>Mina / Turno</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '150px' }}>Operador</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '140px' }}>Sistema Afectado</th>
+                    <th style={{ padding: '10px 14px', minWidth: '220px' }}>Descripción Falla</th>
+                    <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '130px' }}>Ubicación</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -610,9 +604,9 @@ const getShortSystemCategory = (name) => {
                         }}
                       >
                         {/* Fecha / Hora */}
-                        <td style={{ padding: '14px', fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          <div>{displayDate}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                        <td style={{ padding: '14px', fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 600, whiteSpace: 'nowrap', minWidth: '150px' }}>
+                          <div style={{ whiteSpace: 'nowrap' }}>{displayDate}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px', whiteSpace: 'nowrap' }}>
                             🕒 {report.reportTime || 'N/A'}
                           </div>
                         </td>
@@ -659,7 +653,7 @@ const getShortSystemCategory = (name) => {
                         </td>
 
                         {/* Falla */}
-                        <td style={{ padding: '14px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', maxWidth: '260px' }}>
+                        <td style={{ padding: '14px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', maxWidth: '280px' }}>
                           {report.failureDescription}
                         </td>
 
@@ -669,11 +663,6 @@ const getShortSystemCategory = (name) => {
                             <MapPin size={12} />
                             {report.bayLocation || 'Sin asignación'}
                           </div>
-                        </td>
-
-                        {/* Reportado Por */}
-                        <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                          {report.reportedBy || 'Sistema'}
                         </td>
                       </tr>
                     );
