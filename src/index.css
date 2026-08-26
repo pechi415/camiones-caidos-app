@@ -685,29 +685,51 @@ textarea.glass-input {
 
 /* Estilos Estandarizados de Filtros en Historial General */
 .history-filters-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .history-filters-top {
-  width: 100%;
+  width: 100% !important;
 }
 
 .history-filters-bottom {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  width: 100%;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.history-filters-selects-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 10px !important;
+  flex: 1 1 320px !important;
+  min-width: 260px !important;
+  width: 100% !important;
+}
+
+.history-filters-dates-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  flex: 1 1 240px !important;
+  min-width: 200px !important;
+  width: 100% !important;
 }
 
 .history-filter-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  flex: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
 .history-filter-item label {
@@ -748,78 +770,6 @@ textarea.glass-input {
   padding: 0 !important;
   display: flex !important;
   align-items: center !important;
-}
-
-@media (max-width: 1024px) {
-  .history-filters-container {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 10px !important;
-  }
-
-  .history-filters-top {
-    width: 100% !important;
-  }
-
-  .history-filters-bottom {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
-    width: 100% !important;
-  }
-
-  .history-filters-selects-row {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px !important;
-    width: 100% !important;
-  }
-
-  .history-filters-dates-row {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    width: 100% !important;
-  }
-
-  .history-filter-item {
-    width: 100% !important;
-  }
-}
-
-@media (min-width: 1025px) {
-  .history-filters-container {
-    flex-direction: row !important;
-    align-items: flex-end !important;
-    justify-content: flex-end !important;
-    gap: 10px !important;
-    width: 100% !important;
-  }
-
-  .history-filters-top {
-    width: 240px !important;
-    flex-shrink: 0 !important;
-  }
-
-  .history-filters-bottom {
-    display: flex !important;
-    align-items: flex-end !important;
-    gap: 10px !important;
-    width: auto !important;
-  }
-
-  .history-filters-selects-row,
-  .history-filters-dates-row {
-    display: flex !important;
-    align-items: flex-end !important;
-    gap: 10px !important;
-  }
-
-  .history-filter-item {
-    width: 130px !important;
-    flex: none !important;
-  }
 }
 
 /* Disposición Responsiva Móvil (Badges en 1 Línea Horizontal en Vertical y 1 Fila Completa en Landscape) */
