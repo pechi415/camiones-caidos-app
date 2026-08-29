@@ -109,45 +109,7 @@ export default function ExportModal({ isOpen, onClose }) {
     doc.setTextColor(11, 13, 16);
     doc.text(`Novedades del Turno: ${totalCount}   |   Pendientes en CAMPO: ${totalCarryoverCount}   |   Total DOWN: ${totalGlobalDown}   |   Recuperados: ${totalOperativos}   |   Tasa Recuperación: ${availabilityRate}%`, 18, 39.5);
 
-    // Barra de Leyenda de Prioridades
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(203, 213, 225);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(14, 46, 269, 7.5, 1, 1, 'FD');
-
-    doc.setFontSize(7.8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(51, 65, 85);
-    doc.text('PRIORIDADES:', 17, 51);
-
-    // Pill 1: ALTA (Campo)
-    doc.setFillColor(254, 190, 190);
-    doc.roundedRect(42, 47.5, 57, 4.5, 1, 1, 'F');
-    doc.setTextColor(153, 27, 27);
-    doc.setFontSize(7.2);
-    doc.text('● ALTA: En Campo / Palas / Bot.', 44, 50.8);
-
-    // Pill 2: MEDIA (Bahía)
-    doc.setFillColor(254, 243, 199);
-    doc.roundedRect(102, 47.5, 45, 4.5, 1, 1, 'F');
-    doc.setTextColor(146, 64, 14);
-    doc.text('● MEDIA: En Bahías', 104, 50.8);
-
-    // Pill 3: BAJA (Taller)
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(150, 47.5, 54, 4.5, 1, 1, 'FD');
-    doc.setTextColor(71, 85, 105);
-    doc.text('● BAJA: En Taller', 152, 50.8);
-
-    // Pill 4: OPERATIVO
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(167, 243, 208);
-    doc.roundedRect(208, 47.5, 60, 4.5, 1, 1, 'FD');
-    doc.setTextColor(6, 78, 59);
-    doc.text('● OPERATIVO: Recuperado', 210, 50.8);
-
-    let currentY = 57;
+    let currentY = 50;
 
     // Ordenar listas por prioridad (Alta -> Media -> Baja -> Operativo)
     const sortedCarryoverReports = sortReportsByPriority(carryoverReports);
