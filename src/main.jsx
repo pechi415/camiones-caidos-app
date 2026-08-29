@@ -4,8 +4,13 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.jsx'
 
-// Registrar Service Worker inmediatamente para la PWA
-registerSW({ immediate: true })
+// Auto-actualizar inmediatamente el Service Worker cuando hay una nueva versión
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    updateSW(true);
+  }
+});
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
