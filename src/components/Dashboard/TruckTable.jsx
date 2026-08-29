@@ -109,6 +109,8 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
     return matchMine && isDown && inField && isPrevious && matchStatus && matchCategory && checkSearchMatch(r);
   });
 
+  const sortedCurrentShiftReports = sortReportsByPriority(currentShiftReports);
+  const sortedCarryoverFieldReports = sortReportsByPriority(carryoverFieldReports);
   const categories = Array.from(new Set(reports.map(r => r.systemCategory)));
 
   // Renderizador para Celulares (Vista de Tarjetas Táctiles)
