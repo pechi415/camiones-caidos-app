@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserCheck, UserPlus, Search, Trash2, Edit, Save, X, Users, MapPin, Sparkles } from 'lucide-react';
@@ -16,6 +17,17 @@ export default function OperatorManager() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOp, setEditingOp] = useState(null);
   const [deleteConfirmOp, setDeleteConfirmOp] = useState(null);
+
+  useEffect(() => {
+    if (editingOp || deleteConfirmOp) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [editingOp, deleteConfirmOp]);
 
   const [newOpData, setNewOpData] = useState({
     name: '',
@@ -365,7 +377,7 @@ export default function OperatorManager() {
       </div>
 
       {/* Modal Editar Operador */}
-      {editingOp && (
+      {editingOp && createPortal(
         <div className="modal-overlay" onClick={() => setEditingOp(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', maxWidth: '500px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', borderBottom: 'var(--glass-border)', paddingBottom: '12px' }}>
@@ -431,11 +443,12 @@ export default function OperatorManager() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Confirmación de Eliminación de Operador */}
-      {deleteConfirmOp && (
+      {deleteConfirmOp && createPortal(
         <div className="modal-overlay" onClick={() => setDeleteConfirmOp(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '440px', textAlign: 'center' }}>
             <div style={{
@@ -487,7 +500,8 @@ export default function OperatorManager() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

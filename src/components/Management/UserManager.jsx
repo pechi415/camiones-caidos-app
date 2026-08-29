@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Users, Shield, MapPin, UserPlus, Search, Edit, Trash2, Save, X, IdCard, Sparkles, KeyRound, RotateCcw, Camera } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
@@ -17,6 +18,17 @@ export default function UserManager() {
   const [resetConfirmUser, setResetConfirmUser] = useState(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [resetMsg, setResetMsg] = useState('');
+
+  useEffect(() => {
+    if (editingUser || resetConfirmUser || deleteConfirmUser) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [editingUser, resetConfirmUser, deleteConfirmUser]);
 
   const [newUserData, setNewUserData] = useState({
     name: '',
@@ -665,7 +677,7 @@ export default function UserManager() {
       </div>
 
       {/* Modal Editar Usuario */}
-      {editingUser && (
+      {editingUser && createPortal(
         <div className="modal-overlay" onClick={() => setEditingUser(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', maxWidth: '500px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', borderBottom: 'var(--glass-border)', paddingBottom: '12px' }}>
@@ -783,11 +795,12 @@ export default function UserManager() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Restablecer Contraseña */}
-      {resetConfirmUser && (
+      {resetConfirmUser && createPortal(
         <div className="modal-overlay" onClick={() => setResetConfirmUser(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '450px', textAlign: 'center' }}>
             <div style={{
@@ -841,11 +854,12 @@ export default function UserManager() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Eliminar Usuario */}
-      {deleteConfirmUser && (
+      {deleteConfirmUser && createPortal(
         <div className="modal-overlay" onClick={() => setDeleteConfirmUser(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '440px', textAlign: 'center' }}>
             <div style={{
@@ -895,7 +909,8 @@ export default function UserManager() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

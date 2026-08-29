@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Search, Wrench, Edit, Trash2, Clock, ArrowRightLeft, History, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
@@ -48,6 +49,18 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
   const [deleteConfirmReport, setDeleteConfirmReport] = useState(null);
   const [operativoConfirmReport, setOperativoConfirmReport] = useState(null);
   const [returnTimeInput, setReturnTimeInput] = useState('');
+
+  // Bloquear scroll de fondo cuando un modal de confirmación está abierto
+  useEffect(() => {
+    if (operativoConfirmReport || deleteConfirmReport) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [operativoConfirmReport, deleteConfirmReport]);
 
   const handleStatusClick = (report) => {
     if (report.status === 'DOWN') {
@@ -588,7 +601,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
       </div>
 
       {/* Modal Confirmación para Marcar Equipo como OPERATIVO */}
-      {operativoConfirmReport && (
+      {operativoConfirmReport && createPortal(
         <div className="modal-overlay" onClick={() => setOperativoConfirmReport(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px', textAlign: 'center' }}>
             <div style={{
@@ -667,11 +680,12 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Confirmación de Eliminación de Reporte de Camión */}
-      {deleteConfirmReport && (
+      {deleteConfirmReport && createPortal(
         <div className="modal-overlay" onClick={() => setDeleteConfirmReport(null)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px', textAlign: 'center' }}>
             <div style={{
@@ -725,7 +739,8 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
