@@ -88,13 +88,62 @@ export function isEquipmentInField(bayLocation) {
 }
 
 /**
- * Ordena una lista de reportes según la jerarquía de prioridad:
- * 1. Prioridad Alta (DOWN en Campo)
- * 2. Prioridad Media (DOWN en Bahías)
- * 3. Prioridad Baja (DOWN en Taller)
- * 4. Operativos
- * 
- * Si tienen la misma prioridad, ordena secundariamente por hora de reporte (más recientes primero).
+ * Convierte la hora de reporte ('07:30 AM', '02:15 PM', '14:20', etc.) a minutos relativos
+ * al inicio del turno para garantizar un orden cronológico perfecto de más temprano a más tarde.
+ * @param {object} report Objeto reporte
+ * @returns {number} Minutos transcurridos desde el inicio del turno
+ */
+export function getReportTimeOrderValue(report) {
+  const timeStr = report.reportTime || '';
+  if (!timeStr) {
+    if (report.createdAt) {
+      return new Date(report.createdAt).getTime();
+    }
+    return 999999;
+  }
+
+  const str = String(timeStr).trim();
+  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
+  const isPM = cleaned.includes('pm') || cleaned.includes('p m');
+  const isAM = cleaned.includes('am') || cleaned.includes('a m');
+
+  const match = cleaned.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return 999999;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+
+  const isNight = report.shift === 'Nocturno' || (hours >= 18 || hours < 6);
+
+  if (isNight) {
+    // Turno Nocturno: inicia a las 18:00 (6:00 PM)
+    if (hours >= 18) {
+      return (hours - 18) * 60 + minutes;
+    } else {
+      return (hours + 6) * 60 + minutes;
+    }
+  } else {
+    // Turno Diurno: inicia a las 06:00 AM
+    if (hours >= 6) {
+      return (hours - 6) * 60 + minutes;
+    } else {
+      return (hours + 18) * 60 + minutes;
+    }
+  }
+}
+
+/**
+ * Ordena una lista de reportes:
+ * 1. Jerarquía de prioridad:
+ *    - 1° Prioridad Alta (DOWN en Campo)
+ *    - 2° Prioridad Media (DOWN en Bahías)
+ *    - 3° Prioridad Baja (DOWN en Taller)
+ *    - 4° Operativos
+ * 2. Dentro de cada prioridad: Se ordena por hora de reporte cronológica (el reportado más temprano primero).
+ * 3. Desempate: Número de camión.
+ *
  * @param {Array} reports Lista de reportes
  * @returns {Array} Nueva lista ordenada
  */
@@ -108,9 +157,15 @@ export function sortReportsByPriority(reports = []) {
       return priorityA.rank - priorityB.rank;
     }
 
-    const timeA = a.reportTime || a.createdAt || '';
-    const timeB = b.reportTime || b.createdAt || '';
-    return timeB.localeCompare(timeA);
+    // Segundo orden: Hora de reporte (más temprano primero)
+    const orderValA = getReportTimeOrderValue(a);
+    const orderValB = getReportTimeOrderValue(b);
+    if (orderValA !== orderValB) {
+      return orderValA - orderValB;
+    }
+
+    // Tercer orden: Número de camión
+    return String(a.truckId || '').localeCompare(String(b.truckId || ''));
   });
 }
 
