@@ -1,15 +1,112 @@
-import { getLocalDateISO, getOperationalDateISO } from './dateUtils';
+import { getLocalDateISO, getOperationalDateISO } from './dateUtils.js';
 
 /**
- * Determina si la ubicación del equipo es en CAMPO (fuera de taller).
- * Si la ubicación está vacía o no incluye la palabra 'taller', se considera en CAMPO.
+ * Determina el nivel de prioridad, coloración y estilo de un reporte para visualización y PDF.
+ * Jerarquía de atención:
+ * 1. 🔴 ALTA (Crítica): DOWN en CAMPO (Botaderos, Rampas, Palas, Vías, Frentes, etc. fuera de bahía/taller)
+ * 2. 🟡 MEDIA: DOWN en BAHÍAS (Bahía 1, Bahía 2, etc.)
+ * 3. ⚪ BAJA: DOWN en TALLERES (Taller Central, Taller Mantenimiento - ya en manos de mecánicos)
+ * 4. 🟢 OPERATIVO: Equipo recuperado y operativo
+ *
+ * @param {object|string} report Objeto reporte o ubicación
+ * @returns {object} { level, rank, label, statusBadge, fillColor, textColor, badgeColor, borderColor }
+ */
+export function getReportPriority(report) {
+  const status = (typeof report === 'object' ? report?.status : 'DOWN') || 'DOWN';
+  const location = (typeof report === 'object' ? (report?.bayLocation || report?.location || '') : (typeof report === 'string' ? report : '')).toLowerCase().trim();
+
+  // Si está OPERATIVO, está resuelto
+  if (status === 'OPERATIVO') {
+    return {
+      level: 'OPERATIVO',
+      rank: 4,
+      label: 'OPERATIVO',
+      statusBadge: 'OPERATIVO',
+      fillColor: [236, 253, 245], // Verde muy suave #ecfdf5
+      textColor: [6, 78, 59],      // Verde oscuro #064e3b
+      badgeColor: [16, 185, 129],  // Verde esmeralda #10b981
+      borderColor: [167, 243, 208]
+    };
+  }
+
+  // 1. Si está en TALLER (prioridad baja, ya en atención mecánica)
+  const isTaller = location.includes('taller') || /\btll?r\b/i.test(location);
+  if (isTaller) {
+    return {
+      level: 'BAJA',
+      rank: 3,
+      label: 'DOWN (TALLER)',
+      statusBadge: 'DOWN (TALLER)',
+      fillColor: [241, 245, 249], // Gris slate suave #f1f5f9
+      textColor: [51, 65, 85],     // Slate 700 #334155
+      badgeColor: [100, 116, 139], // Slate 500 #64748b
+      borderColor: [203, 213, 225]
+    };
+  }
+
+  // 2. Si está en BAHÍA (prioridad media)
+  const isBahia = location.includes('bahia') || location.includes('bahía') || /\b(?:bh|bay)\b/i.test(location);
+  if (isBahia) {
+    return {
+      level: 'MEDIA',
+      rank: 2,
+      label: 'DOWN (BAHÍA)',
+      statusBadge: 'DOWN (BAHÍA)',
+      fillColor: [254, 243, 199], // Ámbar / amarillo suave #fef3c7
+      textColor: [146, 64, 14],    // Ámbar oscuro #92400e
+      badgeColor: [217, 119, 6],   // Ámbar #d97706
+      borderColor: [253, 230, 138]
+    };
+  }
+
+  // 3. Cualquier otra ubicación (Botaderos, Rampas, Palas, Vías, Frente, o sin taller) -> PRIORIDAD ALTA
+  return {
+    level: 'ALTA',
+    rank: 1,
+    label: 'DOWN (CAMPO)',
+    statusBadge: 'DOWN (CAMPO)',
+    fillColor: [254, 226, 226], // Rojo suave #fee2e2
+    textColor: [153, 27, 27],    // Rojo oscuro #991b1b
+    badgeColor: [220, 38, 38],   // Rojo intenso #dc2626
+    borderColor: [254, 202, 202]
+  };
+}
+
+/**
+ * Determina si la ubicación del equipo es en CAMPO (fuera de taller y de bahías).
  * @param {string} bayLocation Ubicación asignada
- * @returns {boolean} true si está en campo, false si está en taller
+ * @returns {boolean} true si está en campo, false si está en taller o bahía
  */
 export function isEquipmentInField(bayLocation) {
-  if (!bayLocation) return true; // Si no tiene taller asignado, está en campo
-  const locationLower = bayLocation.toLowerCase().trim();
-  return !locationLower.includes('taller');
+  const priority = getReportPriority({ status: 'DOWN', bayLocation });
+  return priority.level === 'ALTA';
+}
+
+/**
+ * Ordena una lista de reportes según la jerarquía de prioridad:
+ * 1. Prioridad Alta (DOWN en Campo)
+ * 2. Prioridad Media (DOWN en Bahías)
+ * 3. Prioridad Baja (DOWN en Taller)
+ * 4. Operativos
+ * 
+ * Si tienen la misma prioridad, ordena secundariamente por hora de reporte (más recientes primero).
+ * @param {Array} reports Lista de reportes
+ * @returns {Array} Nueva lista ordenada
+ */
+export function sortReportsByPriority(reports = []) {
+  if (!Array.isArray(reports)) return [];
+  return [...reports].sort((a, b) => {
+    const priorityA = getReportPriority(a);
+    const priorityB = getReportPriority(b);
+
+    if (priorityA.rank !== priorityB.rank) {
+      return priorityA.rank - priorityB.rank;
+    }
+
+    const timeA = a.reportTime || a.createdAt || '';
+    const timeB = b.reportTime || b.createdAt || '';
+    return timeB.localeCompare(timeA);
+  });
 }
 
 /**

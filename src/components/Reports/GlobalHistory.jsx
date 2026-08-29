@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
+import { getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
 import { downloadOrOpenPdf } from '../../utils/pdfUtils';
 import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
@@ -148,23 +149,27 @@ const getShortSystemCategory = (name) => {
   // Exportar Excel
   const handleExportExcel = () => {
     try {
-      const dataToExport = filteredHistory.map(r => ({
-        'ID Registro': r.id,
-        'Fecha': r.date || getLocalDateISO(r.createdAt),
-        'Mina': r.mine,
-        'Turno': r.shift,
-        'N° Camión': r.truckId,
-        'Operador': r.operatorName,
-        'Sistema Afectado': r.systemCategory,
-        'Descripción Falla': r.failureDescription,
-        'Ubicación': r.bayLocation || 'Sin asignación',
-        'Hora Reporte Falla': r.reportTime || 'N/A',
-        'Hora Salida Taller': r.actualReturnTime || 'En Taller',
-        'Reportado Por': r.reportedBy || 'Sistema',
-        'Fecha Registro BD': r.createdAt ? new Date(r.createdAt).toLocaleString() : 'N/A'
-      }));
+      const sortedForExcel = sortReportsByPriority(filteredHistory);
+      const excelData = sortedForExcel.map(r => {
+        const prio = getReportPriority(r);
+        return {
+          'Fecha': r.date || getLocalDateISO(r.createdAt),
+          'N° Camión': r.truckId,
+          'Mina': r.mine,
+          'Turno': r.shift,
+          'Operador': r.operatorName,
+          'Sistema Afectado': r.systemCategory,
+          'Descripción de Falla': r.failureDescription,
+          'Ubicación': r.bayLocation || 'Sin asignación',
+          'Prioridad': prio.level,
+          'Hora Falla': r.reportTime || 'N/A',
+          'Hora Retorno': r.actualReturnTime || 'N/A',
+          'Estado': r.status,
+          'Reportado Por': r.reportedBy || 'N/A'
+        };
+      });
 
-      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Bitácora Histórica');
 
@@ -233,32 +238,49 @@ const getShortSystemCategory = (name) => {
       doc.setTextColor(11, 13, 16);
       doc.text(`Total Novedades: ${totalCount}   |   Equipos Afectados Únicos: ${uniqueTrucks}   |   Sistema Falla Frecuente: ${topSystem}`, 18, 41);
 
-      const tableRows = filteredHistory.map(r => [
-        r.date || getLocalDateISO(r.createdAt),
-        `${r.truckId}`,
-        r.mine,
-        r.shift,
-        r.operatorName,
-        r.systemCategory,
-        r.failureDescription,
-        r.bayLocation || 'N/A',
-        r.reportTime || 'N/A'
-      ]);
+      const sortedForPdf = sortReportsByPriority(filteredHistory);
+      const tableRows = sortedForPdf.map(r => {
+        const prio = getReportPriority(r);
+        return [
+          r.date || getLocalDateISO(r.createdAt),
+          `${r.truckId}`,
+          r.mine,
+          r.shift,
+          r.operatorName,
+          r.systemCategory,
+          r.failureDescription,
+          r.bayLocation || 'N/A',
+          prio.statusBadge
+        ];
+      });
 
       autoTable(doc, {
         startY: 49,
-        head: [['Fecha', 'Camión', 'Mina', 'Turno', 'Operador', 'Sistema', 'Descripción Falla', 'Ubicación', 'Hora Falla']],
+        head: [['Fecha', 'Camión', 'Mina', 'Turno', 'Operador', 'Sistema', 'Descripción Falla', 'Ubicación', 'Prioridad / Estado']],
         body: tableRows,
         theme: 'grid',
         headStyles: {
-          fillColor: [229, 46, 46],
+          fillColor: [185, 28, 28],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 9
+          fontSize: 8.5
         },
         styles: {
-          fontSize: 8,
-          cellPadding: 3
+          fontSize: 7.8,
+          cellPadding: 2.2
+        },
+        didParseCell: function(data) {
+          if (data.section === 'body') {
+            const reportObj = sortedForPdf[data.row.index];
+            if (reportObj) {
+              const priority = getReportPriority(reportObj);
+              data.cell.styles.fillColor = priority.fillColor;
+              data.cell.styles.textColor = priority.textColor;
+              if (data.column.index === 1 || data.column.index === 8) {
+                data.cell.styles.fontStyle = 'bold';
+              }
+            }
+          }
         }
       });
 

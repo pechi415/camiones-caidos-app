@@ -4,7 +4,7 @@ import { useReports } from '../../context/ReportContext';
 import { X, Truck, Save } from 'lucide-react';
 import AnimatedInput from '../Common/AnimatedInput';
 import { correctTextWithAI } from '../../utils/aiCorrector';
-import { getCurrentShiftByTime } from '../../utils/truckUtils';
+import { getCurrentShiftByTime, getReportPriority } from '../../utils/truckUtils';
 
 const SYSTEM_CATEGORIES = [
   'Aire Acondicionado',
@@ -212,8 +212,8 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
 
     const cleanedData = {
       ...formData,
-      failureDescription: correctTextWithAI(formData.failureDescription),
-      bayLocation: correctTextWithAI(formData.bayLocation)
+      failureDescription: correctTextWithAI(formData.failureDescription, 'failure'),
+      bayLocation: correctTextWithAI(formData.bayLocation, 'location')
     };
 
     if (editingReport) {
@@ -375,14 +375,29 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
             </div>
 
             <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                Ubicación *
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', display: 'block', margin: 0 }}>
+                  Ubicación *
+                </label>
+                {formData.bayLocation && (
+                  (() => {
+                    const prio = getReportPriority({ status: formData.status, bayLocation: formData.bayLocation });
+                    const badgeBg = prio.level === 'ALTA' ? 'rgba(239, 68, 68, 0.15)' : prio.level === 'MEDIA' ? 'rgba(245, 158, 11, 0.15)' : prio.level === 'BAJA' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+                    const badgeColor = prio.level === 'ALTA' ? '#f87171' : prio.level === 'MEDIA' ? '#fbbf24' : prio.level === 'BAJA' ? '#cbd5e1' : '#34d399';
+                    const icon = prio.level === 'ALTA' ? '🔴' : prio.level === 'MEDIA' ? '🟡' : prio.level === 'BAJA' ? '⚪' : '🟢';
+                    return (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: badgeBg, color: badgeColor, border: `1px solid ${badgeColor}40` }}>
+                        {icon} Prioridad {prio.level === 'ALTA' ? 'Alta (Campo)' : prio.level === 'MEDIA' ? 'Media (Bahía)' : prio.level === 'BAJA' ? 'Baja (Taller)' : 'Operativo'}
+                      </span>
+                    );
+                  })()
+                )}
+              </div>
               <AnimatedInput
                 required
                 value={formData.bayLocation}
                 onChange={(e) => setFormData({ ...formData, bayLocation: e.target.value })}
-                onBlur={(e) => setFormData({ ...formData, bayLocation: correctTextWithAI(e.target.value) })}
+                onBlur={(e) => setFormData({ ...formData, bayLocation: correctTextWithAI(e.target.value, 'location') })}
                 placeholderText="📢 Indique ubicación (Ej: Frente 4, Taller Central, Bahía 3)..."
               />
             </div>
@@ -449,7 +464,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
               placeholder="Detalle la falla reportada y observaciones relevantes..."
               value={formData.failureDescription}
               onChange={(e) => setFormData({ ...formData, failureDescription: e.target.value })}
-              onBlur={(e) => setFormData({ ...formData, failureDescription: correctTextWithAI(e.target.value) })}
+              onBlur={(e) => setFormData({ ...formData, failureDescription: correctTextWithAI(e.target.value, 'failure') })}
               required
               style={{ resize: 'vertical' }}
             />

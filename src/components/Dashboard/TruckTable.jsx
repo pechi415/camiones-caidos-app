@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Search, Wrench, Edit, Trash2, Clock, ArrowRightLeft, History, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
-import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truckUtils';
+import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 
 // Helper para convertir formato 12h a "HH:mm"
@@ -539,7 +539,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               {carryoverFieldReports.length} {carryoverFieldReports.length === 1 ? 'equipo' : 'equipos'} fuera de taller
             </span>
           </div>
-          {renderTableRows(carryoverFieldReports, true)}
+          {renderTableRows(sortedCarryoverFieldReports, true)}
         </div>
       )}
 
@@ -581,7 +581,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
             No se han registrado nuevas fallas originadas durante el transcurso de este turno.
           </div>
         ) : (
-          renderTableRows(currentShiftReports, false)
+          renderTableRows(sortedCurrentShiftReports, false)
         )}
       </div>
 

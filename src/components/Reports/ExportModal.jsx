@@ -6,7 +6,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { X, FileSpreadsheet, FileText, ShieldCheck, Eye, Share2, MessageSquare, Download } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
-import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truckUtils';
+import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
 import { downloadOrOpenPdf, sharePdfDoc } from '../../utils/pdfUtils';
 import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
@@ -102,89 +102,152 @@ export default function ExportModal({ isOpen, onClose }) {
 
     // Resumen Ejecutivo KPIs
     doc.setFillColor(243, 235, 221);
-    doc.rect(14, 32, 269, 13, 'F');
+    doc.rect(14, 32, 269, 12, 'F');
 
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(11, 13, 16);
-    doc.text(`Novedades del Turno: ${totalCount}   |   Pendientes en CAMPO: ${totalCarryoverCount}   |   Total DOWN: ${totalGlobalDown}   |   Recuperados: ${totalOperativos}   |   Tasa Recuperación: ${availabilityRate}%`, 18, 40);
+    doc.text(`Novedades del Turno: ${totalCount}   |   Pendientes en CAMPO: ${totalCarryoverCount}   |   Total DOWN: ${totalGlobalDown}   |   Recuperados: ${totalOperativos}   |   Tasa Recuperación: ${availabilityRate}%`, 18, 39.5);
 
-    let currentY = 50;
+    // Barra de Leyenda de Prioridades
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(14, 46, 269, 7.5, 1, 1, 'FD');
+
+    doc.setFontSize(7.8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(51, 65, 85);
+    doc.text('PRIORIDADES:', 17, 51);
+
+    // Pill 1: ALTA (Campo)
+    doc.setFillColor(254, 226, 226);
+    doc.roundedRect(42, 47.5, 57, 4.5, 1, 1, 'F');
+    doc.setTextColor(153, 27, 27);
+    doc.setFontSize(7.2);
+    doc.text('● ALTA: En Campo / Palas / Bot.', 44, 50.8);
+
+    // Pill 2: MEDIA (Bahía)
+    doc.setFillColor(254, 243, 199);
+    doc.roundedRect(102, 47.5, 45, 4.5, 1, 1, 'F');
+    doc.setTextColor(146, 64, 14);
+    doc.text('● MEDIA: En Bahías', 104, 50.8);
+
+    // Pill 3: BAJA (Taller)
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(150, 47.5, 62, 4.5, 1, 1, 'F');
+    doc.setTextColor(71, 85, 105);
+    doc.text('● BAJA: En Taller (Con mecánicos)', 152, 50.8);
+
+    // Pill 4: OPERATIVO
+    doc.setFillColor(236, 253, 245);
+    doc.roundedRect(215, 47.5, 64, 4.5, 1, 1, 'F');
+    doc.setTextColor(6, 78, 59);
+    doc.text('● OPERATIVO: Recuperado / Listo', 217, 50.8);
+
+    let currentY = 57;
+
+    // Ordenar listas por prioridad (Alta -> Media -> Baja -> Operativo)
+    const sortedCarryoverReports = sortReportsByPriority(carryoverReports);
+    const sortedShiftReports = sortReportsByPriority(shiftReports);
 
     // TABLA 1: Equipos Pendientes en CAMPO de Turnos Anteriores (si existen)
-    if (carryoverReports.length > 0) {
-      doc.setFontSize(11);
+    if (sortedCarryoverReports.length > 0) {
+      doc.setFontSize(10.5);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(229, 46, 46);
+      doc.setTextColor(185, 28, 28);
       doc.text('EQUIPOS PENDIENTES EN CAMPO (TURNOS ANTERIORES - ARRASTRE)', 14, currentY);
 
-      const carryoverRows = carryoverReports.map(r => [
-        `${r.truckId}`,
-        r.operatorName,
-        r.systemCategory,
-        r.failureDescription,
-        r.bayLocation || 'En Campo',
-        `${r.shift} (${r.date || getLocalDateISO(r.createdAt)})`,
-        'DOWN (EN CAMPO)'
-      ]);
+      const carryoverRows = sortedCarryoverReports.map(r => {
+        const prio = getReportPriority(r);
+        return [
+          `${r.truckId}`,
+          r.operatorName,
+          r.systemCategory,
+          r.failureDescription,
+          r.bayLocation || 'En Campo',
+          `${r.shift} (${r.date || getLocalDateISO(r.createdAt)})`,
+          prio.statusBadge
+        ];
+      });
 
       autoTable(doc, {
-        startY: currentY + 4,
-        head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación Campo', 'Origen (Turno / Fecha)', 'Estado']],
+        startY: currentY + 3.5,
+        head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación Campo', 'Origen (Turno / Fecha)', 'Prioridad / Estado']],
         body: carryoverRows,
         theme: 'grid',
         headStyles: {
           fillColor: [185, 28, 28],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 9
+          fontSize: 8.5
         },
         styles: {
           fontSize: 8,
-          cellPadding: 2.5
+          cellPadding: 2.2
+        },
+        didParseCell: function(data) {
+          if (data.section === 'body') {
+            const reportObj = sortedCarryoverReports[data.row.index];
+            if (reportObj) {
+              const priority = getReportPriority(reportObj);
+              data.cell.styles.fillColor = priority.fillColor;
+              data.cell.styles.textColor = priority.textColor;
+              if (data.column.index === 0 || data.column.index === 6) {
+                data.cell.styles.fontStyle = 'bold';
+              }
+            }
+          }
         }
       });
 
-      currentY = (doc.lastAutoTable && doc.lastAutoTable.finalY) + 10;
+      currentY = (doc.lastAutoTable && doc.lastAutoTable.finalY) + 9;
     }
 
-    // TABLA 2: Novedades de la Jornada Actual (Sin Hora de Salida)
-    doc.setFontSize(11);
+    // TABLA 2: Novedades de la Jornada Actual
+    doc.setFontSize(10.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 17, 21);
-    doc.text(`NOVEDADES REGISTRADAS EN EL TURNO (${shiftReports.length} REGISTROS)`, 14, currentY);
+    doc.text(`NOVEDADES REGISTRADAS EN EL TURNO (${sortedShiftReports.length} REGISTROS)`, 14, currentY);
 
-    const tableRows = shiftReports.map(r => [
-      `${r.truckId}`,
-      r.operatorName,
-      r.systemCategory,
-      r.failureDescription,
-      r.bayLocation || 'Sin Ubicación',
-      r.reportTime,
-      r.status
-    ]);
+    const tableRows = sortedShiftReports.map(r => {
+      const prio = getReportPriority(r);
+      return [
+        `${r.truckId}`,
+        r.operatorName,
+        r.systemCategory,
+        r.failureDescription,
+        r.bayLocation || 'Sin Ubicación',
+        r.reportTime,
+        prio.statusBadge
+      ];
+    });
 
     autoTable(doc, {
-      startY: currentY + 4,
-      head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación', 'Hora Reporte', 'Estado']],
+      startY: currentY + 3.5,
+      head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación', 'Hora Reporte', 'Prioridad / Estado']],
       body: tableRows,
       theme: 'grid',
       headStyles: {
         fillColor: [229, 46, 46],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 9
+        fontSize: 8.5
       },
       styles: {
         fontSize: 8,
-        cellPadding: 2.5
+        cellPadding: 2.2
       },
       didParseCell: function(data) {
-        if (data.section === 'body' && data.column.index === 6) {
-          if (data.cell.raw === 'DOWN') {
-            data.cell.styles.textColor = [255, 59, 48];
-          } else {
-            data.cell.styles.textColor = [16, 185, 129];
+        if (data.section === 'body') {
+          const reportObj = sortedShiftReports[data.row.index];
+          if (reportObj) {
+            const priority = getReportPriority(reportObj);
+            data.cell.styles.fillColor = priority.fillColor;
+            data.cell.styles.textColor = priority.textColor;
+            if (data.column.index === 0 || data.column.index === 6) {
+              data.cell.styles.fontStyle = 'bold';
+            }
           }
         }
       }
@@ -193,10 +256,10 @@ export default function ExportModal({ isOpen, onClose }) {
     // Pie de Página
     const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) || 140;
 
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generado por: ${responsableName} - ${new Date().toLocaleTimeString()}`, 14, finalY + 10);
+    doc.text(`Generado por: ${responsableName} - ${new Date().toLocaleTimeString()}`, 14, finalY + 8);
 
     return doc;
   };
@@ -265,40 +328,50 @@ export default function ExportModal({ isOpen, onClose }) {
     setDownloading(true);
     try {
       const workbook = XLSX.utils.book_new();
+      const sortedShift = sortReportsByPriority(shiftReports);
+      const sortedCarryover = sortReportsByPriority(carryoverReports);
 
       // Pestaña 1: Novedades del Turno Actual
-      const sheet1Data = shiftReports.map(r => ({
-        'N° Camión': r.truckId,
-        'Operador': r.operatorName,
-        'Mina': r.mine,
-        'Turno': r.shift,
-        'Sistema Afectado': r.systemCategory,
-        'Descripción de Falla': r.failureDescription,
-        'Ubicación': r.bayLocation || 'Sin Ubicación',
-        'Hora Reporte': r.reportTime,
-        'Estado': r.status,
-        'Fecha Registrada': r.date || (r.createdAt ? getLocalDateISO(r.createdAt) : '')
-      }));
-
-      const sheet1 = XLSX.utils.json_to_sheet(sheet1Data);
-      XLSX.utils.book_append_sheet(workbook, sheet1, `Novedades Turno (${shiftReports.length})`);
-
-      // Pestaña 2: Pendientes en Campo (Arrastre)
-      if (carryoverReports.length > 0) {
-        const sheet2Data = carryoverReports.map(r => ({
+      const sheet1Data = sortedShift.map(r => {
+        const prio = getReportPriority(r);
+        return {
           'N° Camión': r.truckId,
           'Operador': r.operatorName,
           'Mina': r.mine,
-          'Origen (Turno)': r.shift,
-          'Origen (Fecha)': r.date || getLocalDateISO(r.createdAt),
+          'Turno': r.shift,
           'Sistema Afectado': r.systemCategory,
           'Descripción de Falla': r.failureDescription,
-          'Ubicación Campo': r.bayLocation || 'En Campo',
-          'Estado': 'DOWN (EN CAMPO)'
-        }));
+          'Ubicación': r.bayLocation || 'Sin Ubicación',
+          'Prioridad': prio.level,
+          'Hora Reporte': r.reportTime,
+          'Estado': r.status,
+          'Fecha Registrada': r.date || (r.createdAt ? getLocalDateISO(r.createdAt) : '')
+        };
+      });
+
+      const sheet1 = XLSX.utils.json_to_sheet(sheet1Data);
+      XLSX.utils.book_append_sheet(workbook, sheet1, `Novedades Turno (${sortedShift.length})`);
+
+      // Pestaña 2: Pendientes en Campo (Arrastre)
+      if (sortedCarryover.length > 0) {
+        const sheet2Data = sortedCarryover.map(r => {
+          const prio = getReportPriority(r);
+          return {
+            'N° Camión': r.truckId,
+            'Operador': r.operatorName,
+            'Mina': r.mine,
+            'Origen (Turno)': r.shift,
+            'Origen (Fecha)': r.date || getLocalDateISO(r.createdAt),
+            'Sistema Afectado': r.systemCategory,
+            'Descripción de Falla': r.failureDescription,
+            'Ubicación Campo': r.bayLocation || 'En Campo',
+            'Prioridad': prio.level,
+            'Estado': prio.statusBadge
+          };
+        });
 
         const sheet2 = XLSX.utils.json_to_sheet(sheet2Data);
-        XLSX.utils.book_append_sheet(workbook, sheet2, `Pendientes Campo (${carryoverReports.length})`);
+        XLSX.utils.book_append_sheet(workbook, sheet2, `Pendientes Campo (${sortedCarryover.length})`);
       }
 
       XLSX.writeFile(workbook, `Reporte_Camiones_Caidos_${activeMine.replace(/\s+/g, '_')}_${activeShift}.xlsx`);
