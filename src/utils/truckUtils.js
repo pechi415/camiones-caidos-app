@@ -15,60 +15,65 @@ export function getReportPriority(report) {
   const status = (typeof report === 'object' ? report?.status : 'DOWN') || 'DOWN';
   const location = (typeof report === 'object' ? (report?.bayLocation || report?.location || '') : (typeof report === 'string' ? report : '')).toLowerCase().trim();
 
-  // Si está OPERATIVO, está resuelto
+  // Si está OPERATIVO: fila blanca con texto de estado OPERATIVO en verde
   if (status === 'OPERATIVO') {
     return {
       level: 'OPERATIVO',
       rank: 4,
       label: 'OPERATIVO',
-      statusBadge: 'OPERATIVO',
-      fillColor: [236, 253, 245], // Verde muy suave #ecfdf5
-      textColor: [6, 78, 59],      // Verde oscuro #064e3b
-      badgeColor: [16, 185, 129],  // Verde esmeralda #10b981
+      statusText: 'OPERATIVO',
+      fillColor: [255, 255, 255], // Fila blanca
+      textColor: [15, 23, 42],      // Texto oscuro
+      statusColor: [16, 185, 129],  // Verde esmeralda #10b981
+      badgeColor: [16, 185, 129],
       borderColor: [167, 243, 208]
     };
   }
 
-  // 1. Si está en TALLER (prioridad baja, ya en atención mecánica)
+  // 1. Si está en TALLER (prioridad baja: fila blanca con DOWN en rojo)
   const isTaller = location.includes('taller') || /\btll?r\b/i.test(location);
   if (isTaller) {
     return {
       level: 'BAJA',
       rank: 3,
-      label: 'DOWN (TALLER)',
-      statusBadge: 'DOWN (TALLER)',
-      fillColor: [241, 245, 249], // Gris slate suave #f1f5f9
-      textColor: [51, 65, 85],     // Slate 700 #334155
-      badgeColor: [100, 116, 139], // Slate 500 #64748b
+      label: 'TALLER',
+      statusText: 'DOWN',
+      fillColor: [255, 255, 255], // Fila blanca
+      textColor: [15, 23, 42],     // Texto oscuro
+      statusColor: [220, 38, 38],  // DOWN en rojo
+      badgeColor: [100, 116, 139],
       borderColor: [203, 213, 225]
     };
   }
 
-  // 2. Si está en BAHÍA (prioridad media)
+  // 2. Si está en BAHÍA (prioridad media: fila ámbar suave con DOWN en rojo)
   const isBahia = location.includes('bahia') || location.includes('bahía') || /\b(?:bh|bay)\b/i.test(location);
   if (isBahia) {
     return {
       level: 'MEDIA',
       rank: 2,
-      label: 'DOWN (BAHÍA)',
-      statusBadge: 'DOWN (BAHÍA)',
-      fillColor: [254, 243, 199], // Ámbar / amarillo suave #fef3c7
+      label: 'BAHÍA',
+      statusText: 'DOWN',
+      fillColor: [254, 243, 199], // Ámbar suave #fef3c7
       textColor: [146, 64, 14],    // Ámbar oscuro #92400e
-      badgeColor: [217, 119, 6],   // Ámbar #d97706
+      statusColor: [220, 38, 38],  // DOWN en rojo
+      badgeColor: [217, 119, 6],
       borderColor: [253, 230, 138]
     };
   }
 
-  // 3. Cualquier otra ubicación (Botaderos, Rampas, Palas, Vías, Frente, o sin taller) -> PRIORIDAD ALTA
+  // 3. Cualquier otra ubicación (Campo: Botaderos, Rampas, Palas, Vías, etc.) -> PRIORIDAD ALTA
+  // Fila con rojo más notorio y vivo
   return {
     level: 'ALTA',
     rank: 1,
-    label: 'DOWN (CAMPO)',
-    statusBadge: 'DOWN (CAMPO)',
-    fillColor: [254, 226, 226], // Rojo suave #fee2e2
-    textColor: [153, 27, 27],    // Rojo oscuro #991b1b
-    badgeColor: [220, 38, 38],   // Rojo intenso #dc2626
-    borderColor: [254, 202, 202]
+    label: 'CAMPO',
+    statusText: 'DOWN',
+    fillColor: [254, 190, 190], // Rojo más vivo y notorio #febebe
+    textColor: [153, 27, 27],    // Rojo oscuro
+    statusColor: [185, 28, 28],  // DOWN en rojo intenso
+    badgeColor: [220, 38, 38],
+    borderColor: [254, 150, 150]
   };
 }
 

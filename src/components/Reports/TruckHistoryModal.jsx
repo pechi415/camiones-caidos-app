@@ -109,24 +109,21 @@ export default function TruckHistoryModal({ isOpen, onClose, initialTruckId, rep
       doc.setTextColor(15, 23, 42);
       doc.text(`Total Novedades: ${totalEvents}   |   En Falla: ${downEvents}   |   Recuperados: ${resolvedEvents}   |   Fecha: ${formattedShortDate}`, centerX, 24, { align: 'center' });
 
-      const tableRows = truckHistory.map(r => {
-        const prio = getReportPriority(r);
-        return [
-          getItemDate(r),
-          r.shift || 'N/A',
-          r.mine || 'N/A',
-          r.operatorName,
-          r.systemCategory,
-          r.failureDescription,
-          r.reportTime,
-          r.actualReturnTime || (r.status === 'OPERATIVO' ? 'Listo' : 'En Atención'),
-          prio.statusBadge
-        ];
-      });
+      const tableRows = truckHistory.map(r => [
+        getItemDate(r),
+        r.shift || 'N/A',
+        r.mine || 'N/A',
+        r.operatorName,
+        r.systemCategory,
+        r.failureDescription,
+        r.reportTime,
+        r.actualReturnTime || (r.status === 'OPERATIVO' ? 'Listo' : 'En Atención'),
+        r.status
+      ]);
 
       autoTable(doc, {
         startY: 34,
-        head: [['Fecha', 'Turno', 'Sede', 'Operador', 'Sistema', 'Descripción', 'Reporte', 'Retorno', 'Prioridad / Estado']],
+        head: [['Fecha', 'Turno', 'Sede', 'Operador', 'Sistema', 'Descripción', 'Reporte', 'Retorno', 'Estado']],
         body: tableRows,
         styles: { fontSize: 7.8, cellPadding: 2.2 },
         headStyles: { fillColor: [185, 28, 28], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
@@ -137,8 +134,12 @@ export default function TruckHistoryModal({ isOpen, onClose, initialTruckId, rep
               const priority = getReportPriority(reportObj);
               data.cell.styles.fillColor = priority.fillColor;
               data.cell.styles.textColor = priority.textColor;
-              if (data.column.index === 0 || data.column.index === 8) {
+              if (data.column.index === 0) {
                 data.cell.styles.fontStyle = 'bold';
+              }
+              if (data.column.index === 8) {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = priority.statusColor;
               }
             }
           }

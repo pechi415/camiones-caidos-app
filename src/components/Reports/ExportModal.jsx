@@ -121,7 +121,7 @@ export default function ExportModal({ isOpen, onClose }) {
     doc.text('PRIORIDADES:', 17, 51);
 
     // Pill 1: ALTA (Campo)
-    doc.setFillColor(254, 226, 226);
+    doc.setFillColor(254, 190, 190);
     doc.roundedRect(42, 47.5, 57, 4.5, 1, 1, 'F');
     doc.setTextColor(153, 27, 27);
     doc.setFontSize(7.2);
@@ -134,16 +134,18 @@ export default function ExportModal({ isOpen, onClose }) {
     doc.text('● MEDIA: En Bahías', 104, 50.8);
 
     // Pill 3: BAJA (Taller)
-    doc.setFillColor(241, 245, 249);
-    doc.roundedRect(150, 47.5, 62, 4.5, 1, 1, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(150, 47.5, 54, 4.5, 1, 1, 'FD');
     doc.setTextColor(71, 85, 105);
-    doc.text('● BAJA: En Taller (Con mecánicos)', 152, 50.8);
+    doc.text('● BAJA: En Taller', 152, 50.8);
 
     // Pill 4: OPERATIVO
-    doc.setFillColor(236, 253, 245);
-    doc.roundedRect(215, 47.5, 64, 4.5, 1, 1, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(167, 243, 208);
+    doc.roundedRect(208, 47.5, 60, 4.5, 1, 1, 'FD');
     doc.setTextColor(6, 78, 59);
-    doc.text('● OPERATIVO: Recuperado / Listo', 217, 50.8);
+    doc.text('● OPERATIVO: Recuperado', 210, 50.8);
 
     let currentY = 57;
 
@@ -158,22 +160,19 @@ export default function ExportModal({ isOpen, onClose }) {
       doc.setTextColor(185, 28, 28);
       doc.text('EQUIPOS PENDIENTES EN CAMPO (TURNOS ANTERIORES - ARRASTRE)', 14, currentY);
 
-      const carryoverRows = sortedCarryoverReports.map(r => {
-        const prio = getReportPriority(r);
-        return [
-          `${r.truckId}`,
-          r.operatorName,
-          r.systemCategory,
-          r.failureDescription,
-          r.bayLocation || 'En Campo',
-          `${r.shift} (${r.date || getLocalDateISO(r.createdAt)})`,
-          prio.statusBadge
-        ];
-      });
+      const carryoverRows = sortedCarryoverReports.map(r => [
+        `${r.truckId}`,
+        r.operatorName,
+        r.systemCategory,
+        r.failureDescription,
+        r.bayLocation || 'En Campo',
+        `${r.shift} (${r.date || getLocalDateISO(r.createdAt)})`,
+        r.status
+      ]);
 
       autoTable(doc, {
         startY: currentY + 3.5,
-        head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación Campo', 'Origen (Turno / Fecha)', 'Prioridad / Estado']],
+        head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación Campo', 'Origen (Turno / Fecha)', 'Estado']],
         body: carryoverRows,
         theme: 'grid',
         headStyles: {
@@ -193,8 +192,12 @@ export default function ExportModal({ isOpen, onClose }) {
               const priority = getReportPriority(reportObj);
               data.cell.styles.fillColor = priority.fillColor;
               data.cell.styles.textColor = priority.textColor;
-              if (data.column.index === 0 || data.column.index === 6) {
+              if (data.column.index === 0) {
                 data.cell.styles.fontStyle = 'bold';
+              }
+              if (data.column.index === 6) {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = priority.statusColor;
               }
             }
           }
@@ -210,22 +213,19 @@ export default function ExportModal({ isOpen, onClose }) {
     doc.setTextColor(15, 17, 21);
     doc.text(`NOVEDADES REGISTRADAS EN EL TURNO (${sortedShiftReports.length} REGISTROS)`, 14, currentY);
 
-    const tableRows = sortedShiftReports.map(r => {
-      const prio = getReportPriority(r);
-      return [
-        `${r.truckId}`,
-        r.operatorName,
-        r.systemCategory,
-        r.failureDescription,
-        r.bayLocation || 'Sin Ubicación',
-        r.reportTime,
-        prio.statusBadge
-      ];
-    });
+    const tableRows = sortedShiftReports.map(r => [
+      `${r.truckId}`,
+      r.operatorName,
+      r.systemCategory,
+      r.failureDescription,
+      r.bayLocation || 'Sin Ubicación',
+      r.reportTime,
+      r.status
+    ]);
 
     autoTable(doc, {
       startY: currentY + 3.5,
-      head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación', 'Hora Reporte', 'Prioridad / Estado']],
+      head: [['N° Camión', 'Operador', 'Sistema Afectado', 'Descripción de Falla', 'Ubicación', 'Hora Reporte', 'Estado']],
       body: tableRows,
       theme: 'grid',
       headStyles: {
@@ -245,8 +245,12 @@ export default function ExportModal({ isOpen, onClose }) {
             const priority = getReportPriority(reportObj);
             data.cell.styles.fillColor = priority.fillColor;
             data.cell.styles.textColor = priority.textColor;
-            if (data.column.index === 0 || data.column.index === 6) {
+            if (data.column.index === 0) {
               data.cell.styles.fontStyle = 'bold';
+            }
+            if (data.column.index === 6) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.textColor = priority.statusColor;
             }
           }
         }

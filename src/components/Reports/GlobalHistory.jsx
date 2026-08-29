@@ -239,24 +239,21 @@ const getShortSystemCategory = (name) => {
       doc.text(`Total Novedades: ${totalCount}   |   Equipos Afectados Únicos: ${uniqueTrucks}   |   Sistema Falla Frecuente: ${topSystem}`, 18, 41);
 
       const sortedForPdf = sortReportsByPriority(filteredHistory);
-      const tableRows = sortedForPdf.map(r => {
-        const prio = getReportPriority(r);
-        return [
-          r.date || getLocalDateISO(r.createdAt),
-          `${r.truckId}`,
-          r.mine,
-          r.shift,
-          r.operatorName,
-          r.systemCategory,
-          r.failureDescription,
-          r.bayLocation || 'N/A',
-          prio.statusBadge
-        ];
-      });
+      const tableRows = sortedForPdf.map(r => [
+        r.date || getLocalDateISO(r.createdAt),
+        `${r.truckId}`,
+        r.mine,
+        r.shift,
+        r.operatorName,
+        r.systemCategory,
+        r.failureDescription,
+        r.bayLocation || 'N/A',
+        r.status
+      ]);
 
       autoTable(doc, {
         startY: 49,
-        head: [['Fecha', 'Camión', 'Mina', 'Turno', 'Operador', 'Sistema', 'Descripción Falla', 'Ubicación', 'Prioridad / Estado']],
+        head: [['Fecha', 'Camión', 'Mina', 'Turno', 'Operador', 'Sistema', 'Descripción Falla', 'Ubicación', 'Estado']],
         body: tableRows,
         theme: 'grid',
         headStyles: {
@@ -276,8 +273,12 @@ const getShortSystemCategory = (name) => {
               const priority = getReportPriority(reportObj);
               data.cell.styles.fillColor = priority.fillColor;
               data.cell.styles.textColor = priority.textColor;
-              if (data.column.index === 1 || data.column.index === 8) {
+              if (data.column.index === 1) {
                 data.cell.styles.fontStyle = 'bold';
+              }
+              if (data.column.index === 8) {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = priority.statusColor;
               }
             }
           }
