@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
 import { X, Truck, Save } from 'lucide-react';
 import AnimatedInput from '../Common/AnimatedInput';
+import SearchableSelect from '../Common/SearchableSelect';
 import { correctTextWithAI } from '../../utils/aiCorrector';
 import { getCurrentShiftByTime, getReportPriority } from '../../utils/truckUtils';
 
@@ -298,21 +299,13 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
                 Operador Asignado
               </label>
-              <select
-                className="glass-input"
+              <SearchableSelect
+                options={filteredOperators}
                 value={formData.operatorId}
-                onChange={(e) => handleOperatorChange(e.target.value)}
-              >
-                {filteredOperators.length > 0 ? (
-                  filteredOperators.map(op => (
-                    <option key={op.id} value={op.id}>
-                      {op.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No hay operadores registrados</option>
-                )}
-              </select>
+                onChange={handleOperatorChange}
+                placeholder="Seleccione un operador..."
+                searchPlaceholder="🔍 Buscar operador..."
+              />
             </div>
           </div>
 
