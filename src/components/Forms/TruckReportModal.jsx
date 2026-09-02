@@ -10,6 +10,7 @@ const SYSTEM_CATEGORIES = [
   'Aire Acondicionado',
   'Compresor de aire',
   'Controles Electricos',
+  'Confort',
   'Diferencial',
   'Estructura Chasis',
   'Frenos',
