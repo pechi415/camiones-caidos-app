@@ -26,7 +26,8 @@ const SYSTEM_CATEGORIES = [
   'Sistema de Enfriamiento',
   'Sistema de Levante',
   'Sistema Hidraulico',
-  'Suspension',
+  'Suspennsion',
+  'SSI',
   'Tolva',
   'Transmision',
   'VHF "Radio"'
