@@ -60,9 +60,7 @@ export default function SearchableSelect({
   const filteredOptions = options.filter((opt) => {
     if (!searchTerm.trim()) return true;
     const term = normalize(searchTerm);
-    const nameMatch = normalize(opt.name).includes(term);
-    const groupMatch = opt.group && normalize(opt.group).includes(term);
-    return nameMatch || groupMatch;
+    return normalize(opt.name).includes(term);
   });
 
   const handleSelect = (optionId) => {
@@ -258,22 +256,7 @@ export default function SearchableSelect({
                       }
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>{opt.name}</span>
-                      {opt.group && (
-                        <span
-                          style={{
-                            fontSize: '0.7rem',
-                            color: 'rgba(255, 255, 255, 0.45)',
-                            background: 'rgba(255, 255, 255, 0.06)',
-                            padding: '1px 6px',
-                            borderRadius: '4px'
-                          }}
-                        >
-                          {opt.group}
-                        </span>
-                      )}
-                    </div>
+                    <span>{opt.name}</span>
 
                     {isSelected && <Check size={14} color="var(--brand-red)" />}
                   </div>
