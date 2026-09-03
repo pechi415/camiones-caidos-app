@@ -171,17 +171,30 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
             ? 'width 0.16s ease-out'
             : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
-      >
-        {/* Capa de desenfoque exclusivamente en el perímetro y bordes de la gota */}
-        <div className="whatsapp-water-lens-edge-blur" />
-      </div>
+      />
 
-      {/* Botones de Navegación (Pasan por debajo de la lente con nitidez cristalina) */}
+      {/* Botones de Navegación (Sufren difracción arcoíris y desenfoque ÚNICAMENTE al cruzar el borde de la gota) */}
       {navItems.map((item, idx) => {
         const Icon = item.icon;
         const itemCenterPercent = (idx + 0.5) * itemWidthPercent;
         
-        // Verifica si este icono está actualmente alcanzado por la lente de agua
+        // Distancia a los bordes de la gota de agua
+        const distToLeftEdge = Math.abs(itemCenterPercent - lensLeftBoundary);
+        const distToRightEdge = Math.abs(itemCenterPercent - lensRightBoundary);
+        
+        // Umbral de intersección con el borde curvado de la gota
+        const edgeZone = itemWidthPercent * 0.44;
+        const isTouchingLeftEdge = isExpanded && distToLeftEdge < edgeZone;
+        const isTouchingRightEdge = isExpanded && distToRightEdge < edgeZone;
+        const isTouchingEdge = isTouchingLeftEdge || isTouchingRightEdge;
+        
+        // Intensidad del efecto óptico según la cercanía al borde
+        const edgeIntensity = isTouchingEdge
+          ? Math.min(1, Math.max(0.35, 1 - (Math.min(distToLeftEdge, distToRightEdge) / edgeZone)))
+          : 0;
+        const skewDeg = isTouchingLeftEdge ? -4.5 : 4.5;
+        
+        // Elemento cubierto plenamente por la lente
         const isCoveredByLens = itemCenterPercent >= lensLeftBoundary && itemCenterPercent <= lensRightBoundary;
 
         return (
@@ -207,14 +220,19 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               userSelect: 'none'
             }}
           >
-            {/* Icono nítido con leve realce bajo la lente */}
+            {/* Icono con aberración cromática arcoíris y desenfoque líquido solo al tocar el borde */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: isCoveredByLens ? 'scale(1.10)' : 'scale(1)',
-                transition: 'transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                transform: isTouchingEdge
+                  ? `scale(1.10) skewX(${skewDeg}deg)`
+                  : isCoveredByLens ? 'scale(1.08)' : 'scale(1)',
+                filter: isTouchingEdge
+                  ? `drop-shadow(-2.5px 0 1px rgba(0, 245, 255, 0.95)) drop-shadow(2.5px 0 1px rgba(255, 0, 170, 0.95)) blur(${edgeIntensity * 1.4}px)`
+                  : 'none',
+                transition: 'transform 0.18s ease, filter 0.18s ease'
               }}
             >
               <Icon
@@ -224,7 +242,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               />
             </div>
 
-            {/* Texto nítido sin ningún desenfoque ni sombra difusa */}
+            {/* Texto con prisma arcoíris y desenfoque líquido únicamente al cruzar el borde */}
             <span
               style={{
                 fontSize: item.id === 'operators' ? '0.58rem' : '0.62rem',
@@ -235,7 +253,12 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
                 maxWidth: '100%',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                transition: 'color 0.2s ease, font-weight 0.2s ease'
+                transform: isTouchingEdge ? `skewX(${skewDeg}deg)` : 'scale(1)',
+                filter: isTouchingEdge ? `blur(${edgeIntensity * 1.1}px)` : 'none',
+                textShadow: isTouchingEdge
+                  ? '-2px 0 1.5px rgba(0, 245, 255, 0.9), 2px 0 1.5px rgba(255, 0, 170, 0.9)'
+                  : 'none',
+                transition: 'color 0.2s ease, font-weight 0.2s ease, filter 0.18s ease, transform 0.18s ease'
               }}
             >
               {item.label}

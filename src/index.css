@@ -887,22 +887,20 @@ textarea.glass-input {
     box-shadow 0.25s ease;
 }
 
-/* Estado ACTIVO / ARRASTRE: Gota líquida con prisma irisado y protuberancia */
+/* Estado ACTIVO / ARRASTRE: Gota líquida con relieve cristalino y protuberancia */
 .whatsapp-water-lens.is-dragging,
 .whatsapp-water-lens.is-snapping {
   top: -4px;
   bottom: -4px;
   border-radius: 34px;
   z-index: 10;
-  background: radial-gradient(ellipse at 50% 14%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(229, 46, 46, 0.12) 80%, rgba(185, 28, 28, 0.24) 100%);
+  background: radial-gradient(ellipse at 50% 14%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(229, 46, 46, 0.08) 80%, rgba(185, 28, 28, 0.18) 100%);
   border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     0 10px 28px rgba(0, 0, 0, 0.45),
-    inset 0 2px 3px rgba(255, 255, 255, 0.90),
+    inset 0 2px 3.5px rgba(255, 255, 255, 0.90),
     inset 0 -2px 3px rgba(255, 255, 255, 0.25),
-    inset 3.5px 0 7px rgba(0, 245, 255, 0.48), /* Reflejo prismático cian solo al mover */
-    inset -3.5px 0 7px rgba(255, 0, 170, 0.48), /* Reflejo prismático magenta solo al mover */
-    0 0 16px rgba(229, 46, 46, 0.35);
+    0 0 14px rgba(229, 46, 46, 0.25);
 }
 
 .whatsapp-water-lens::before {
@@ -921,25 +919,6 @@ textarea.glass-input {
 .whatsapp-water-lens.is-dragging::before,
 .whatsapp-water-lens.is-snapping::before {
   opacity: 0.9;
-}
-
-/* Desenfoque óptico exclusivamente en el perímetro exterior de la gota */
-.whatsapp-water-lens-edge-blur {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  backdrop-filter: blur(3.5px);
-  -webkit-backdrop-filter: blur(3.5px);
-  mask-image: radial-gradient(ellipse at center, transparent 52%, black 92%);
-  -webkit-mask-image: radial-gradient(ellipse at center, transparent 52%, black 92%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.is-dragging .whatsapp-water-lens-edge-blur,
-.is-snapping .whatsapp-water-lens-edge-blur {
-  opacity: 1;
 }
 
 .mobile-nav-register-btn:active {
