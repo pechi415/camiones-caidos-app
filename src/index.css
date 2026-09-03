@@ -921,6 +921,25 @@ textarea.glass-input {
   opacity: 0.9;
 }
 
+/* Anillo Óptico de Refracción Perimetral (Solo difumina los píxeles que tocan el borde exterior) */
+.whatsapp-water-lens-optical-rim {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  backdrop-filter: blur(4px) saturate(160%);
+  -webkit-backdrop-filter: blur(4px) saturate(160%);
+  mask-image: radial-gradient(ellipse at center, transparent 48%, black 72%, black 90%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 48%, black 72%, black 90%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.whatsapp-water-lens.is-dragging .whatsapp-water-lens-optical-rim,
+.whatsapp-water-lens.is-snapping .whatsapp-water-lens-optical-rim {
+  opacity: 1;
+}
+
 .mobile-nav-register-btn:active {
   transform: scale(0.88) !important;
   filter: brightness(1.15);

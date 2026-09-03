@@ -171,31 +171,30 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
             ? 'width 0.16s ease-out'
             : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
-      />
+      >
+        {/* Anillo de refracción óptica perimetral: difumina exclusivamente la franja física que cruza el borde */}
+        <div className="whatsapp-water-lens-optical-rim" />
+      </div>
 
-      {/* Botones de Navegación (Sufren difracción arcoíris y desenfoque ÚNICAMENTE al cruzar el borde de la gota) */}
+      {/* Botones de Navegación con relleno dinámico (Outline -> Solid Fill) estilo WhatsApp iOS */}
       {navItems.map((item, idx) => {
         const Icon = item.icon;
         const itemCenterPercent = (idx + 0.5) * itemWidthPercent;
         
-        // Distancia a los bordes de la gota de agua
-        const distToLeftEdge = Math.abs(itemCenterPercent - lensLeftBoundary);
-        const distToRightEdge = Math.abs(itemCenterPercent - lensRightBoundary);
-        
-        // Umbral de intersección con el borde curvado de la gota
-        const edgeZone = itemWidthPercent * 0.44;
-        const isTouchingLeftEdge = isExpanded && distToLeftEdge < edgeZone;
-        const isTouchingRightEdge = isExpanded && distToRightEdge < edgeZone;
-        const isTouchingEdge = isTouchingLeftEdge || isTouchingRightEdge;
-        
-        // Intensidad del efecto óptico según la cercanía al borde
-        const edgeIntensity = isTouchingEdge
-          ? Math.min(1, Math.max(0.35, 1 - (Math.min(distToLeftEdge, distToRightEdge) / edgeZone)))
-          : 0;
-        const skewDeg = isTouchingLeftEdge ? -4.5 : 4.5;
-        
-        // Elemento cubierto plenamente por la lente
+        // Elemento cubierto por la lente de agua
         const isCoveredByLens = itemCenterPercent >= lensLeftBoundary && itemCenterPercent <= lensRightBoundary;
+
+        // Relleno dinámico: vacíos al estar inactivos, se inundan/rellenan al quedar bajo la gota
+        const getFill = () => {
+          if (!isCoveredByLens) return 'transparent';
+          if (item.id === 'dashboard' || item.id === 'operators' || item.id === 'users') {
+            return 'currentColor';
+          }
+          if (item.id === 'register') {
+            return 'rgba(255, 255, 255, 0.35)';
+          }
+          return 'rgba(255, 255, 255, 0.30)';
+        };
 
         return (
           <button
@@ -220,45 +219,39 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               userSelect: 'none'
             }}
           >
-            {/* Icono con aberración cromática arcoíris y desenfoque líquido solo al tocar el borde */}
+            {/* Icono con inundación/relleno sólido suave al ser cubierto por la gota */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: isTouchingEdge
-                  ? `scale(1.10) skewX(${skewDeg}deg)`
-                  : isCoveredByLens ? 'scale(1.08)' : 'scale(1)',
-                filter: isTouchingEdge
-                  ? `drop-shadow(-2.5px 0 1px rgba(0, 245, 255, 0.95)) drop-shadow(2.5px 0 1px rgba(255, 0, 170, 0.95)) blur(${edgeIntensity * 1.4}px)`
-                  : 'none',
-                transition: 'transform 0.18s ease, filter 0.18s ease'
+                transform: isCoveredByLens ? 'scale(1.10)' : 'scale(1)',
+                transition: 'transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
             >
               <Icon
                 size={19}
                 color={isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)'}
                 strokeWidth={isCoveredByLens ? 2.2 : 1.85}
+                fill={getFill()}
+                style={{
+                  transition: 'fill 0.25s ease, color 0.2s ease'
+                }}
               />
             </div>
 
-            {/* Texto con prisma arcoíris y desenfoque líquido únicamente al cruzar el borde */}
+            {/* Texto limpio y nítido */}
             <span
               style={{
                 fontSize: item.id === 'operators' ? '0.58rem' : '0.62rem',
-                fontWeight: isCoveredByLens ? 750 : 500,
+                fontWeight: isCoveredByLens ? 800 : 500,
                 color: isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)',
                 letterSpacing: item.id === 'operators' ? '-0.2px' : '0px',
                 whiteSpace: 'nowrap',
                 maxWidth: '100%',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                transform: isTouchingEdge ? `skewX(${skewDeg}deg)` : 'scale(1)',
-                filter: isTouchingEdge ? `blur(${edgeIntensity * 1.1}px)` : 'none',
-                textShadow: isTouchingEdge
-                  ? '-2px 0 1.5px rgba(0, 245, 255, 0.9), 2px 0 1.5px rgba(255, 0, 170, 0.9)'
-                  : 'none',
-                transition: 'color 0.2s ease, font-weight 0.2s ease, filter 0.18s ease, transform 0.18s ease'
+                transition: 'color 0.2s ease, font-weight 0.2s ease'
               }}
             >
               {item.label}
