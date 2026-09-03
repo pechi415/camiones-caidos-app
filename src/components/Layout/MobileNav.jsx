@@ -1,412 +1,220 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, PlusCircle, UserCheck, Users, FileSpreadsheet, History } from 'lucide-react';
+import { LayoutDashboard, History, Plus, UserCheck, Users, FileSpreadsheet } from 'lucide-react';
 
 export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, onOpenExport }) {
   const { isAdmin } = useAuth();
-  const navRef = useRef(null);
-  const fabRef = useRef(null);
-  const [touchActiveIndex, setTouchActiveIndex] = useState(null);
 
-  // Estado y Ref de Posición AssistiveTouch (X, Y)
-  const [fabPos, setFabPos] = useState(null);
-  const fabPosRef = useRef(fabPos);
-  fabPosRef.current = fabPos;
-
-  const [isDraggingFab, setIsDraggingFab] = useState(false);
-  const dragStartRef = useRef({ startX: 0, startY: 0, fabStartX: 0, fabStartY: 0, hasMoved: false });
-  const isCustomPlacedRef = useRef(false);
-
-  // Estado de Inactividad (Reposo estilo AssistiveTouch iOS)
-  const [isIdle, setIsIdle] = useState(false);
-  const idleTimerRef = useRef(null);
-
-  const resetIdleTimer = () => {
-    setIsIdle(false);
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      setIsIdle(true);
-    }, 2200); // Ocultar parcialmente tras 2.2 segundos de inactividad
-  };
-
-  // Detectar scroll para ocultar parcialmente el botón durante la navegación
-  useEffect(() => {
-    resetIdleTimer();
-    const handleScroll = () => {
-      setIsIdle(true);
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-      idleTimerRef.current = setTimeout(() => {
-        setIsIdle(true);
-      }, 1500);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    };
-  }, []);
-
-  // Inicializar y ajustar posición ante rotaciones de pantalla sin esconderse
-  useEffect(() => {
-    const handleResize = () => {
-      const buttonWidth = fabRef.current ? fabRef.current.offsetWidth : 120;
-      const buttonHeight = fabRef.current ? fabRef.current.offsetHeight : 44;
-      const bottomSafeMargin = 70;
-
-      if (!fabPosRef.current) {
-        const defaultX = window.innerWidth - buttonWidth - 20;
-        const defaultY = window.innerHeight - buttonHeight - bottomSafeMargin;
-        setFabPos({ x: Math.max(16, defaultX), y: Math.max(70, defaultY) });
-      } else if (isCustomPlacedRef.current) {
-        const current = fabPosRef.current;
-        const midPoint = window.innerWidth / 2;
-        const isLeftSide = current.x + buttonWidth / 2 < midPoint;
-        const clampedX = isLeftSide ? 16 : (window.innerWidth - buttonWidth - 16);
-        const clampedY = Math.max(65, Math.min(window.innerHeight - buttonHeight - bottomSafeMargin, current.y));
-        setFabPos({ x: clampedX, y: clampedY });
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  // Definición unificada de elementos de navegación con "Registrar" en el centro
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, action: () => setActiveTab('dashboard') },
     { id: 'history', label: 'Historial', icon: History, action: () => setActiveTab('history') },
+    { id: 'register', label: 'Registrar', icon: Plus, isAction: true, action: onOpenNewReport },
     ...(isAdmin ? [
-      { id: 'users', label: 'Usuarios', icon: Users, action: () => setActiveTab('users') },
-      { id: 'operators', label: 'Operadores', icon: UserCheck, action: () => setActiveTab('operators') }
+      { id: 'operators', label: 'Operad.', icon: UserCheck, action: () => setActiveTab('operators') },
+      { id: 'users', label: 'Usuarios', icon: Users, action: () => setActiveTab('users') }
     ] : []),
     { id: 'export', label: 'PDF', icon: FileSpreadsheet, action: onOpenExport }
   ];
 
-  const activeIndex = touchActiveIndex !== null 
-    ? touchActiveIndex 
-    : Math.max(0, navItems.findIndex(item => item.id === activeTab));
-
+  // Índice activo para las pestañas de navegación (excluyendo acciones que no cambian de tab)
+  const activeIndex = Math.max(0, navItems.findIndex(item => item.id === activeTab));
   const totalItems = navItems.length;
   const itemWidthPercent = 100 / totalItems;
 
-  // Arrastre Táctil AssistiveTouch (Touch Start)
-  const handleFabTouchStart = (e) => {
-    resetIdleTimer();
-    const touch = e.touches[0];
-    const buttonWidth = fabRef.current ? fabRef.current.offsetWidth : 120;
-    const buttonHeight = fabRef.current ? fabRef.current.offsetHeight : 44;
-    const currentX = fabPosRef.current ? fabPosRef.current.x : (window.innerWidth - buttonWidth - 20);
-    const currentY = fabPosRef.current ? fabPosRef.current.y : (window.innerHeight - buttonHeight - 70);
+  // Estado para la física elástica de la gota de agua (Squash & Stretch)
+  const [prevIndex, setPrevIndex] = useState(activeIndex);
+  const [isStretching, setIsStretching] = useState(false);
+  const [stretchDirection, setStretchDirection] = useState(0); // -1: izquierda, 1: derecha
+  const [lastAnimatedTab, setLastAnimatedTab] = useState(activeTab);
 
-    dragStartRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
-      fabStartX: currentX,
-      fabStartY: currentY,
-      hasMoved: false
-    };
-    setIsDraggingFab(true);
-  };
+  // Detección de cambio de pestaña para calcular dirección y deformación elástica
+  useEffect(() => {
+    if (activeTab === 'register') return;
 
-  // Arrastre Táctil AssistiveTouch (Touch Move)
-  const handleFabTouchMove = (e) => {
-    if (!isDraggingFab) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - dragStartRef.current.startX;
-    const deltaY = touch.clientY - dragStartRef.current.startY;
-
-    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-      dragStartRef.current.hasMoved = true;
-    }
-
-    const buttonWidth = fabRef.current ? fabRef.current.offsetWidth : 120;
-    const buttonHeight = fabRef.current ? fabRef.current.offsetHeight : 44;
-
-    let newX = dragStartRef.current.fabStartX + deltaX;
-    let newY = dragStartRef.current.fabStartY + deltaY;
-
-    newX = Math.max(10, Math.min(window.innerWidth - buttonWidth - 10, newX));
-    newY = Math.max(65, Math.min(window.innerHeight - buttonHeight - 65, newY));
-
-    setFabPos({ x: newX, y: newY });
-  };
-
-  // Encaje Magnético AssistiveTouch a los Bordes (Touch End)
-  const handleFabTouchEnd = () => {
-    setIsDraggingFab(false);
-
-    if (!dragStartRef.current.hasMoved) {
-      onOpenNewReport();
-      resetIdleTimer();
-      return;
-    }
-
-    isCustomPlacedRef.current = true;
-
-    if (fabPosRef.current) {
-      const buttonWidth = fabRef.current ? fabRef.current.offsetWidth : 120;
-      const buttonHeight = fabRef.current ? fabRef.current.offsetHeight : 44;
-      const midPoint = window.innerWidth / 2;
-      const currentCenterX = fabPosRef.current.x + buttonWidth / 2;
-
-      const targetX = currentCenterX < midPoint ? 16 : (window.innerWidth - buttonWidth - 16);
-      const targetY = Math.max(65, Math.min(window.innerHeight - buttonHeight - 65, fabPosRef.current.y));
+    const newIdx = navItems.findIndex(item => item.id === activeTab);
+    if (newIdx !== -1 && newIdx !== prevIndex) {
+      const dir = newIdx > prevIndex ? 1 : -1;
+      const distance = Math.abs(newIdx - prevIndex);
       
-      setFabPos({
-        x: targetX,
-        y: targetY
-      });
+      setStretchDirection(dir);
+      setIsStretching(true);
+      setLastAnimatedTab(activeTab);
+
+      const timer = setTimeout(() => {
+        setIsStretching(false);
+        setPrevIndex(newIdx);
+      }, 340);
+
+      return () => clearTimeout(timer);
+    } else {
+      setPrevIndex(newIdx !== -1 ? newIdx : 0);
     }
-
-    resetIdleTimer();
-  };
-
-  // Soporte Mouse (Escritorio)
-  const handleFabMouseDown = (e) => {
-    resetIdleTimer();
-    const buttonWidth = fabRef.current ? fabRef.current.offsetWidth : 120;
-    const buttonHeight = fabRef.current ? fabRef.current.offsetHeight : 44;
-    const currentX = fabPosRef.current ? fabPosRef.current.x : (window.innerWidth - buttonWidth - 20);
-    const currentY = fabPosRef.current ? fabPosRef.current.y : (window.innerHeight - buttonHeight - 70);
-
-    dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      fabStartX: currentX,
-      fabStartY: currentY,
-      hasMoved: false
-    };
-    setIsDraggingFab(true);
-
-    const onMouseMove = (moveEvent) => {
-      const deltaX = moveEvent.clientX - dragStartRef.current.startX;
-      const deltaY = moveEvent.clientY - dragStartRef.current.startY;
-      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-        dragStartRef.current.hasMoved = true;
-      }
-      const buttonWidthVal = fabRef.current ? fabRef.current.offsetWidth : 120;
-      const buttonHeightVal = fabRef.current ? fabRef.current.offsetHeight : 44;
-      let newX = Math.max(10, Math.min(window.innerWidth - buttonWidthVal - 10, dragStartRef.current.fabStartX + deltaX));
-      let newY = Math.max(65, Math.min(window.innerHeight - buttonHeightVal - 65, dragStartRef.current.fabStartY + deltaY));
-      setFabPos({ x: newX, y: newY });
-    };
-
-    const onMouseUp = () => {
-      setIsDraggingFab(false);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-
-      if (!dragStartRef.current.hasMoved) {
-        onOpenNewReport();
-      } else if (fabPosRef.current) {
-        isCustomPlacedRef.current = true;
-        const buttonWidthVal = fabRef.current ? fabRef.current.offsetWidth : 120;
-        const buttonHeightVal = fabRef.current ? fabRef.current.offsetHeight : 44;
-        const midPoint = window.innerWidth / 2;
-        const currentCenterX = fabPosRef.current.x + buttonWidthVal / 2;
-        const targetX = currentCenterX < midPoint ? 16 : (window.innerWidth - buttonWidthVal - 16);
-        const targetY = Math.max(65, Math.min(window.innerHeight - buttonHeightVal - 65, fabPosRef.current.y));
-        setFabPos({ x: targetX, y: targetY });
-      }
-      resetIdleTimer();
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  };
-
-  // Seguimiento táctil al arrastrar el dedo por la cápsula estilo gota líquida
-  const handleTouchMove = (e) => {
-    if (!navRef.current) return;
-    const touch = e.touches[0];
-    const rect = navRef.current.getBoundingClientRect();
-    const relativeX = touch.clientX - rect.left;
-    const clampedX = Math.max(0, Math.min(rect.width, relativeX));
-    const newIndex = Math.floor((clampedX / rect.width) * totalItems);
-    const validIndex = Math.min(totalItems - 1, Math.max(0, newIndex));
-    setTouchActiveIndex(validIndex);
-  };
-
-  const handleTouchEnd = () => {
-    if (touchActiveIndex !== null) {
-      const selectedItem = navItems[touchActiveIndex];
-      if (selectedItem) {
-        selectedItem.action();
-      }
-      setTouchActiveIndex(null);
-    }
-  };
-
-  // Determinar en qué borde lateral se encuentra actualmente el botón para replegarlo suavemente
-  const midPoint = typeof window !== 'undefined' ? window.innerWidth / 2 : 200;
-  const buttonWidthVal = fabRef.current ? fabRef.current.offsetWidth : 120;
-  const isOnLeftSide = fabPos ? fabPos.x + buttonWidthVal / 2 < midPoint : false;
-
-  // Transformación y Opacidad en Reposo (Sin salirse de la pantalla)
-  let fabTransform = 'none';
-  if (isDraggingFab) {
-    fabTransform = 'scale(1.08)';
-  } else if (isIdle) {
-    fabTransform = isOnLeftSide ? 'translateX(-6px) scale(0.92)' : 'translateX(6px) scale(0.92)';
-  }
-
-  const fabOpacity = isDraggingFab ? 1 : (isIdle ? 0.35 : 0.95);
+  }, [activeTab]);
 
   return (
-    <>
-      {/* Botón Flotante AssistiveTouch (Docking en Reposo / Scroll + zIndex: 9999) */}
+    <nav
+      className="mobile-only mobile-nav-pill"
+      style={{
+        position: 'fixed',
+        bottom: '16px',
+        left: '16px',
+        right: '16px',
+        maxWidth: '420px',
+        margin: '0 auto',
+        height: '62px',
+        borderRadius: '35px',
+        padding: '5px 6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        zIndex: 9999,
+        background: 'rgba(12, 16, 25, 0.72)',
+        border: '1px solid rgba(255, 255, 255, 0.22)',
+        backdropFilter: 'blur(28px) saturate(190%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 1.5px rgba(255, 255, 255, 0.38), inset 0 -1px 1px rgba(0, 0, 0, 0.3)',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'manipulation'
+      }}
+    >
+      {/* 💧 Gota de Agua Líquida con Física de Deformación (WhatsApp iOS Liquid Indicator) */}
       <div
-        ref={fabRef}
-        onTouchStart={handleFabTouchStart}
-        onTouchMove={handleFabTouchMove}
-        onTouchEnd={handleFabTouchEnd}
-        onMouseDown={handleFabMouseDown}
-        onMouseEnter={() => setIsIdle(false)}
-        className="mobile-only mobile-fab-container"
         style={{
-          position: 'fixed',
-          left: fabPos ? `${fabPos.x}px` : 'auto',
-          right: fabPos ? 'auto' : '16px',
-          top: fabPos ? `${fabPos.y}px` : 'auto',
-          bottom: fabPos ? 'auto' : '135px',
-          zIndex: 9999,
-          touchAction: 'none',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          transition: isDraggingFab 
-            ? 'none' 
-            : 'left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s ease, opacity 0.4s ease'
-        }}
-      >
-        <button
-          className="mobile-fab-btn"
-          style={{
-            background: 'linear-gradient(135deg, rgba(229, 46, 46, 0.8) 0%, rgba(185, 28, 28, 0.8) 100%)',
-            color: '#FFFFFF',
-            border: '1px solid rgba(255, 255, 255, 0.45)',
-            padding: '11px 18px',
-            borderRadius: '30px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: isDraggingFab ? 'grabbing' : 'pointer',
-            fontWeight: 800,
-            fontSize: '0.85rem',
-            fontFamily: 'var(--font-heading)',
-            letterSpacing: '0.2px',
-            backdropFilter: 'blur(12px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(160%)',
-            boxShadow: isDraggingFab 
-              ? '0 15px 35px rgba(229, 46, 46, 0.75)' 
-              : (isIdle ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 8px 24px rgba(229, 46, 46, 0.45)'),
-            transform: fabTransform,
-            opacity: fabOpacity,
-            transition: 'transform 0.4s ease, opacity 0.4s ease, box-shadow 0.4s ease'
-          }}
-        >
-          <PlusCircle size={20} color="#FFFFFF" />
-          <span>Registrar</span>
-        </button>
-      </div>
-
-      {/* Cápsula de Navegación Inferior Flotante Estilo WhatsApp */}
-      <nav
-        ref={navRef}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="mobile-only mobile-nav-pill"
-        style={{
-          position: 'fixed',
-          bottom: '14px',
-          left: '26px',
-          right: '26px',
-          maxWidth: '380px',
-          margin: '0 auto',
-          borderRadius: '35px',
-          padding: '4px 3px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-around',
-          zIndex: 900,
-          background: 'rgba(15, 23, 42, 0.18)',
-          border: '1px solid rgba(255, 255, 255, 0.28)',
-          backdropFilter: 'blur(8px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          touchAction: 'pan-x'
-        }}
-      >
-        {/* Burbuja / Gota Líquida Desplazable */}
-        <div style={{
           position: 'absolute',
-          top: '4px',
-          bottom: '4px',
+          top: '5px',
+          bottom: '5px',
           left: `${activeIndex * itemWidthPercent}%`,
           width: `${itemWidthPercent}%`,
-          transition: 'left 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transition: 'left 0.34s cubic-bezier(0.34, 1.56, 0.64, 1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           pointerEvents: 'none',
-          padding: '0 1px'
-        }}>
-          <div style={{
+          padding: '0 3px',
+          zIndex: 1,
+          transformOrigin: stretchDirection > 0 ? 'left center' : stretchDirection < 0 ? 'right center' : 'center'
+        }}
+      >
+        <div
+          style={{
             width: '100%',
             height: '100%',
-            background: 'linear-gradient(135deg, rgba(229, 46, 46, 0.38) 0%, rgba(185, 28, 28, 0.38) 100%)',
-            border: '1px solid rgba(229, 46, 46, 0.65)',
-            borderRadius: '26px',
-            boxShadow: '0 0 16px rgba(229, 46, 46, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-            backdropFilter: 'blur(10px)'
-          }} />
-        </div>
+            borderRadius: '24px',
+            background: 'radial-gradient(ellipse at 50% 18%, rgba(255, 255, 255, 0.35) 0%, rgba(229, 46, 46, 0.45) 50%, rgba(185, 28, 28, 0.62) 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.42)',
+            boxShadow: '0 4px 18px rgba(229, 46, 46, 0.5), inset 0 1.5px 2px rgba(255, 255, 255, 0.65), inset 0 -1px 2px rgba(0, 0, 0, 0.35)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            transform: isStretching
+              ? `scaleX(1.24) scaleY(0.92) skewX(${stretchDirection * -3.5}deg)`
+              : 'scale(1) scaleY(1)',
+            transition: 'transform 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}
+        />
+      </div>
 
-        {/* Botones de Navegación */}
-        {navItems.map((item, idx) => {
-          const Icon = item.icon;
-          const isActive = activeIndex === idx;
+      {/* Botones de Navegación Integrados */}
+      {navItems.map((item, idx) => {
+        const Icon = item.icon;
+        const isActive = activeIndex === idx && !item.isAction;
+        const isAction = item.isAction === true;
 
+        if (isAction) {
+          // Botón Central "Registrar" Integrado con relieve de cristal líquido
           return (
             <button
               key={item.id}
               onClick={item.action}
-              className="mobile-nav-item-btn"
+              className="mobile-nav-register-btn"
               style={{
-                background: 'transparent',
-                border: 'none',
-                padding: '3px 1px',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.95) 0%, rgba(185, 28, 28, 0.95) 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.55)',
+                borderRadius: '22px',
+                padding: '4px 8px',
+                height: '46px',
                 cursor: 'pointer',
-                flex: 1,
+                flex: 1.15,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '2px',
-                zIndex: 2,
+                gap: '1px',
+                zIndex: 3,
                 outline: 'none',
-                position: 'relative'
+                position: 'relative',
+                margin: '0 2px',
+                boxShadow: '0 4px 16px rgba(229, 46, 46, 0.55), inset 0 1px 1.5px rgba(255, 255, 255, 0.65)'
               }}
+              title="Registrar Camión Caído"
             >
-              <Icon size={18} color={isActive ? '#FF5252' : 'rgba(255, 255, 255, 0.65)'} />
-              <span style={{
-                fontSize: item.id === 'operators' ? '0.58rem' : '0.62rem',
-                fontWeight: isActive ? 800 : 500,
-                color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
-                letterSpacing: item.id === 'operators' ? '-0.25px' : '0px',
-                whiteSpace: 'nowrap',
-                maxWidth: '100%',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
+              <Icon size={18} color="#FFFFFF" strokeWidth={2.6} />
+              <span
+                style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  fontFamily: 'var(--font-heading)',
+                  letterSpacing: '-0.1px',
+                  lineHeight: 1
+                }}
+              >
                 {item.label}
               </span>
             </button>
           );
-        })}
-      </nav>
-    </>
+        }
+
+        // Pestañas Estándar con Micro-animación de Resorte (Icon Pop)
+        return (
+          <button
+            key={item.id}
+            onClick={item.action}
+            className="mobile-nav-item-btn"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: '4px 2px',
+              cursor: 'pointer',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              zIndex: 2,
+              outline: 'none',
+              position: 'relative',
+              height: '100%'
+            }}
+          >
+            <div className={isActive ? 'icon-spring-active' : ''} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon
+                size={19}
+                color={isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)'}
+                strokeWidth={isActive ? 2.3 : 1.9}
+              />
+            </div>
+
+            <span
+              style={{
+                fontSize: item.id === 'operators' ? '0.58rem' : '0.62rem',
+                fontWeight: isActive ? 750 : 500,
+                color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
+                letterSpacing: item.id === 'operators' ? '-0.2px' : '0px',
+                whiteSpace: 'nowrap',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                transition: 'color 0.2s ease, font-weight 0.2s ease'
+              }}
+            >
+              {item.label}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }

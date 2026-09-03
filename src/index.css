@@ -843,7 +843,46 @@ textarea.glass-input {
 }
 
 .mobile-nav-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.90);
+}
+
+/* Animaciones Estilo WhatsApp iOS - Gota Líquida y Pop de Iconos */
+@keyframes iconPopSpring {
+  0% {
+    transform: scale(0.85);
+  }
+  40% {
+    transform: scale(1.24) translateY(-2px);
+  }
+  75% {
+    transform: scale(0.94) translateY(0.5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+.icon-spring-active {
+  animation: iconPopSpring 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.mobile-nav-item-btn {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.mobile-nav-item-btn:active {
+  transform: scale(0.86);
+}
+
+.mobile-nav-register-btn {
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, filter 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mobile-nav-register-btn:active {
+  transform: scale(0.88) !important;
+  filter: brightness(1.15);
 }
 
 /* Adaptación Responsiva para Orientación Horizontal (Landscape Móvil) */
