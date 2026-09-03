@@ -6,7 +6,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   const { isAdmin } = useAuth();
   const navRef = useRef(null);
 
-  // Definición de pestañas en total sintonía visual y geométrica
+  // Definición de pestañas en total sintonía visual
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, action: () => setActiveTab('dashboard') },
     { id: 'history', label: 'Historial', icon: History, action: () => setActiveTab('history') },
@@ -21,37 +21,30 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   const totalItems = navItems.length;
   const itemWidthPercent = 100 / totalItems;
 
-  // Índice activo basado en el tab actual (si se abrió Registrar u otro modal, se mantiene el tab de fondo)
   const activeIndex = Math.max(0, navItems.findIndex(item => item.id === activeTab));
 
-  // Estados para el arrastre táctil 1:1 (deslizar con el dedo como en WhatsApp iOS)
+  // Estados de arrastre táctil y física líquida
   const [isDragging, setIsDragging] = useState(false);
-  const [dragLeftPercent, setDragLeftPercent] = useState(null);
+  const [dragCenterXPercent, setDragCenterXPercent] = useState(null);
   const [dragHoverIndex, setDragHoverIndex] = useState(null);
-  const [dragDirection, setStretchDirection] = useState(0); // -1: izq, 1: der
-
-  // Referencias para el cálculo de física táctil instantánea
-  const lastTouchXRef = useRef(0);
-  const touchStartTimeRef = useRef(0);
-  const touchHasMovedRef = useRef(false);
-
-  // Animación al cambiar de pestaña por clic
-  const [prevIndex, setPrevIndex] = useState(activeIndex);
   const [isSnapping, setIsSnapping] = useState(false);
+  const [prevIndex, setPrevIndex] = useState(activeIndex);
 
+  const lastTouchXRef = useRef(0);
+  const touchMovedRef = useRef(false);
+
+  // Cambio de pestaña por clic directo (animación de transición con expansión de agua)
   useEffect(() => {
     if (activeTab === 'register') return;
 
     const newIdx = navItems.findIndex(item => item.id === activeTab);
     if (newIdx !== -1 && newIdx !== prevIndex) {
-      const dir = newIdx > prevIndex ? 1 : -1;
-      setStretchDirection(dir);
       setIsSnapping(true);
 
       const timer = setTimeout(() => {
         setIsSnapping(false);
         setPrevIndex(newIdx);
-      }, 340);
+      }, 360);
 
       return () => clearTimeout(timer);
     } else {
@@ -59,21 +52,34 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     }
   }, [activeTab]);
 
-  // Posición calculada de la gota: si se está arrastrando sigue al dedo 1:1, si no, se ubica en el tab activo
-  const displayedLeftPercent = isDragging && dragLeftPercent !== null
-    ? dragLeftPercent
-    : activeIndex * itemWidthPercent;
+  // --- Dimensiones y Posición de la Gota de Agua Líquida ---
+  // Al arrastrar o saltar entre pestañas, la gota se expande a lo ancho (1.85x) para abarcar ambos iconos a la vez
+  const isExpanded = isDragging || isSnapping;
+  const lensWidthPercent = isExpanded ? itemWidthPercent * 1.85 : itemWidthPercent * 1.08;
 
-  // Índice resaltado actualmente (mientras se arrastra resalta donde está el dedo)
-  const currentHighlightIndex = isDragging && dragHoverIndex !== null ? dragHoverIndex : activeIndex;
+  // Centro de la gota (durante el arrastre sigue el dedo, en reposo se centra en el item activo)
+  const defaultCenterPercent = (activeIndex + 0.5) * itemWidthPercent;
+  const currentCenterPercent = isDragging && dragCenterXPercent !== null
+    ? dragCenterXPercent
+    : defaultCenterPercent;
 
-  // --- GESTOS TÁCTILES: Arrastre 1:1 fluido estilo WhatsApp iPhone ---
+  // Límite para que no se salga de los extremos de la barra
+  const halfLensPercent = lensWidthPercent / 2;
+  const clampedLeftPercent = Math.max(
+    -1,
+    Math.min(100 - lensWidthPercent + 1, currentCenterPercent - halfLensPercent)
+  );
+
+  // Rango horizontal que cubre la lente actualmente (para distorsionar y magnificar los iconos debajo)
+  const lensLeftBoundary = clampedLeftPercent;
+  const lensRightBoundary = clampedLeftPercent + lensWidthPercent;
+
+  // --- GESTOS TÁCTILES: Arrastre 1:1 con deformación y absorción de iconos ---
   const handleTouchStart = (e) => {
     if (!navRef.current) return;
     const touch = e.touches[0];
     lastTouchXRef.current = touch.clientX;
-    touchStartTimeRef.current = Date.now();
-    touchHasMovedRef.current = false;
+    touchMovedRef.current = false;
   };
 
   const handleTouchMove = (e) => {
@@ -82,47 +88,33 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     const rect = navRef.current.getBoundingClientRect();
     const clientX = touch.clientX;
 
-    const deltaX = clientX - lastTouchXRef.current;
-    if (Math.abs(deltaX) > 3) {
-      touchHasMovedRef.current = true;
+    if (Math.abs(clientX - lastTouchXRef.current) > 3) {
+      touchMovedRef.current = true;
     }
-
-    const dir = deltaX > 0.5 ? 1 : deltaX < -0.5 ? -1 : dragDirection;
-    setStretchDirection(dir);
     lastTouchXRef.current = clientX;
 
-    // Calcular posición horizontal relativa dentro de la barra
     const relX = clientX - rect.left;
-    const itemWidthPx = rect.width / totalItems;
-
-    // La burbuja centra su posición en el dedo del usuario
-    const bubbleLeftPx = relX - (itemWidthPx / 2);
-    const maxLeftPx = rect.width - itemWidthPx;
-    const clampedLeftPx = Math.max(0, Math.min(maxLeftPx, bubbleLeftPx));
-    const leftPercent = (clampedLeftPx / rect.width) * 100;
-
-    // Determinar qué pestaña está bajo el pulgar en tiempo real
+    const centerPercent = (relX / rect.width) * 100;
     const hoverIdx = Math.max(0, Math.min(totalItems - 1, Math.floor((relX / rect.width) * totalItems)));
 
     setIsDragging(true);
-    setDragLeftPercent(leftPercent);
+    setDragCenterXPercent(centerPercent);
     setDragHoverIndex(hoverIdx);
   };
 
-  const handleTouchEnd = (e) => {
-    if (!isDragging || !touchHasMovedRef.current) {
+  const handleTouchEnd = () => {
+    if (!isDragging || !touchMovedRef.current) {
       setIsDragging(false);
-      setDragLeftPercent(null);
+      setDragCenterXPercent(null);
       setDragHoverIndex(null);
       return;
     }
 
-    // Al soltar el dedo, activar con rebote magnético la pestaña más cercana
     const targetIdx = dragHoverIndex !== null ? dragHoverIndex : activeIndex;
     const targetItem = navItems[targetIdx];
 
     setIsDragging(false);
-    setDragLeftPercent(null);
+    setDragCenterXPercent(null);
     setDragHoverIndex(null);
 
     if (targetItem) {
@@ -145,69 +137,49 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         right: '16px',
         maxWidth: '420px',
         margin: '0 auto',
-        height: '62px',
+        height: '60px',
         borderRadius: '35px',
-        padding: '5px 6px',
+        padding: '4px 6px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
         zIndex: 9999,
-        background: 'rgba(12, 16, 25, 0.75)',
+        background: 'rgba(12, 16, 25, 0.78)',
         border: '1px solid rgba(255, 255, 255, 0.22)',
         backdropFilter: 'blur(28px) saturate(190%)',
         WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 1.5px rgba(255, 255, 255, 0.38), inset 0 -1px 1px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.65), inset 0 1px 1.5px rgba(255, 255, 255, 0.38), inset 0 -1px 1px rgba(0, 0, 0, 0.3)',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        touchAction: 'none' // Permite el seguimiento gestual horizontal 1:1 sin interferencia de scroll
+        touchAction: 'none',
+        overflow: 'visible',
+        // La barra se encoge ligeramente en su interior por la tensión/peso de la gota al arrastrar
+        transform: isDragging ? 'scale(0.978)' : 'scale(1)',
+        transition: 'transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)'
       }}
     >
-      {/* 💧 Gota de Agua Líquida con Seguimiento Táctil 1:1 y Física Elástica */}
+      {/* 💧 LENTE DE AGUA LÍQUIDA FLOTANTE (Por ENCIMA de los iconos, sobresale arriba y abajo, con prisma irisado) */}
       <div
+        className="whatsapp-water-lens"
         style={{
-          position: 'absolute',
-          top: '5px',
-          bottom: '5px',
-          left: `${displayedLeftPercent}%`,
-          width: `${itemWidthPercent}%`,
-          // Si el usuario está arrastrando con el dedo, NO hay transición (sigue al dedo 1:1 instantáneamente)
-          // Si soltó el dedo o hizo clic, anima con rebote elástico de agua
+          left: `${clampedLeftPercent}%`,
+          width: `${lensWidthPercent}%`,
+          // Al arrastrar con el dedo no hay transición (sigue al dedo 1:1 de inmediato)
+          // Al soltar, rebota elásticamente hacia la pestaña seleccionada
           transition: isDragging
-            ? 'none'
-            : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          padding: '0 3px',
-          zIndex: 1,
-          transformOrigin: dragDirection > 0 ? 'left center' : dragDirection < 0 ? 'right center' : 'center'
+            ? 'width 0.18s ease-out'
+            : 'left 0.36s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '24px',
-            background: 'radial-gradient(ellipse at 50% 18%, rgba(255, 255, 255, 0.38) 0%, rgba(229, 46, 46, 0.45) 50%, rgba(185, 28, 28, 0.65) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.42)',
-            boxShadow: '0 4px 18px rgba(229, 46, 46, 0.52), inset 0 1.5px 2px rgba(255, 255, 255, 0.65), inset 0 -1px 2px rgba(0, 0, 0, 0.35)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            transform: (isDragging || isSnapping)
-              ? `scaleX(1.22) scaleY(0.92) skewX(${dragDirection * -3}deg)`
-              : 'scale(1) scaleY(1)',
-            transition: isDragging
-              ? 'transform 0.1s ease-out'
-              : 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)'
-          }}
-        />
-      </div>
+      />
 
-      {/* Botones de Navegación (Todos en la misma sintonía visual y geométrica) */}
+      {/* Botones de Navegación (Pasan por debajo de la lente y se difuminan/magnifican al estar cubiertos) */}
       {navItems.map((item, idx) => {
         const Icon = item.icon;
-        const isHighlighted = currentHighlightIndex === idx;
+        const itemCenterPercent = (idx + 0.5) * itemWidthPercent;
+        
+        // Verifica si este icono está actualmente atrapado por la lente de agua
+        const isCoveredByLens = itemCenterPercent >= lensLeftBoundary && itemCenterPercent <= lensRightBoundary;
+        const isActive = activeIndex === idx;
 
         return (
           <button
@@ -225,41 +197,45 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               alignItems: 'center',
               justifyContent: 'center',
               gap: '2px',
-              zIndex: 2,
+              zIndex: 2, // Por debajo de la lente de agua que tiene zIndex: 10
               outline: 'none',
               position: 'relative',
               height: '100%',
               userSelect: 'none'
             }}
           >
+            {/* Icono con magnificación y refracción luminosa bajo la lente */}
             <div
-              className={isHighlighted ? 'icon-spring-active' : ''}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: isHighlighted ? 'scale(1.08)' : 'scale(1)',
-                transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                transform: isCoveredByLens ? 'scale(1.18) translateY(-1px)' : 'scale(1)',
+                transition: 'transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease',
+                filter: isCoveredByLens ? 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' : 'none'
               }}
             >
               <Icon
                 size={19}
-                color={isHighlighted ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)'}
-                strokeWidth={isHighlighted ? 2.3 : 1.85}
+                color={isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.58)'}
+                strokeWidth={isCoveredByLens ? 2.4 : 1.85}
               />
             </div>
 
+            {/* Texto que se resalta y magnifica suavemente al pasar la gota por encima */}
             <span
               style={{
                 fontSize: item.id === 'operators' ? '0.58rem' : '0.62rem',
-                fontWeight: isHighlighted ? 800 : 500,
-                color: isHighlighted ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
+                fontWeight: isCoveredByLens ? 850 : 500,
+                color: isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.58)',
                 letterSpacing: item.id === 'operators' ? '-0.2px' : '0px',
                 whiteSpace: 'nowrap',
                 maxWidth: '100%',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                transition: 'color 0.2s ease, font-weight 0.2s ease'
+                transform: isCoveredByLens ? 'scale(1.06)' : 'scale(1)',
+                transition: 'transform 0.22s ease, color 0.2s ease, font-weight 0.2s ease',
+                textShadow: isCoveredByLens ? '0 0 6px rgba(255,255,255,0.45)' : 'none'
               }}
             >
               {item.label}

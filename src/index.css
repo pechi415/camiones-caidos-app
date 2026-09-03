@@ -862,22 +862,43 @@ textarea.glass-input {
   }
 }
 
-.icon-spring-active {
-  animation: iconPopSpring 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+.mobile-nav-pill {
+  overflow: visible !important;
 }
 
-.mobile-nav-item-btn {
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+/* Lente de Agua Líquida WhatsApp iOS (Efecto Lupa y Prisma Irisado) */
+.whatsapp-water-lens {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  border-radius: 36px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(1.8px) brightness(1.16) contrast(1.08);
+  -webkit-backdrop-filter: blur(1.8px) brightness(1.16) contrast(1.08);
+  background: radial-gradient(ellipse at 50% 14%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.12) 38%, rgba(229, 46, 46, 0.16) 75%, rgba(185, 28, 28, 0.28) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.45),
+    0 0 1px rgba(255, 255, 255, 0.8),
+    inset 0 2.5px 3.5px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(255, 255, 255, 0.35),
+    inset 3px 0 7px rgba(0, 245, 255, 0.45), /* Reflejo prismático cian */
+    inset -3px 0 7px rgba(255, 0, 170, 0.45), /* Reflejo prismático magenta */
+    0 0 16px rgba(229, 46, 46, 0.35);
+  transition: box-shadow 0.2s ease;
 }
 
-.mobile-nav-item-btn:active {
-  transform: scale(0.86);
-}
-
-.mobile-nav-register-btn {
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, filter 0.2s ease;
-  user-select: none;
-  -webkit-user-select: none;
+.whatsapp-water-lens::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 16%;
+  right: 16%;
+  height: 5px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0) 100%);
+  opacity: 0.85;
 }
 
 .mobile-nav-register-btn:active {
