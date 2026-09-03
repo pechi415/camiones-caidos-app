@@ -77,7 +77,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
 
   // Centro de la gota (durante el arrastre sigue el dedo, en reposo se centra en el item activo)
   const defaultCenterPercent = (activeIndex + 0.5) * itemWidthPercent;
-  const currentCenterPercent = isDragging && dragCenterXPercent !== null
+  const currentCenterXPercent = isDragging && dragCenterXPercent !== null
     ? dragCenterXPercent
     : defaultCenterPercent;
 
@@ -85,7 +85,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   const halfLensPercent = lensWidthPercent / 2;
   const clampedLeftPercent = Math.max(
     -1,
-    Math.min(100 - lensWidthPercent + 1, currentCenterPercent - halfLensPercent)
+    Math.min(100 - lensWidthPercent + 1, currentCenterXPercent - halfLensPercent)
   );
 
   // Rango horizontal que cubre la lente actualmente (para distorsionar y magnificar los iconos debajo)
