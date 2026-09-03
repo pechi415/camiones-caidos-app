@@ -53,9 +53,10 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   }, [activeTab]);
 
   // --- Dimensiones y Posición de la Gota de Agua Líquida ---
-  // Al arrastrar o saltar entre pestañas, la gota se expande a lo ancho (1.85x) para abarcar ambos iconos a la vez
+  // Al arrastrar o saltar entre pestañas, la gota se expande moderadamente (1.30x) para rozar/cubrir solo una parte del icono anterior y siguiente
+  // En reposo, se ajusta limpiamente dentro de la barra (0.94x) sin sobresalir
   const isExpanded = isDragging || isSnapping;
-  const lensWidthPercent = isExpanded ? itemWidthPercent * 1.85 : itemWidthPercent * 1.08;
+  const lensWidthPercent = isExpanded ? itemWidthPercent * 1.30 : itemWidthPercent * 0.94;
 
   // Centro de la gota (durante el arrastre sigue el dedo, en reposo se centra en el item activo)
   const defaultCenterPercent = (activeIndex + 0.5) * itemWidthPercent;
@@ -158,28 +159,27 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         transition: 'transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)'
       }}
     >
-      {/* 💧 LENTE DE AGUA LÍQUIDA FLOTANTE (Por ENCIMA de los iconos, sobresale arriba y abajo, con prisma irisado) */}
+      {/* 💧 LENTE DE AGUA LÍQUIDA FLOTANTE (Por ENCIMA de los iconos, sobresale solo al arrastrar, prisma en bordes y centro cristalino) */}
       <div
-        className="whatsapp-water-lens"
+        className={`whatsapp-water-lens ${isDragging ? 'is-dragging' : ''} ${isSnapping ? 'is-snapping' : ''}`}
         style={{
           left: `${clampedLeftPercent}%`,
           width: `${lensWidthPercent}%`,
-          // Al arrastrar con el dedo no hay transición (sigue al dedo 1:1 de inmediato)
+          // Al arrastrar con el dedo sigue al dedo 1:1 sin retraso
           // Al soltar, rebota elásticamente hacia la pestaña seleccionada
           transition: isDragging
-            ? 'width 0.18s ease-out'
-            : 'left 0.36s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            ? 'width 0.16s ease-out'
+            : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
       />
 
-      {/* Botones de Navegación (Pasan por debajo de la lente y se difuminan/magnifican al estar cubiertos) */}
+      {/* Botones de Navegación (Pasan por debajo de la lente con nitidez cristalina) */}
       {navItems.map((item, idx) => {
         const Icon = item.icon;
         const itemCenterPercent = (idx + 0.5) * itemWidthPercent;
         
-        // Verifica si este icono está actualmente atrapado por la lente de agua
+        // Verifica si este icono está actualmente alcanzado por la lente de agua
         const isCoveredByLens = itemCenterPercent >= lensLeftBoundary && itemCenterPercent <= lensRightBoundary;
-        const isActive = activeIndex === idx;
 
         return (
           <button
@@ -204,38 +204,35 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               userSelect: 'none'
             }}
           >
-            {/* Icono con magnificación y refracción luminosa bajo la lente */}
+            {/* Icono nítido con leve realce bajo la lente */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: isCoveredByLens ? 'scale(1.18) translateY(-1px)' : 'scale(1)',
-                transition: 'transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease',
-                filter: isCoveredByLens ? 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' : 'none'
+                transform: isCoveredByLens ? 'scale(1.10)' : 'scale(1)',
+                transition: 'transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)'
               }}
             >
               <Icon
                 size={19}
-                color={isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.58)'}
-                strokeWidth={isCoveredByLens ? 2.4 : 1.85}
+                color={isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)'}
+                strokeWidth={isCoveredByLens ? 2.2 : 1.85}
               />
             </div>
 
-            {/* Texto que se resalta y magnifica suavemente al pasar la gota por encima */}
+            {/* Texto nítido sin ningún desenfoque ni sombra difusa */}
             <span
               style={{
                 fontSize: item.id === 'operators' ? '0.58rem' : '0.62rem',
-                fontWeight: isCoveredByLens ? 850 : 500,
-                color: isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.58)',
+                fontWeight: isCoveredByLens ? 750 : 500,
+                color: isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)',
                 letterSpacing: item.id === 'operators' ? '-0.2px' : '0px',
                 whiteSpace: 'nowrap',
                 maxWidth: '100%',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                transform: isCoveredByLens ? 'scale(1.06)' : 'scale(1)',
-                transition: 'transform 0.22s ease, color 0.2s ease, font-weight 0.2s ease',
-                textShadow: isCoveredByLens ? '0 0 6px rgba(255,255,255,0.45)' : 'none'
+                transition: 'color 0.2s ease, font-weight 0.2s ease'
               }}
             >
               {item.label}
