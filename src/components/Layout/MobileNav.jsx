@@ -1,10 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, History, PlusCircle, UserCheck, Users, FileSpreadsheet } from 'lucide-react';
+import LiquidLensCanvas from './LiquidLensCanvas';
 
 export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, onOpenExport }) {
   const { isAdmin } = useAuth();
   const navRef = useRef(null);
+
+  const [dimensions, setDimensions] = useState({ width: 380, height: 60 });
+  const [webGLReady, setWebGLReady] = useState(false);
+
+  useEffect(() => {
+    if (!navRef.current) return;
+    const updateSize = () => {
+      const rect = navRef.current.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setDimensions({ width: rect.width, height: rect.height });
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   // Definición de pestañas en total sintonía visual
   const navItems = [
@@ -159,24 +176,35 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         transition: 'transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)'
       }}
     >
-      {/* 💧 LENTE DE AGUA LÍQUIDA FLOTANTE (Por ENCIMA de los iconos al arrastrar, cápsula limpia en reposo) */}
-      <div
-        className={`whatsapp-water-lens ${isDragging ? 'is-dragging' : ''} ${isSnapping ? 'is-snapping' : ''}`}
-        style={{
-          left: `${clampedLeftPercent}%`,
-          width: `${lensWidthPercent}%`,
-          // Al arrastrar con el dedo sigue al dedo 1:1 sin retraso
-          // Al soltar, rebota elásticamente hacia la pestaña seleccionada
-          transition: isDragging
-            ? 'width 0.16s ease-out'
-            : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        }}
-      >
-        {/* Anillo de refracción óptica perimetral: difumina exclusivamente la franja física que cruza el borde */}
-        <div className="whatsapp-water-lens-optical-rim" />
-      </div>
+      {/* 🔮 MOTOR ÓPTICO WEBGL (Refracción física por Shaders GLSL de Apple Liquid Glass) */}
+      <LiquidLensCanvas
+        navItems={navItems}
+        activeTab={activeTab}
+        lensCenterXPercent={currentCenterXPercent}
+        lensWidthPercent={lensWidthPercent}
+        isMoving={isDragging || isSnapping}
+        containerWidth={dimensions.width}
+        containerHeight={dimensions.height}
+        onReady={setWebGLReady}
+      />
 
-      {/* Botones de Navegación con relleno dinámico (Outline -> Solid Fill) estilo WhatsApp iOS */}
+      {/* Fallback CSS Lente (si WebGL no estuviera soportado) */}
+      {!webGLReady && (
+        <div
+          className={`whatsapp-water-lens ${isDragging ? 'is-dragging' : ''} ${isSnapping ? 'is-snapping' : ''}`}
+          style={{
+            left: `${clampedLeftPercent}%`,
+            width: `${lensWidthPercent}%`,
+            transition: isDragging
+              ? 'width 0.16s ease-out'
+              : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}
+        >
+          <div className="whatsapp-water-lens-optical-rim" />
+        </div>
+      )}
+
+      {/* Botones de Navegación interactivos (Por encima del canvas con zIndex: 10 para capturar toques) */}
       {navItems.map((item, idx) => {
         const Icon = item.icon;
         const itemCenterPercent = (idx + 0.5) * itemWidthPercent;
@@ -212,11 +240,12 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               alignItems: 'center',
               justifyContent: 'center',
               gap: '2px',
-              zIndex: 2, // Por debajo de la lente de agua que tiene zIndex: 10
+              zIndex: 10, // Por encima del canvas para capturar toques instantáneos
               outline: 'none',
               position: 'relative',
               height: '100%',
-              userSelect: 'none'
+              userSelect: 'none',
+              opacity: webGLReady ? 0 : 1 // Si WebGL está listo, el shader renderiza la barra; si no, fallback
             }}
           >
             {/* Icono con inundación/relleno sólido suave al ser cubierto por la gota */}
