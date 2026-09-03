@@ -133,7 +133,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       className="mobile-only mobile-nav-pill"
       style={{
         position: 'fixed',
-        bottom: '16px',
+        bottom: '24px',
         left: '16px',
         right: '16px',
         maxWidth: '420px',
@@ -159,7 +159,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         transition: 'transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)'
       }}
     >
-      {/* 💧 LENTE DE AGUA LÍQUIDA FLOTANTE (Por ENCIMA de los iconos, sobresale solo al arrastrar, prisma en bordes y centro cristalino) */}
+      {/* 💧 LENTE DE AGUA LÍQUIDA FLOTANTE (Por ENCIMA de los iconos al arrastrar, cápsula limpia en reposo) */}
       <div
         className={`whatsapp-water-lens ${isDragging ? 'is-dragging' : ''} ${isSnapping ? 'is-snapping' : ''}`}
         style={{
@@ -171,7 +171,10 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
             ? 'width 0.16s ease-out'
             : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
-      />
+      >
+        {/* Capa de desenfoque exclusivamente en el perímetro y bordes de la gota */}
+        <div className="whatsapp-water-lens-edge-blur" />
+      </div>
 
       {/* Botones de Navegación (Pasan por debajo de la lente con nitidez cristalina) */}
       {navItems.map((item, idx) => {
