@@ -40,53 +40,94 @@ const FRAGMENT_SHADER_SOURCE = `
       return;
     }
 
-    // Estado en Reposo (Inactivo - Idéntico a Imagen 2): Cápsula suave y limpia sin arcoíris
+    // 1. ESTADO EN REPOSO (Inactivo / Sin arrastrar - Idéntico a Imagen 2):
+    // Cápsula limpia, contenida y suave. CERO distorsión, CERO aberración cromática.
     if (u_isMoving < 0.05) {
       vec4 baseColor = texture2D(u_texture, v_uv);
-      vec4 pillBg = vec4(1.0, 1.0, 1.0, 0.12);
-      float borderMask = smoothstep(0.0, -1.5, dist) - smoothstep(-1.5, -2.5, dist);
-      vec4 borderColor = vec4(1.0, 1.0, 1.0, 0.22) * borderMask;
-      gl_FragColor = mix(pillBg + borderColor, baseColor, baseColor.a);
+      
+      // Borde sutil y fondo translúcido blanco suave de la cápsula
+      float borderMask = smoothstep(0.0, -1.0, dist) - smoothstep(-1.0, -2.0, dist);
+      float pillAlpha = 0.14 + borderMask * 0.20;
+      vec4 pillPremultiplied = vec4(pillAlpha, pillAlpha, pillAlpha, pillAlpha);
+
+      // El icono y texto se mantienen 100% nítidos por encima de la cápsula
+      gl_FragColor = baseColor + pillPremultiplied * (1.0 - baseColor.a);
       return;
     }
 
-    // Estado Activo (Al arrastrar con el dedo): Motor Óptico de Refracción Real
+    // 2. ESTADO ACTIVO (Solo durante el arrastre con el dedo o mouse):
+    // Gota líquida con lupa central y desdoblamiento espectral continuo a brillo completo
+    float uMag = 0.22;          // Magnificación convexa en el centro (+22%)
+    float bendWidth = 18.0;     // Ancho del menisco perimetral curvo
+    float fres = 0.35;          // Reflejo Fresnel en el ángulo oblicuo
+    float spec = 0.50;          // Línea luminosa de borde perimetral (bright rim line)
+
+    // Gradiente de la superficie mediante el campo de distancias con signo (SDF)
     float eps = 1.5;
     float dx = sdRoundedBox(p + vec2(eps, 0.0), halfSize, radius) - sdRoundedBox(p - vec2(eps, 0.0), halfSize, radius);
     float dy = sdRoundedBox(p + vec2(0.0, eps), halfSize, radius) - sdRoundedBox(p - vec2(0.0, eps), halfSize, radius);
     vec2 grad = normalize(vec2(dx, dy) + 0.0001);
 
-    // Factor de borde (1.0 en el perímetro curvado de la gota, 0.0 en el centro plano)
-    float edgeFactor = clamp(-dist / radius, 0.0, 1.0);
-    float rimFactor = 1.0 - edgeFactor;
+    // Centro de la lente: Curvatura convexa y Magnificación Óptica pura
+    float centerProximity = clamp(-dist / radius, 0.0, 1.0);
+    vec2 centerOffset = (p / u_resolution);
+    vec2 baseZoomUV = v_uv - centerOffset * (uMag * pow(centerProximity, 0.75));
 
-    // Desplazamiento de Refracción (Ley de Snell)
-    float refrStrength = rimFactor * 0.035;
-    vec2 refrDir = grad * refrStrength;
+    // Menisco perimetral: se activa hacia el borde exterior
+    float bendFactor = smoothstep(-bendWidth, 0.0, dist);
 
-    // Aberración Cromática Física (RGB Split real solo donde el borde cruza los píxeles)
-    float chromOffset = rimFactor * 0.010;
-    vec2 uvR = clamp(v_uv + refrDir + grad * chromOffset, 0.0, 1.0);
-    vec2 uvG = clamp(v_uv + refrDir, 0.0, 1.0);
-    vec2 uvB = clamp(v_uv + refrDir - grad * chromOffset, 0.0, 1.0);
+    // Vector normal 3D de la superficie de la gota de agua
+    vec3 N = normalize(vec3(grad * bendFactor * 2.8, 1.0 - bendFactor * 0.85));
 
-    vec4 colR = texture2D(u_texture, uvR);
-    vec4 colG = texture2D(u_texture, uvG);
-    vec4 colB = texture2D(u_texture, uvB);
+    // Refracción física de Snell en píxeles reales isotrópicos
+    float bendPixels = pow(bendFactor, 1.3) * 14.0;
+    vec2 refrUV = (grad * bendPixels) / u_resolution;
 
-    // Contenido refractado descompuesto en prisma
-    vec4 refractedContent = vec4(colR.r, colG.g, colB.b, max(colR.a, max(colG.a, colB.a)));
+    // Dispersión cromática amplia y viva (18px de separación espectral)
+    float caPixels = bendFactor * 18.0;
+    vec2 dispDir = (grad * caPixels) / u_resolution;
 
-    // Brillo especular superior del cristal
-    float spec = clamp(-grad.y, 0.0, 1.0) * pow(rimFactor, 2.2) * 0.75;
-    vec4 specularLight = vec4(1.0, 1.0, 1.0, 1.0) * spec;
+    // Muestreo espectral continuo de 7 longitudes de onda (desde rojo hasta violeta):
+    vec4 s0 = texture2D(u_texture, baseZoomUV + refrUV + dispDir * 1.00); // Rojo puro
+    vec4 s1 = texture2D(u_texture, baseZoomUV + refrUV + dispDir * 0.66); // Naranja / Ámbar
+    vec4 s2 = texture2D(u_texture, baseZoomUV + refrUV + dispDir * 0.33); // Amarillo cálido
+    vec4 s3 = texture2D(u_texture, baseZoomUV + refrUV);                   // Verde central
+    vec4 s4 = texture2D(u_texture, baseZoomUV + refrUV - dispDir * 0.33); // Cian brillante
+    vec4 s5 = texture2D(u_texture, baseZoomUV + refrUV - dispDir * 0.66); // Azul eléctrico
+    vec4 s6 = texture2D(u_texture, baseZoomUV + refrUV - dispDir * 1.00); // Violeta / Magenta
 
-    // Tinte de vidrio líquido
-    vec4 liquidTint = vec4(0.06, 0.08, 0.14, 0.25);
-    float alpha = smoothstep(1.0, -1.0, dist);
+    // Reconstrucción espectral basada en luminancia / presencia del elemento:
+    float a0 = max(s0.r, s0.a);
+    float a1 = max(s1.r, s1.a);
+    float a2 = max(s2.r, s2.a);
+    float a3 = max(s3.r, s3.a);
+    float a4 = max(s4.r, s4.a);
+    float a5 = max(s5.r, s5.a);
+    float a6 = max(s6.r, s6.a);
 
-    vec4 finalColor = mix(liquidTint, refractedContent, refractedContent.a) + specularLight;
-    gl_FragColor = finalColor * alpha;
+    // Canal Rojo: activado por ondas cálidas (s0, s1, s2, s3)
+    float r = clamp(a0 * 0.50 + a1 * 0.45 + a2 * 0.40 + a3 * 0.25, 0.0, 1.0);
+
+    // Canal Verde: activado por la zona media del espectro (s1, s2, s3, s4, s5)
+    float g = clamp(a1 * 0.25 + a2 * 0.45 + a3 * 0.60 + a4 * 0.45 + a5 * 0.25, 0.0, 1.0);
+
+    // Canal Azul: activado por ondas frías (s3, s4, s5, s6)
+    float b = clamp(a3 * 0.25 + a4 * 0.40 + a5 * 0.45 + a6 * 0.50, 0.0, 1.0);
+
+    float alpha = max(max(max(a0, a1), max(a2, a3)), max(max(a4, a5), a6));
+    vec4 refractedContent = vec4(r, g, b, alpha);
+
+    // 3. Efecto Fresnel (brillo blanco natural en el ángulo de incidencia rasante)
+    float fresnel = pow(1.0 - N.z, 2.2) * fres;
+    vec4 fresnelPremult = vec4(fresnel, fresnel, fresnel, fresnel);
+
+    // 4. Línea luminosa de borde perimetral (bright rim line)
+    float rimLine = smoothstep(0.0, -1.0, dist) - smoothstep(-1.0, -2.2, dist);
+    float specularHighlight = rimLine * spec;
+    vec4 specPremult = vec4(specularHighlight, specularHighlight, specularHighlight, specularHighlight);
+
+    // Composición final: cristal limpio + contenido refractado espectral brillante + Fresnel + micro-borde
+    gl_FragColor = (refractedContent + fresnelPremult + specPremult) * smoothstep(0.5, -0.5, dist);
   }
 `;
 
@@ -97,7 +138,7 @@ export default function LiquidLensCanvas({
   lensWidthPercent = 20,
   isMoving = false,
   containerWidth = 380,
-  containerHeight = 60,
+  containerHeight = 66,
   onReady = () => {}
 }) {
   const canvasRef = useRef(null);
@@ -127,7 +168,7 @@ export default function LiquidLensCanvas({
 
     const gl = canvas.getContext('webgl', {
       alpha: true,
-      premultipliedAlpha: false,
+      premultipliedAlpha: true,
       antialias: true
     });
     if (!gl) {
@@ -203,51 +244,31 @@ export default function LiquidLensCanvas({
     };
   }, [onReady]);
 
-  // Dibujar los iconos y textos en el Canvas Offscreen para alimentar la textura WebGL
-  const updateBaseTexture = useCallback(() => {
-    if (!offscreenCanvasRef.current) {
-      offscreenCanvasRef.current = document.createElement('canvas');
-    }
-    const offCanvas = offscreenCanvasRef.current;
-    const dpr = Math.min(window.devicePixelRatio || 2, 2.5);
-    const width = containerWidth * dpr;
-    const height = containerHeight * dpr;
-
-    if (offCanvas.width !== width || offCanvas.height !== height) {
-      offCanvas.width = width;
-      offCanvas.height = height;
-    }
-
-    const ctx = offCanvas.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
-
+  // Dibujo vectorial de todos los iconos del Dock (versión Línea vs versión Sólido)
+  const drawAllNavIcons = (ctx, isFilled, width, height, dpr) => {
     const total = navItems.length;
     const itemW = width / total;
+    const centerY = height * 0.5;
 
     navItems.forEach((item, idx) => {
       const cx = (idx + 0.5) * itemW;
-      const cy = height * 0.38;
-      const isActive = item.id === activeTab;
+      const cy = centerY - (9 * dpr);
+      const s = 14.8 * dpr; // Iconos más grandes y prominentes (+20%)
 
-      // Iconos dibujados vectorialmente en Canvas
       ctx.save();
       ctx.translate(cx, cy);
 
-      const iconColor = isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
-      ctx.fillStyle = iconColor;
-      ctx.strokeStyle = iconColor;
-      ctx.lineWidth = 2.2 * dpr;
+      const color = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.75 * dpr;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Siluetas con relleno según estado (WhatsApp iOS Fill Transition)
-      const isFilled = isActive;
-      const s = 10 * dpr;
-
       if (item.id === 'dashboard') {
         // 4 bloques de dashboard
-        const b = 3.8 * dpr;
-        const o = 1.6 * dpr;
+        const b = 5.2 * dpr;
+        const o = 2.0 * dpr;
         if (isFilled) {
           ctx.fillRect(-b - o, -b - o, b, b);
           ctx.fillRect(o, -b - o, b, b);
@@ -261,69 +282,255 @@ export default function LiquidLensCanvas({
         }
       } else if (item.id === 'history') {
         // Reloj de historial
-        ctx.beginPath();
-        ctx.arc(0, 0, s * 0.85, 0, Math.PI * 2);
         if (isFilled) {
-          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          // 1. Disco blanco sólido al entrar la gota
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.88, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
           ctx.fill();
+
+          // 2. Troquelado en negativo: perfora las manecillas en transparencia pura
+          ctx.save();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = 2.4 * dpr;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.44);
+          ctx.lineTo(0, 0);
+          ctx.lineTo(s * 0.38, s * 0.20);
+          ctx.stroke();
+
+          // Agujero del eje central
+          ctx.beginPath();
+          ctx.arc(0, 0, 1.8 * dpr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          // Modo línea en reposo
+          ctx.lineWidth = 1.75 * dpr;
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.88, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.44);
+          ctx.lineTo(0, 0);
+          ctx.lineTo(s * 0.38, s * 0.20);
+          ctx.stroke();
         }
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, -s * 0.45);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(s * 0.38, s * 0.2);
-        ctx.stroke();
       } else if (item.id === 'register') {
-        // Botón Registrar (Círculo con más)
-        ctx.beginPath();
-        ctx.arc(0, 0, s * 0.9, 0, Math.PI * 2);
+        // Botón Registrar (Círculo con '+')
         if (isFilled) {
-          ctx.fillStyle = 'rgba(255,255,255,0.35)';
+          // 1. Disco blanco sólido al entrar la gota
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.92, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
           ctx.fill();
+
+          // 2. Troquelado en negativo: perfora la cruz '+' en transparencia pura
+          ctx.save();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = 2.8 * dpr;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.44, 0);
+          ctx.lineTo(s * 0.44, 0);
+          ctx.moveTo(0, -s * 0.44);
+          ctx.lineTo(0, s * 0.44);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Modo línea en reposo
+          ctx.lineWidth = 1.75 * dpr;
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.92, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.44, 0);
+          ctx.lineTo(s * 0.44, 0);
+          ctx.moveTo(0, -s * 0.44);
+          ctx.lineTo(0, s * 0.44);
+          ctx.stroke();
         }
-        ctx.stroke();
+      } else if (item.id === 'operators') {
+        // Operadores: Silueta de persona + checkmark (UserCheck)
+        // Cabeza
         ctx.beginPath();
-        ctx.moveTo(-s * 0.4, 0);
-        ctx.lineTo(s * 0.4, 0);
-        ctx.moveTo(0, -s * 0.4);
-        ctx.lineTo(0, s * 0.4);
-        ctx.stroke();
-      } else if (item.id === 'operators' || item.id === 'users') {
-        // Silueta de usuario / personas (relleno sólido cuando está activo)
-        ctx.beginPath();
-        ctx.arc(0, -s * 0.35, s * 0.38, 0, Math.PI * 2);
+        ctx.arc(-s * 0.14, -s * 0.35, s * 0.36, 0, Math.PI * 2);
         if (isFilled) ctx.fill();
         else ctx.stroke();
+
+        // Cuerpo
         ctx.beginPath();
-        ctx.arc(0, s * 0.85, s * 0.7, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.arc(-s * 0.14, s * 0.84, s * 0.68, Math.PI * 1.15, Math.PI * 1.85);
         if (isFilled) ctx.fill();
         else ctx.stroke();
+
+        // Checkmark distintivo
+        ctx.beginPath();
+        ctx.moveTo(s * 0.28, -s * 0.08);
+        ctx.lineTo(s * 0.46, s * 0.10);
+        ctx.lineTo(s * 0.80, -s * 0.26);
+        ctx.stroke();
+      } else if (item.id === 'users') {
+        // Icono oficial de Comunidades de WhatsApp (Imagen 2: Trío simétrico con separación y aire limpio)
+        
+        // 1. Acompañante izquierdo (separado hacia la izquierda)
+        ctx.beginPath();
+        ctx.arc(-s * 0.64, -s * 0.28, s * 0.20, 0, Math.PI * 2); // Cabeza izquierda bien separada
+        if (isFilled) ctx.fill(); else ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.96, s * 0.50);
+        ctx.quadraticCurveTo(-s * 0.78, s * 0.12, -s * 0.44, s * 0.26);
+        if (isFilled) {
+          ctx.lineTo(-s * 0.44, s * 0.50);
+          ctx.lineTo(-s * 0.96, s * 0.50);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.stroke();
+        }
+
+        // 2. Acompañante derecho (simétrico y bien separado)
+        ctx.beginPath();
+        ctx.arc(s * 0.64, -s * 0.28, s * 0.20, 0, Math.PI * 2); // Cabeza derecha bien separada
+        if (isFilled) ctx.fill(); else ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(s * 0.44, s * 0.26);
+        ctx.quadraticCurveTo(s * 0.78, s * 0.12, s * 0.96, s * 0.50);
+        if (isFilled) {
+          ctx.lineTo(s * 0.44, s * 0.50);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.stroke();
+        }
+
+        // 3. Figura central principal (en el frente, equilibrada)
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.44, s * 0.26, 0, Math.PI * 2); // Cabeza central
+        if (isFilled) ctx.fill(); else ctx.stroke();
+
+        // Torso central redondeado con respiro nítido hacia los laterales
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.38, s * 0.52);
+        ctx.quadraticCurveTo(-s * 0.32, s * 0.08, 0, s * 0.08);
+        ctx.quadraticCurveTo(s * 0.32, s * 0.08, s * 0.38, s * 0.52);
+        if (isFilled) {
+          ctx.lineTo(-s * 0.38, s * 0.52);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.stroke();
+        }
       } else {
         // Documento / PDF
-        const w = s * 0.75;
-        const h = s * 0.95;
-        ctx.strokeRect(-w / 2, -h / 2, w, h);
-        ctx.beginPath();
-        ctx.moveTo(-w * 0.28, -h * 0.15);
-        ctx.lineTo(w * 0.28, -h * 0.15);
-        ctx.moveTo(-w * 0.28, h * 0.15);
-        ctx.lineTo(w * 0.28, h * 0.15);
-        ctx.stroke();
+        const w = s * 0.78;
+        const h = s * 0.98;
+        if (isFilled) {
+          // 1. Hoja sólida blanca al entrar la gota
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(-w / 2, -h / 2, w, h);
+
+          // 2. Troquelado en negativo: perfora las líneas de texto en transparencia pura
+          ctx.save();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = 2.2 * dpr;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(-w * 0.28, -h * 0.16);
+          ctx.lineTo(w * 0.28, -h * 0.16);
+          ctx.moveTo(-w * 0.28, h * 0.16);
+          ctx.lineTo(w * 0.28, h * 0.16);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Modo línea en reposo
+          ctx.lineWidth = 1.75 * dpr;
+          ctx.strokeRect(-w / 2, -h / 2, w, h);
+          ctx.beginPath();
+          ctx.moveTo(-w * 0.28, -h * 0.16);
+          ctx.lineTo(w * 0.28, -h * 0.16);
+          ctx.moveTo(-w * 0.28, h * 0.16);
+          ctx.lineTo(w * 0.28, h * 0.16);
+          ctx.stroke();
+        }
       }
       ctx.restore();
 
       // Etiquetas de Texto
       ctx.save();
-      ctx.font = `${isActive ? 'bold' : '500'} ${10.5 * dpr}px 'Plus Jakarta Sans', sans-serif`;
+      ctx.font = `${isFilled ? 'bold' : '600'} ${11.5 * dpr}px 'Plus Jakarta Sans', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)';
-      ctx.fillText(item.label, cx, height * 0.78);
+      ctx.fillStyle = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
+      ctx.fillText(item.label, cx, centerY + (14 * dpr));
       ctx.restore();
     });
+  };
+
+  // Renderizar la textura de los iconos sobre el canvas auxiliar 2D
+  const updateBaseTexture = useCallback(() => {
+    if (!offscreenCanvasRef.current) {
+      offscreenCanvasRef.current = document.createElement('canvas');
+    }
+    const offCanvas = offscreenCanvasRef.current;
+    const dpr = Math.min(window.devicePixelRatio || 2, 2.5);
+    const extraY = 16; // Permite que la gota sobresalga sutilmente 3px por arriba y 3px por abajo
+    const width = containerWidth * dpr;
+    const height = (containerHeight + extraY) * dpr;
+
+    if (offCanvas.width !== width || offCanvas.height !== height) {
+      offCanvas.width = width;
+      offCanvas.height = height;
+    }
+
+    const ctx = offCanvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. CAPA EXTERIOR: Dibuja todos los iconos en versión OUTLINE (línea suave fuera de la gota)
+    drawAllNavIcons(ctx, false, width, height, dpr);
+
+    // 2. CAPA INTERIOR (MÁSCARA DE RECORTE FÍSICA):
+    // Recorta con la silueta exacta de la cápsula de la gota en píxeles reales
+    const rawCenterPx = (lensCenterXPercent / 100) * width;
+    const lensWidthPx = (lensWidthPercent / 100) * width;
+    const lensHeightPx = (isMoving ? 72 : 52) * dpr;
+
+    const halfWidthPx = lensWidthPx * 0.5;
+    const edgePaddingPx = 4 * dpr;
+    const lensCenterPx = isMoving
+      ? Math.max(halfWidthPx + edgePaddingPx, Math.min(width - halfWidthPx - edgePaddingPx, rawCenterPx))
+      : rawCenterPx;
+
+    const lx = lensCenterPx - halfWidthPx;
+    const ly = (height * 0.5) - (lensHeightPx * 0.5);
+    const radius = lensHeightPx * 0.5;
+
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(lx, ly, lensWidthPx, lensHeightPx, radius);
+    } else {
+      ctx.moveTo(lx + radius, ly);
+      ctx.lineTo(lx + lensWidthPx - radius, ly);
+      ctx.arc(lx + lensWidthPx - radius, ly + radius, radius, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.lineTo(lx + radius, ly + lensHeightPx);
+      ctx.arc(lx + radius, ly + radius, radius, Math.PI * 0.5, -Math.PI * 0.5);
+      ctx.closePath();
+    }
+    ctx.clip(); // <--- MÁSCARA VECTORIAL QUE CORTA EL ICONO EXACTAMENTE EN EL BORDE DE LA GOTA
+
+    // 3. CAPA SÓLIDA: Dibuja los iconos en versión FILLED (sólido brillante) dentro del área recortada
+    drawAllNavIcons(ctx, true, width, height, dpr);
+
+    ctx.restore();
 
     return offCanvas;
-  }, [navItems, activeTab, containerWidth, containerHeight]);
+  }, [navItems, activeTab, containerWidth, containerHeight, lensCenterXPercent, lensWidthPercent, isMoving]);
 
   // Loop de Renderizado WebGL
   useEffect(() => {
@@ -333,9 +540,10 @@ export default function LiquidLensCanvas({
     const canvas = canvasRef.current;
     if (!gl || !program || !texture || !canvas) return;
 
+    const extraY = 16; // 8px de holgura superior e inferior para sobresalir con sutileza elegante
     const dpr = Math.min(window.devicePixelRatio || 2, 2.5);
     const pixelWidth = containerWidth * dpr;
-    const pixelHeight = containerHeight * dpr;
+    const pixelHeight = (containerHeight + extraY) * dpr;
 
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
       canvas.width = pixelWidth;
@@ -352,10 +560,17 @@ export default function LiquidLensCanvas({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
     gl.uniform1i(uniformsRef.current.u_texture, 0);
 
-    // Uniforms de la gota de agua
-    const lensCenterPx = (lensCenterXPercent / 100) * pixelWidth;
+    // Uniforms de la gota: en reposo 52px (dentro de la barra), en movimiento 72px (sobresale sutilmente 3px por arriba y abajo)
+    const rawCenterPx = (lensCenterXPercent / 100) * pixelWidth;
     const lensWidthPx = (lensWidthPercent / 100) * pixelWidth;
-    const lensHeightPx = (isMoving ? 66 : 48) * dpr;
+    const lensHeightPx = (isMoving ? 72 : 52) * dpr;
+
+    // Límite físico: la gota nunca debe sobrepasar el perímetro exterior izquierdo o derecho
+    const halfWidthPx = lensWidthPx * 0.5;
+    const edgePaddingPx = 4 * dpr;
+    const lensCenterPx = isMoving
+      ? Math.max(halfWidthPx + edgePaddingPx, Math.min(pixelWidth - halfWidthPx - edgePaddingPx, rawCenterPx))
+      : rawCenterPx;
 
     gl.uniform2f(uniformsRef.current.u_resolution, pixelWidth, pixelHeight);
     gl.uniform2f(uniformsRef.current.u_lensCenter, lensCenterPx, pixelHeight * 0.5);
@@ -378,11 +593,10 @@ export default function LiquidLensCanvas({
       ref={canvasRef}
       style={{
         position: 'absolute',
-        top: 0,
+        top: '-8px',
         left: 0,
         width: '100%',
-        height: '100%',
-        borderRadius: '35px',
+        height: 'calc(100% + 16px)',
         pointerEvents: 'none',
         zIndex: 5
       }}

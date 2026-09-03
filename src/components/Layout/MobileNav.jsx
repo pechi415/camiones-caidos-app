@@ -7,7 +7,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   const { isAdmin } = useAuth();
   const navRef = useRef(null);
 
-  const [dimensions, setDimensions] = useState({ width: 380, height: 60 });
+  const [dimensions, setDimensions] = useState({ width: 380, height: 66 });
   const [webGLReady, setWebGLReady] = useState(false);
 
   useEffect(() => {
@@ -71,40 +71,52 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
 
   // --- Dimensiones y Posición de la Gota de Agua Líquida ---
   // Al arrastrar o saltar entre pestañas, la gota se expande moderadamente (1.30x) para rozar/cubrir solo una parte del icono anterior y siguiente
-  // En reposo, se ajusta limpiamente dentro de la barra (0.94x) sin sobresalir
+  // En reposo, se ajusta al 90% del ancho del botón para quedar perfectamente centrada con espacio en ambos lados
   const isExpanded = isDragging || isSnapping;
-  const lensWidthPercent = isExpanded ? itemWidthPercent * 1.30 : itemWidthPercent * 0.94;
+  const lensWidthPercent = isExpanded ? itemWidthPercent * 1.25 : itemWidthPercent * 0.88;
 
-  // Centro de la gota (durante el arrastre sigue el dedo, en reposo se centra en el item activo)
+  // Centro de la gota (durante el arrastre sigue el dedo, en reposo se centra exactamente en el item activo)
   const defaultCenterPercent = (activeIndex + 0.5) * itemWidthPercent;
-  const currentCenterXPercent = isDragging && dragCenterXPercent !== null
+  const rawCenterPercent = isDragging && dragCenterXPercent !== null
     ? dragCenterXPercent
     : defaultCenterPercent;
 
-  // Límite para que no se salga de los extremos de la barra
+  // Tope de contención estricto: la gota NUNCA puede salirse de la barra por la izquierda ni por la derecha
   const halfLensPercent = lensWidthPercent / 2;
-  const clampedLeftPercent = Math.max(
-    -1,
-    Math.min(100 - lensWidthPercent + 1, currentCenterXPercent - halfLensPercent)
-  );
+  const edgeMarginPercent = 1.0; // Margen de respiro interior en los extremos
+  const minAllowedCenterPercent = halfLensPercent + edgeMarginPercent;
+  const maxAllowedCenterPercent = 100 - halfLensPercent - edgeMarginPercent;
+
+  const currentCenterXPercent = isDragging
+    ? Math.max(minAllowedCenterPercent, Math.min(maxAllowedCenterPercent, rawCenterPercent))
+    : defaultCenterPercent;
+
+  // Límite para el fallback CSS
+  const clampedLeftPercent = currentCenterXPercent - halfLensPercent;
 
   // Rango horizontal que cubre la lente actualmente (para distorsionar y magnificar los iconos debajo)
   const lensLeftBoundary = clampedLeftPercent;
   const lensRightBoundary = clampedLeftPercent + lensWidthPercent;
 
-  // --- GESTOS TÁCTILES: Arrastre 1:1 con deformación y absorción de iconos ---
-  const handleTouchStart = (e) => {
+  // --- GESTOS: Arrastre fluido 1:1 táctil y mouse con deformación física ---
+  const handlePointerDown = (clientX) => {
     if (!navRef.current) return;
-    const touch = e.touches[0];
-    lastTouchXRef.current = touch.clientX;
-    touchMovedRef.current = false;
+    const rect = navRef.current.getBoundingClientRect();
+    lastTouchXRef.current = clientX;
+    touchMovedRef.current = true;
+
+    const relX = clientX - rect.left;
+    const centerPercent = (relX / rect.width) * 100;
+    const hoverIdx = Math.max(0, Math.min(totalItems - 1, Math.floor((relX / rect.width) * totalItems)));
+
+    setIsDragging(true);
+    setDragCenterXPercent(centerPercent);
+    setDragHoverIndex(hoverIdx);
   };
 
-  const handleTouchMove = (e) => {
+  const handlePointerMove = (clientX) => {
     if (!navRef.current) return;
-    const touch = e.touches[0];
     const rect = navRef.current.getBoundingClientRect();
-    const clientX = touch.clientX;
 
     if (Math.abs(clientX - lastTouchXRef.current) > 3) {
       touchMovedRef.current = true;
@@ -120,7 +132,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     setDragHoverIndex(hoverIdx);
   };
 
-  const handleTouchEnd = () => {
+  const handlePointerUp = () => {
     if (!isDragging || !touchMovedRef.current) {
       setIsDragging(false);
       setDragCenterXPercent(null);
@@ -140,6 +152,59 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     }
   };
 
+  const handleTouchStart = (e) => handlePointerDown(e.touches[0].clientX);
+  const handleTouchMove = (e) => handlePointerMove(e.touches[0].clientX);
+  const handleTouchEnd = () => handlePointerUp();
+
+  const handleMouseDown = (e) => {
+    handlePointerDown(e.clientX);
+    const onMouseMove = (moveEvt) => handlePointerMove(moveEvt.clientX);
+    const onMouseUp = () => {
+      handlePointerUp();
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Genera el contorno SVG de la barra con efecto cinturilla elástica que se aprieta en la posición de la gota
+  const getDockPath = () => {
+    const W = dimensions.width || 380;
+    const H = dimensions.height || 66;
+    const R = H / 2; // 33px radio de extremos
+    const isMoving = isDragging || isSnapping;
+    const pinch = isMoving ? 3.5 : 0; // Contracción sutil y delicada de 3.5px arriba y abajo
+    const pw = 56; // Amplitud amplia de 56px para una transición sedosa y orgánica
+    const cx = (currentCenterXPercent / 100) * W;
+
+    // Estado en reposo: Cápsula rectangular redondeada perfecta
+    if (pinch <= 0.1) {
+      return `M ${R} 0 L ${W - R} 0 A ${R} ${R} 0 0 1 ${W} ${R} A ${R} ${R} 0 0 1 ${W - R} ${H} L ${R} ${H} A ${R} ${R} 0 0 1 0 ${R} A ${R} ${R} 0 0 1 ${R} 0 Z`;
+    }
+
+    // Estado activo: Línea superior se hunde hacia abajo y línea inferior se eleva hacia arriba en la coordenada de la gota
+    const x0 = Math.max(R, cx - pw);
+    const x1 = Math.min(W - R, cx + pw);
+
+    return `
+      M ${R} 0
+      L ${x0} 0
+      C ${x0 + pw * 0.35} 0, ${cx - pw * 0.25} ${pinch}, ${cx} ${pinch}
+      C ${cx + pw * 0.25} ${pinch}, ${x1 - pw * 0.35} 0, ${x1} 0
+      L ${W - R} 0
+      A ${R} ${R} 0 0 1 ${W} ${R}
+      A ${R} ${R} 0 0 1 ${W - R} ${H}
+      L ${x1} ${H}
+      C ${x1 - pw * 0.35} ${H}, ${cx + pw * 0.25} ${H - pinch}, ${cx} ${H - pinch}
+      C ${cx - pw * 0.25} ${H - pinch}, ${x0 + pw * 0.35} ${H}, ${x0} ${H}
+      L ${R} ${H}
+      A ${R} ${R} 0 0 1 0 ${R}
+      A ${R} ${R} 0 0 1 ${R} 0
+      Z
+    `;
+  };
+
   return (
     <nav
       ref={navRef}
@@ -147,6 +212,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
+      onMouseDown={handleMouseDown}
       className="mobile-only mobile-nav-pill"
       style={{
         position: 'fixed',
@@ -155,27 +221,50 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         right: '16px',
         maxWidth: '420px',
         margin: '0 auto',
-        height: '60px',
+        height: '66px',
         borderRadius: '35px',
         padding: '4px 6px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
         zIndex: 9999,
-        background: 'rgba(12, 16, 25, 0.78)',
-        border: '1px solid rgba(255, 255, 255, 0.22)',
+        background: 'transparent',
+        border: 'none',
         backdropFilter: 'blur(28px) saturate(190%)',
         WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.65), inset 0 1px 1.5px rgba(255, 255, 255, 0.38), inset 0 -1px 1px rgba(0, 0, 0, 0.3)',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         touchAction: 'none',
-        overflow: 'visible',
-        // La barra se encoge ligeramente en su interior por la tensión/peso de la gota al arrastrar
-        transform: isDragging ? 'scale(0.978)' : 'scale(1)',
-        transition: 'transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        overflow: 'visible'
       }}
     >
+      {/* 🧬 CONTORNO DINÁMICO DE CINTURILLA ELÁSTICA (Líneas superior e inferior se curvan hacia adentro en la gota) */}
+      <svg
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          overflow: 'visible',
+          zIndex: 0,
+          filter: 'drop-shadow(0 16px 40px rgba(0, 0, 0, 0.65))'
+        }}
+      >
+        <defs>
+          <linearGradient id="dockBorderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255, 255, 255, 0.40)" />
+            <stop offset="100%" stopColor="rgba(255, 255, 255, 0.16)" />
+          </linearGradient>
+        </defs>
+        <path
+          d={getDockPath()}
+          fill="rgba(12, 16, 25, 0.78)"
+          stroke="url(#dockBorderGrad)"
+          strokeWidth="1.2"
+        />
+      </svg>
       {/* 🔮 MOTOR ÓPTICO WEBGL (Refracción física por Shaders GLSL de Apple Liquid Glass) */}
       <LiquidLensCanvas
         navItems={navItems}
