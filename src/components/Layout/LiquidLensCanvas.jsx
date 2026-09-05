@@ -252,7 +252,7 @@ export default function LiquidLensCanvas({
 
     navItems.forEach((item, idx) => {
       const cx = (idx + 0.5) * itemW;
-      const cy = centerY - (9 * dpr);
+      const cy = centerY - (5.5 * dpr);
       const s = 14.8 * dpr; // Iconos más grandes y prominentes (+20%)
 
       ctx.save();
@@ -467,7 +467,7 @@ export default function LiquidLensCanvas({
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
-      ctx.fillText(item.label, cx, centerY + (14 * dpr));
+      ctx.fillText(item.label, cx, centerY + (15.0 * dpr));
       ctx.restore();
     });
   };
