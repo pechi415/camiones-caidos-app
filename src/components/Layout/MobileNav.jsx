@@ -40,8 +40,8 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
 
   const activeIndex = Math.max(0, navItems.findIndex(item => item.id === activeTab));
 
-  // Dimensiones base de la lente
-  const baseWidthPercent = itemWidthPercent * 0.88;
+  // Dimensiones base de la lente (anchura amplia para que el texto respire con holgura)
+  const baseWidthPercent = itemWidthPercent * 0.95;
   const maxStretchPercent = itemWidthPercent * 0.45;
 
   // Estados de arrastre e interacción táctil

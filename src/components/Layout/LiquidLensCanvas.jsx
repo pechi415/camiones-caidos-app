@@ -253,7 +253,7 @@ export default function LiquidLensCanvas({
     navItems.forEach((item, idx) => {
       const cx = (idx + 0.5) * itemW;
       const cy = centerY - (5.5 * dpr);
-      const s = 14.8 * dpr; // Iconos más grandes y prominentes (+20%)
+      const s = 13.5 * dpr; // Proporción áurea balanceada para amplio respiro lateral
 
       ctx.save();
       ctx.translate(cx, cy);
@@ -463,11 +463,11 @@ export default function LiquidLensCanvas({
 
       // Etiquetas de Texto
       ctx.save();
-      ctx.font = `${isFilled ? 'bold' : '600'} ${11.5 * dpr}px 'Plus Jakarta Sans', sans-serif`;
+      ctx.font = `${isFilled ? 'bold' : '600'} ${10.5 * dpr}px 'Plus Jakarta Sans', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
-      ctx.fillText(item.label, cx, centerY + (15.0 * dpr));
+      ctx.fillText(item.label, cx, centerY + (14.0 * dpr));
       ctx.restore();
     });
   };
@@ -498,7 +498,7 @@ export default function LiquidLensCanvas({
     // Recorta con la silueta exacta de la cápsula de la gota en píxeles reales
     const rawCenterPx = (lensCenterXPercent / 100) * width;
     const lensWidthPx = (lensWidthPercent / 100) * width;
-    const lensHeightPx = (isMoving ? 74 : 52) * dpr;
+    const lensHeightPx = (isMoving ? 74 : 56) * dpr;
 
     const halfWidthPx = lensWidthPx * 0.5;
     const edgePaddingPx = 4 * dpr;
@@ -560,10 +560,10 @@ export default function LiquidLensCanvas({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
     gl.uniform1i(uniformsRef.current.u_texture, 0);
 
-    // Uniforms de la gota: en reposo 52px (dentro de la barra), en movimiento 74px (sobresale sutilmente 4px por arriba y abajo)
+    // Uniforms de la gota: en reposo 56px (con amplio respiro vertical), en movimiento 74px (sobresale sutilmente 4px por arriba y abajo)
     const rawCenterPx = (lensCenterXPercent / 100) * pixelWidth;
     const lensWidthPx = (lensWidthPercent / 100) * pixelWidth;
-    const lensHeightPx = (isMoving ? 74 : 52) * dpr;
+    const lensHeightPx = (isMoving ? 74 : 56) * dpr;
 
     // Límite físico: la gota nunca debe sobrepasar el perímetro exterior izquierdo o derecho
     const halfWidthPx = lensWidthPx * 0.5;
