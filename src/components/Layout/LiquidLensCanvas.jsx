@@ -252,7 +252,7 @@ export default function LiquidLensCanvas({
 
     navItems.forEach((item, idx) => {
       const cx = (idx + 0.5) * itemW;
-      const cy = centerY - (5.5 * dpr);
+      const cy = centerY - (5.0 * dpr);
       const s = 13.5 * dpr; // Proporción áurea balanceada para amplio respiro lateral
 
       ctx.save();
@@ -467,7 +467,7 @@ export default function LiquidLensCanvas({
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
-      ctx.fillText(item.label, cx, centerY + (14.0 * dpr));
+      ctx.fillText(item.label, cx, centerY + (13.5 * dpr));
       ctx.restore();
     });
   };
@@ -498,7 +498,7 @@ export default function LiquidLensCanvas({
     // Recorta con la silueta exacta de la cápsula de la gota en píxeles reales
     const rawCenterPx = (lensCenterXPercent / 100) * width;
     const lensWidthPx = (lensWidthPercent / 100) * width;
-    const lensHeightPx = (isMoving ? 74 : 56) * dpr;
+    const lensHeightPx = (isMoving ? 74 : 49) * dpr;
 
     const halfWidthPx = lensWidthPx * 0.5;
     const edgePaddingPx = 4 * dpr;
@@ -560,10 +560,10 @@ export default function LiquidLensCanvas({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
     gl.uniform1i(uniformsRef.current.u_texture, 0);
 
-    // Uniforms de la gota: en reposo 56px (con amplio respiro vertical), en movimiento 74px (sobresale sutilmente 4px por arriba y abajo)
+    // Uniforms de la gota: en reposo 49px (cápsula horizontal esbelta), en movimiento 74px (sobresale sutilmente 4px por arriba y abajo)
     const rawCenterPx = (lensCenterXPercent / 100) * pixelWidth;
     const lensWidthPx = (lensWidthPercent / 100) * pixelWidth;
-    const lensHeightPx = (isMoving ? 74 : 56) * dpr;
+    const lensHeightPx = (isMoving ? 74 : 49) * dpr;
 
     // Límite físico: la gota nunca debe sobrepasar el perímetro exterior izquierdo o derecho
     const halfWidthPx = lensWidthPx * 0.5;
