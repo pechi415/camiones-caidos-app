@@ -100,8 +100,9 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       }
 
       // Determinar el índice de la pestaña de destino para su anchura base
-      const targetIdx = p.isDragging && dragHoverIndex !== null
-        ? dragHoverIndex
+      const hoverIdx = dragHoverIndexRef.current;
+      const targetIdx = p.isDragging && hoverIdx !== null
+        ? hoverIdx
         : Math.max(0, Math.min(totalItems - 1, Math.round((currentTargetX / itemWidthPercent) - 0.5)));
       const targetBaseWidth = getTabBaseWidth(targetIdx);
 
@@ -160,10 +161,13 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     };
 
     animFrameIdRef.current = requestAnimationFrame(tick);
-  }, [itemWidthPercent, getTabBaseWidth, maxStretchPercent, totalItems, dragHoverIndex]);
+  }, [itemWidthPercent, getTabBaseWidth, maxStretchPercent, totalItems]);
 
   // Al cambiar la pestaña activa (por clic directo), la gota viaja físicamente por la barra
   useEffect(() => {
+    // Si el usuario está arrastrando con el dedo, no interrumpir el drag
+    if (physicsRef.current.isDragging) return;
+
     const newIdx = navItems.findIndex(item => item.id === activeTab);
     if (newIdx !== -1) {
       physicsRef.current.isDragging = false;
@@ -199,7 +203,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     if (!navRef.current) return;
     const rect = navRef.current.getBoundingClientRect();
     lastTouchXRef.current = clientX;
-    touchMovedRef.current = true;
+    touchMovedRef.current = false;
 
     const relX = clientX - rect.left;
     const centerPercent = (relX / rect.width) * 100;
@@ -250,10 +254,25 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       physicsRef.current.targetX = targetPercent;
       startPhysicsLoop();
     }
+
+    setTimeout(() => {
+      touchMovedRef.current = false;
+    }, 80);
   };
 
-  const handleTouchStart = (e) => handlePointerDown(e.touches[0].clientX);
-  const handleTouchMove = (e) => handlePointerMove(e.touches[0].clientX);
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      handlePointerDown(e.touches[0].clientX);
+    }
+  };
+  const handleTouchMove = (e) => {
+    if (physicsRef.current.isDragging && e.cancelable) {
+      e.preventDefault();
+    }
+    if (e.touches && e.touches[0]) {
+      handlePointerMove(e.touches[0].clientX);
+    }
+  };
   const handleTouchEnd = () => handlePointerUp();
 
   const handleMouseDown = (e) => {
@@ -415,7 +434,13 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         return (
           <button
             key={item.id}
-            onClick={item.action}
+            onClick={(e) => {
+              if (touchMovedRef.current) {
+                e.preventDefault();
+                return;
+              }
+              item.action();
+            }}
             className="mobile-nav-item-btn"
             style={{
               background: 'transparent',
@@ -433,6 +458,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               position: 'relative',
               height: '100%',
               userSelect: 'none',
+              touchAction: 'none',
               opacity: webGLReady ? 0 : 1 // Si WebGL está listo, el shader renderiza la barra; si no, fallback
             }}
           >
