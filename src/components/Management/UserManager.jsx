@@ -136,6 +136,17 @@ export default function UserManager() {
     setDeleteConfirmUser(targetUser);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmUser) return;
+    if (usersList.length <= 1) {
+      alert('Debe permanecer al menos un usuario en el sistema.');
+      setDeleteConfirmUser(null);
+      return;
+    }
+    await deleteUser(deleteConfirmUser.id);
+    setDeleteConfirmUser(null);
+  };
+
   const filteredUsers = usersList.filter(u => {
     const matchSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         (u.nationalId && u.nationalId.includes(searchTerm)) ||
@@ -474,7 +485,7 @@ export default function UserManager() {
                 </button>
 
                 <button
-                  onClick={() => setDeleteConfirmUser(u)}
+                  onClick={() => handleDeleteUser(u)}
                   title="Eliminar Usuario"
                   style={{
                     background: 'rgba(239, 68, 68, 0.15)',
@@ -654,7 +665,7 @@ export default function UserManager() {
                       </button>
 
                       <button
-                        onClick={() => setDeleteConfirmUser(u)}
+                        onClick={() => handleDeleteUser(u)}
                         title="Eliminar Usuario"
                         style={{
                           background: 'rgba(239, 68, 68, 0.15)',
@@ -898,10 +909,7 @@ export default function UserManager() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  handleDeleteUser(deleteConfirmUser.id);
-                  setDeleteConfirmUser(null);
-                }}
+                onClick={handleConfirmDelete}
                 className="btn-primary"
                 style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFFFFF', fontWeight: 700 }}
               >
