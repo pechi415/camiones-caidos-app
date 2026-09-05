@@ -40,13 +40,23 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
 
   const activeIndex = Math.max(0, navItems.findIndex(item => item.id === activeTab));
 
-  // Dimensiones base de la lente (cápsula horizontal alargada, dejando atrás la forma redonda)
-  const baseWidthPercent = itemWidthPercent * 1.05;
+  // Anchura adaptativa de la cápsula según la posición:
+  // - En los extremos (Inicio y PDF): 86% para no chocar con las puntas redondas ni desplazarse hacia el centro
+  // - En los botones intermedios (Historial, Registrar, Operad., Usuarios): 105% para amplio respiro horizontal
+  const getTabBaseWidth = useCallback((idx) => {
+    if (idx === 0 || idx === totalItems - 1) {
+      return itemWidthPercent * 0.86;
+    }
+    return itemWidthPercent * 1.05;
+  }, [itemWidthPercent, totalItems]);
+
   const maxStretchPercent = itemWidthPercent * 0.45;
 
   // Estados de arrastre e interacción táctil
   const [isDragging, setIsDragging] = useState(false);
   const [dragHoverIndex, setDragHoverIndex] = useState(null);
+
+  const initialWidth = getTabBaseWidth(activeIndex);
 
   // Refs para el motor continuo de física de fluidos (Spring Physics 60/120fps)
   const animFrameIdRef = useRef(null);
@@ -54,7 +64,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     x: (activeIndex + 0.5) * itemWidthPercent,
     targetX: (activeIndex + 0.5) * itemWidthPercent,
     vx: 0,
-    width: baseWidthPercent,
+    width: initialWidth,
     vw: 0,
     isDragging: false,
     dragTargetX: null,
@@ -64,7 +74,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   // Estado reactivo que alimenta el WebGL Canvas y el contorno elástico SVG
   const [lensState, setLensState] = useState(() => ({
     centerX: (activeIndex + 0.5) * itemWidthPercent,
-    width: baseWidthPercent,
+    width: initialWidth,
     isMoving: false
   }));
 
@@ -88,6 +98,12 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         currentTargetX = p.dragTargetX;
       }
 
+      // Determinar el índice de la pestaña de destino para su anchura base
+      const targetIdx = p.isDragging && dragHoverIndex !== null
+        ? dragHoverIndex
+        : Math.max(0, Math.min(totalItems - 1, Math.round((currentTargetX / itemWidthPercent) - 0.5)));
+      const targetBaseWidth = getTabBaseWidth(targetIdx);
+
       // 1. SPRING PHYSICS EN POSICIÓN X
       // Rigidez (k=240) y amortiguación (c=21) para el rebote elástico característico de iOS
       const k = p.isDragging ? 480 : 240;
@@ -100,7 +116,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       // 2. DEFORMACIÓN E INERCIA LÍQUIDA (STRETCH PROPORCIONAL A LA VELOCIDAD)
       const speed = Math.abs(p.vx);
       const velocityStretch = Math.min(maxStretchPercent, speed * 0.11);
-      const desiredWidth = (p.isDragging ? itemWidthPercent * 1.22 : baseWidthPercent) + velocityStretch;
+      const desiredWidth = (p.isDragging ? itemWidthPercent * 1.22 : targetBaseWidth) + velocityStretch;
 
       // Resorte suave para la anchura para un estiramiento y contracción orgánicos
       const kw = 260;
@@ -117,7 +133,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       const clampedX = Math.max(minAllowed, Math.min(maxAllowed, p.x));
 
       // Detección de movimiento
-      const stillMoving = p.isDragging || Math.abs(dx) > 0.05 || speed > 0.3 || Math.abs(p.width - baseWidthPercent) > 0.08;
+      const stillMoving = p.isDragging || Math.abs(dx) > 0.05 || speed > 0.3 || Math.abs(p.width - targetBaseWidth) > 0.08;
 
       if (stillMoving) {
         setLensState({
@@ -130,20 +146,20 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         // En reposo definitivo en el botón seleccionado
         p.x = currentTargetX;
         p.vx = 0;
-        p.width = baseWidthPercent;
+        p.width = targetBaseWidth;
         p.vw = 0;
         p.lastTime = null;
         animFrameIdRef.current = null;
         setLensState({
-          centerX: Math.max(minAllowed, Math.min(maxAllowed, currentTargetX)),
-          width: baseWidthPercent,
+          centerX: currentTargetX,
+          width: targetBaseWidth,
           isMoving: false
         });
       }
     };
 
     animFrameIdRef.current = requestAnimationFrame(tick);
-  }, [itemWidthPercent, baseWidthPercent, maxStretchPercent]);
+  }, [itemWidthPercent, getTabBaseWidth, maxStretchPercent, totalItems, dragHoverIndex]);
 
   // Al cambiar la pestaña activa (por clic directo), la gota viaja físicamente por la barra
   useEffect(() => {
