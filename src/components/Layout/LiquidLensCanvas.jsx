@@ -252,8 +252,7 @@ export default function LiquidLensCanvas({
 
     navItems.forEach((item, idx) => {
       const cx = (idx + 0.5) * itemW;
-      const cy = centerY - (5.0 * dpr);
-      const s = 13.5 * dpr; // Proporción áurea balanceada para amplio respiro lateral
+      const cy = centerY - (7.2 * dpr); // Elevado para generar una separación limpia y elegante con las letras
 
       ctx.save();
       ctx.translate(cx, cy);
@@ -261,15 +260,15 @@ export default function LiquidLensCanvas({
       const color = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
-      ctx.lineWidth = 1.75 * dpr;
+      ctx.lineWidth = 1.85 * dpr;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
       if (item.id === 'dashboard') {
-        // 4 bloques de dashboard (cuadrícula simétrica uniforme 16.8px x 16.8px)
-        const b = 6.4 * dpr;
-        const o = 2.0 * dpr;
-        const r = 1.2 * dpr;
+        // 4 bloques de dashboard (cuadrícula simétrica uniforme 19.2px x 19.2px)
+        const b = 7.4 * dpr;
+        const o = 2.2 * dpr;
+        const r = 1.4 * dpr;
         if (isFilled) {
           if (ctx.roundRect) {
             ctx.beginPath();
@@ -300,8 +299,8 @@ export default function LiquidLensCanvas({
           }
         }
       } else if (item.id === 'history') {
-        // Reloj de historial (diámetro uniforme 16.8px)
-        const r = 8.4 * dpr;
+        // Reloj de historial (diámetro uniforme 19.2px)
+        const r = 9.6 * dpr;
         if (isFilled) {
           // 1. Disco blanco sólido al entrar la gota
           ctx.beginPath();
@@ -312,7 +311,7 @@ export default function LiquidLensCanvas({
           // 2. Troquelado en negativo: perfora las manecillas en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.0 * dpr;
+          ctx.lineWidth = 2.2 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(0, -r * 0.52);
@@ -322,12 +321,12 @@ export default function LiquidLensCanvas({
 
           // Agujero del eje central
           ctx.beginPath();
-          ctx.arc(0, 0, 1.4 * dpr, 0, Math.PI * 2);
+          ctx.arc(0, 0, 1.5 * dpr, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         } else {
           // Modo línea en reposo
-          ctx.lineWidth = 1.75 * dpr;
+          ctx.lineWidth = 1.85 * dpr;
           ctx.beginPath();
           ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.stroke();
@@ -339,8 +338,8 @@ export default function LiquidLensCanvas({
           ctx.stroke();
         }
       } else if (item.id === 'register') {
-        // Botón Registrar (Círculo con '+', diámetro uniforme 16.8px)
-        const r = 8.4 * dpr;
+        // Botón Registrar (Círculo con '+', diámetro uniforme 19.2px)
+        const r = 9.6 * dpr;
         const arm = r * 0.48;
         if (isFilled) {
           // 1. Disco blanco sólido al entrar la gota
@@ -352,7 +351,7 @@ export default function LiquidLensCanvas({
           // 2. Troquelado en negativo: perfora la cruz '+' en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.1 * dpr;
+          ctx.lineWidth = 2.3 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(-arm, 0);
@@ -363,7 +362,7 @@ export default function LiquidLensCanvas({
           ctx.restore();
         } else {
           // Modo línea en reposo
-          ctx.lineWidth = 1.75 * dpr;
+          ctx.lineWidth = 1.85 * dpr;
           ctx.beginPath();
           ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.stroke();
@@ -376,10 +375,10 @@ export default function LiquidLensCanvas({
           ctx.stroke();
         }
       } else if (item.id === 'operators') {
-        // Operadores: Silueta de persona + checkmark (altura uniforme 16.8px)
-        const hx = -1.8 * dpr;
-        const hy = -4.5 * dpr;
-        const hr = 3.8 * dpr;
+        // Operadores: Silueta de persona + checkmark (altura uniforme ~19.3px)
+        const hx = -2.0 * dpr;
+        const hy = -5.2 * dpr;
+        const hr = 4.4 * dpr;
 
         // Cabeza
         ctx.beginPath();
@@ -389,7 +388,7 @@ export default function LiquidLensCanvas({
 
         // Cuerpo / Torso
         ctx.beginPath();
-        ctx.arc(hx, 10.5 * dpr, 8.4 * dpr, Math.PI * 1.18, Math.PI * 1.82);
+        ctx.arc(hx, 12.2 * dpr, 9.8 * dpr, Math.PI * 1.18, Math.PI * 1.82);
         if (isFilled) {
           ctx.fill();
         } else {
@@ -398,22 +397,22 @@ export default function LiquidLensCanvas({
 
         // Checkmark distintivo
         ctx.beginPath();
-        ctx.moveTo(3.4 * dpr, -0.6 * dpr);
-        ctx.lineTo(5.6 * dpr, 1.6 * dpr);
-        ctx.lineTo(8.8 * dpr, -2.4 * dpr);
+        ctx.moveTo(3.8 * dpr, -0.7 * dpr);
+        ctx.lineTo(6.4 * dpr, 1.8 * dpr);
+        ctx.lineTo(10.0 * dpr, -2.8 * dpr);
         ctx.stroke();
       } else if (item.id === 'users') {
-        // Icono de Comunidades (Trío simétrico armónico, altura uniforme 16.8px)
+        // Icono de Comunidades (Trío simétrico armónico, altura uniforme 18.5px, ancho 21.0px)
         // 1. Acompañante izquierdo
         ctx.beginPath();
-        ctx.arc(-6.2 * dpr, -2.4 * dpr, 2.3 * dpr, 0, Math.PI * 2);
+        ctx.arc(-7.0 * dpr, -2.8 * dpr, 2.7 * dpr, 0, Math.PI * 2);
         if (isFilled) ctx.fill(); else ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(-9.2 * dpr, 7.2 * dpr);
-        ctx.quadraticCurveTo(-7.6 * dpr, 1.6 * dpr, -4.0 * dpr, 3.2 * dpr);
+        ctx.moveTo(-10.5 * dpr, 8.4 * dpr);
+        ctx.quadraticCurveTo(-8.6 * dpr, 1.8 * dpr, -4.6 * dpr, 3.6 * dpr);
         if (isFilled) {
-          ctx.lineTo(-4.0 * dpr, 7.2 * dpr);
+          ctx.lineTo(-4.6 * dpr, 8.4 * dpr);
           ctx.closePath();
           ctx.fill();
         } else {
@@ -422,14 +421,14 @@ export default function LiquidLensCanvas({
 
         // 2. Acompañante derecho
         ctx.beginPath();
-        ctx.arc(6.2 * dpr, -2.4 * dpr, 2.3 * dpr, 0, Math.PI * 2);
+        ctx.arc(7.0 * dpr, -2.8 * dpr, 2.7 * dpr, 0, Math.PI * 2);
         if (isFilled) ctx.fill(); else ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(4.0 * dpr, 3.2 * dpr);
-        ctx.quadraticCurveTo(7.6 * dpr, 1.6 * dpr, 9.2 * dpr, 7.2 * dpr);
+        ctx.moveTo(4.6 * dpr, 3.6 * dpr);
+        ctx.quadraticCurveTo(8.6 * dpr, 1.8 * dpr, 10.5 * dpr, 8.4 * dpr);
         if (isFilled) {
-          ctx.lineTo(4.0 * dpr, 7.2 * dpr);
+          ctx.lineTo(4.6 * dpr, 8.4 * dpr);
           ctx.closePath();
           ctx.fill();
         } else {
@@ -438,25 +437,25 @@ export default function LiquidLensCanvas({
 
         // 3. Figura central principal (en el frente)
         ctx.beginPath();
-        ctx.arc(0, -4.8 * dpr, 3.3 * dpr, 0, Math.PI * 2);
+        ctx.arc(0, -5.5 * dpr, 3.8 * dpr, 0, Math.PI * 2);
         if (isFilled) ctx.fill(); else ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(-4.4 * dpr, 7.6 * dpr);
-        ctx.quadraticCurveTo(-3.8 * dpr, 0.6 * dpr, 0, 0.6 * dpr);
-        ctx.quadraticCurveTo(3.8 * dpr, 0.6 * dpr, 4.4 * dpr, 7.6 * dpr);
+        ctx.moveTo(-5.0 * dpr, 8.8 * dpr);
+        ctx.quadraticCurveTo(-4.4 * dpr, 0.7 * dpr, 0, 0.7 * dpr);
+        ctx.quadraticCurveTo(4.4 * dpr, 0.7 * dpr, 5.0 * dpr, 8.8 * dpr);
         if (isFilled) {
-          ctx.lineTo(-4.4 * dpr, 7.6 * dpr);
+          ctx.lineTo(-5.0 * dpr, 8.8 * dpr);
           ctx.closePath();
           ctx.fill();
         } else {
           ctx.stroke();
         }
       } else {
-        // Documento / PDF (altura uniforme 16.8px, ancho proporcional 12.6px)
-        const w = 12.6 * dpr;
-        const h = 16.8 * dpr;
-        const r = 1.8 * dpr;
+        // Documento / PDF (altura uniforme 19.2px, ancho proporcional 14.4px)
+        const w = 14.4 * dpr;
+        const h = 19.2 * dpr;
+        const r = 2.0 * dpr;
         const lx = -w * 0.5;
         const ly = -h * 0.5;
         if (isFilled) {
@@ -473,7 +472,7 @@ export default function LiquidLensCanvas({
           // 2. Troquelado en negativo: perfora las líneas de texto en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.0 * dpr;
+          ctx.lineWidth = 2.2 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(-w * 0.28, -h * 0.16);
@@ -484,7 +483,7 @@ export default function LiquidLensCanvas({
           ctx.restore();
         } else {
           // Modo línea en reposo
-          ctx.lineWidth = 1.75 * dpr;
+          ctx.lineWidth = 1.85 * dpr;
           if (ctx.roundRect) {
             ctx.beginPath();
             ctx.roundRect(lx, ly, w, h, r);
@@ -504,11 +503,11 @@ export default function LiquidLensCanvas({
 
       // Etiquetas de Texto
       ctx.save();
-      ctx.font = `${isFilled ? 'bold' : '600'} ${10.5 * dpr}px 'Plus Jakarta Sans', sans-serif`;
+      ctx.font = `${isFilled ? 'bold' : '600'} ${10.0 * dpr}px 'Plus Jakarta Sans', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = isFilled ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)';
-      ctx.fillText(item.label, cx, centerY + (13.5 * dpr));
+      ctx.fillText(item.label, cx, centerY + (14.2 * dpr));
       ctx.restore();
     });
   };

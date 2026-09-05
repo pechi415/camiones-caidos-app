@@ -420,7 +420,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '2px',
+              gap: '4px',
               zIndex: 10, // Por encima del canvas para capturar toques instantáneos
               outline: 'none',
               position: 'relative',
@@ -440,7 +440,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
               }}
             >
               <Icon
-                size={19}
+                size={20}
                 color={isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)'}
                 strokeWidth={isCoveredByLens ? 2.2 : 1.85}
                 fill={getFill()}
