@@ -40,61 +40,137 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
 
   const activeIndex = Math.max(0, navItems.findIndex(item => item.id === activeTab));
 
-  // Estados de arrastre táctil y física líquida
+  // Dimensiones base de la lente
+  const baseWidthPercent = itemWidthPercent * 0.88;
+  const maxStretchPercent = itemWidthPercent * 0.45;
+
+  // Estados de arrastre e interacción táctil
   const [isDragging, setIsDragging] = useState(false);
-  const [dragCenterXPercent, setDragCenterXPercent] = useState(null);
   const [dragHoverIndex, setDragHoverIndex] = useState(null);
-  const [isSnapping, setIsSnapping] = useState(false);
-  const [prevIndex, setPrevIndex] = useState(activeIndex);
+
+  // Refs para el motor continuo de física de fluidos (Spring Physics 60/120fps)
+  const animFrameIdRef = useRef(null);
+  const physicsRef = useRef({
+    x: (activeIndex + 0.5) * itemWidthPercent,
+    targetX: (activeIndex + 0.5) * itemWidthPercent,
+    vx: 0,
+    width: baseWidthPercent,
+    vw: 0,
+    isDragging: false,
+    dragTargetX: null,
+    lastTime: null
+  });
+
+  // Estado reactivo que alimenta el WebGL Canvas y el contorno elástico SVG
+  const [lensState, setLensState] = useState(() => ({
+    centerX: (activeIndex + 0.5) * itemWidthPercent,
+    width: baseWidthPercent,
+    isMoving: false
+  }));
 
   const lastTouchXRef = useRef(0);
   const touchMovedRef = useRef(false);
 
-  // Cambio de pestaña por clic directo (animación de transición con expansión de agua)
+  // Bucle de Física de Resorte Continuo (Spring Physics)
+  const startPhysicsLoop = useCallback(() => {
+    if (animFrameIdRef.current) return;
+
+    physicsRef.current.lastTime = performance.now();
+
+    const tick = (now) => {
+      const p = physicsRef.current;
+      const dt = Math.min((now - (p.lastTime || now)) / 1000, 0.032);
+      p.lastTime = now;
+
+      // Determinar objetivo actual (posición táctil o centro de la pestaña seleccionada)
+      let currentTargetX = p.targetX;
+      if (p.isDragging && p.dragTargetX !== null) {
+        currentTargetX = p.dragTargetX;
+      }
+
+      // 1. SPRING PHYSICS EN POSICIÓN X
+      // Rigidez (k=240) y amortiguación (c=21) para el rebote elástico característico de iOS
+      const k = p.isDragging ? 480 : 240;
+      const c = p.isDragging ? 38 : 21;
+      const dx = p.x - currentTargetX;
+      const springForce = -k * dx - c * p.vx;
+      p.vx += springForce * dt;
+      p.x += p.vx * dt;
+
+      // 2. DEFORMACIÓN E INERCIA LÍQUIDA (STRETCH PROPORCIONAL A LA VELOCIDAD)
+      const speed = Math.abs(p.vx);
+      const velocityStretch = Math.min(maxStretchPercent, speed * 0.11);
+      const desiredWidth = (p.isDragging ? itemWidthPercent * 1.22 : baseWidthPercent) + velocityStretch;
+
+      // Resorte suave para la anchura para un estiramiento y contracción orgánicos
+      const kw = 260;
+      const cw = 24;
+      const dw = p.width - desiredWidth;
+      p.vw += (-kw * dw - cw * p.vw) * dt;
+      p.width += p.vw * dt;
+
+      // 3. LÍMITES DE CONTENCIÓN ESTRICTA EN EL DOCK
+      const halfW = p.width * 0.5;
+      const edgeMargin = 1.0;
+      const minAllowed = halfW + edgeMargin;
+      const maxAllowed = 100 - halfW - edgeMargin;
+      const clampedX = Math.max(minAllowed, Math.min(maxAllowed, p.x));
+
+      // Detección de movimiento
+      const stillMoving = p.isDragging || Math.abs(dx) > 0.05 || speed > 0.3 || Math.abs(p.width - baseWidthPercent) > 0.08;
+
+      if (stillMoving) {
+        setLensState({
+          centerX: clampedX,
+          width: p.width,
+          isMoving: true
+        });
+        animFrameIdRef.current = requestAnimationFrame(tick);
+      } else {
+        // En reposo definitivo en el botón seleccionado
+        p.x = currentTargetX;
+        p.vx = 0;
+        p.width = baseWidthPercent;
+        p.vw = 0;
+        p.lastTime = null;
+        animFrameIdRef.current = null;
+        setLensState({
+          centerX: Math.max(minAllowed, Math.min(maxAllowed, currentTargetX)),
+          width: baseWidthPercent,
+          isMoving: false
+        });
+      }
+    };
+
+    animFrameIdRef.current = requestAnimationFrame(tick);
+  }, [itemWidthPercent, baseWidthPercent, maxStretchPercent]);
+
+  // Al cambiar la pestaña activa (por clic directo), la gota viaja físicamente por la barra
   useEffect(() => {
-    if (activeTab === 'register') return;
-
     const newIdx = navItems.findIndex(item => item.id === activeTab);
-    if (newIdx !== -1 && newIdx !== prevIndex) {
-      setIsSnapping(true);
-
-      const timer = setTimeout(() => {
-        setIsSnapping(false);
-        setPrevIndex(newIdx);
-      }, 360);
-
-      return () => clearTimeout(timer);
-    } else {
-      setPrevIndex(newIdx !== -1 ? newIdx : 0);
+    if (newIdx !== -1) {
+      const targetPercent = (newIdx + 0.5) * itemWidthPercent;
+      physicsRef.current.targetX = targetPercent;
+      startPhysicsLoop();
     }
-  }, [activeTab]);
+  }, [activeTab, itemWidthPercent, startPhysicsLoop]);
 
-  // --- Dimensiones y Posición de la Gota de Agua Líquida ---
-  // Al arrastrar o saltar entre pestañas, la gota se expande moderadamente (1.30x) para rozar/cubrir solo una parte del icono anterior y siguiente
-  // En reposo, se ajusta al 90% del ancho del botón para quedar perfectamente centrada con espacio en ambos lados
-  const isExpanded = isDragging || isSnapping;
-  const lensWidthPercent = isExpanded ? itemWidthPercent * 1.25 : itemWidthPercent * 0.88;
+  // Limpiar loop de animación al desmontar
+  useEffect(() => {
+    return () => {
+      if (animFrameIdRef.current) {
+        cancelAnimationFrame(animFrameIdRef.current);
+      }
+    };
+  }, []);
 
-  // Centro de la gota (durante el arrastre sigue el dedo, en reposo se centra exactamente en el item activo)
-  const defaultCenterPercent = (activeIndex + 0.5) * itemWidthPercent;
-  const rawCenterPercent = isDragging && dragCenterXPercent !== null
-    ? dragCenterXPercent
-    : defaultCenterPercent;
+  // Coordenadas actuales interpoladas en tiempo real para shaders y cortes vectoriales
+  const currentCenterXPercent = lensState.centerX;
+  const lensWidthPercent = lensState.width;
+  const isMoving = lensState.isMoving;
 
-  // Tope de contención estricto: la gota NUNCA puede salirse de la barra por la izquierda ni por la derecha
   const halfLensPercent = lensWidthPercent / 2;
-  const edgeMarginPercent = 1.0; // Margen de respiro interior en los extremos
-  const minAllowedCenterPercent = halfLensPercent + edgeMarginPercent;
-  const maxAllowedCenterPercent = 100 - halfLensPercent - edgeMarginPercent;
-
-  const currentCenterXPercent = isDragging
-    ? Math.max(minAllowedCenterPercent, Math.min(maxAllowedCenterPercent, rawCenterPercent))
-    : defaultCenterPercent;
-
-  // Límite para el fallback CSS
   const clampedLeftPercent = currentCenterXPercent - halfLensPercent;
-
-  // Rango horizontal que cubre la lente actualmente (para distorsionar y magnificar los iconos debajo)
   const lensLeftBoundary = clampedLeftPercent;
   const lensRightBoundary = clampedLeftPercent + lensWidthPercent;
 
@@ -109,13 +185,15 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     const centerPercent = (relX / rect.width) * 100;
     const hoverIdx = Math.max(0, Math.min(totalItems - 1, Math.floor((relX / rect.width) * totalItems)));
 
+    physicsRef.current.isDragging = true;
+    physicsRef.current.dragTargetX = centerPercent;
     setIsDragging(true);
-    setDragCenterXPercent(centerPercent);
     setDragHoverIndex(hoverIdx);
+    startPhysicsLoop();
   };
 
   const handlePointerMove = (clientX) => {
-    if (!navRef.current) return;
+    if (!navRef.current || !physicsRef.current.isDragging) return;
     const rect = navRef.current.getBoundingClientRect();
 
     if (Math.abs(clientX - lastTouchXRef.current) > 3) {
@@ -127,28 +205,27 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     const centerPercent = (relX / rect.width) * 100;
     const hoverIdx = Math.max(0, Math.min(totalItems - 1, Math.floor((relX / rect.width) * totalItems)));
 
-    setIsDragging(true);
-    setDragCenterXPercent(centerPercent);
+    physicsRef.current.dragTargetX = centerPercent;
     setDragHoverIndex(hoverIdx);
+    startPhysicsLoop();
   };
 
   const handlePointerUp = () => {
-    if (!isDragging || !touchMovedRef.current) {
-      setIsDragging(false);
-      setDragCenterXPercent(null);
-      setDragHoverIndex(null);
-      return;
-    }
+    if (!physicsRef.current.isDragging) return;
+
+    physicsRef.current.isDragging = false;
+    physicsRef.current.dragTargetX = null;
+    setIsDragging(false);
 
     const targetIdx = dragHoverIndex !== null ? dragHoverIndex : activeIndex;
     const targetItem = navItems[targetIdx];
-
-    setIsDragging(false);
-    setDragCenterXPercent(null);
     setDragHoverIndex(null);
 
     if (targetItem) {
       targetItem.action();
+      const targetPercent = (targetIdx + 0.5) * itemWidthPercent;
+      physicsRef.current.targetX = targetPercent;
+      startPhysicsLoop();
     }
   };
 
@@ -173,7 +250,6 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     const W = dimensions.width || 380;
     const H = dimensions.height || 66;
     const R = H / 2; // 33px radio de extremos
-    const isMoving = isDragging || isSnapping;
     const pinch = isMoving ? 3.5 : 0; // Contracción sutil y delicada de 3.5px arriba y abajo
     const pw = 56; // Amplitud amplia de 56px para una transición sedosa y orgánica
     const cx = (currentCenterXPercent / 100) * W;
@@ -271,7 +347,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         activeTab={activeTab}
         lensCenterXPercent={currentCenterXPercent}
         lensWidthPercent={lensWidthPercent}
-        isMoving={isDragging || isSnapping}
+        isMoving={isMoving}
         containerWidth={dimensions.width}
         containerHeight={dimensions.height}
         onReady={setWebGLReady}
@@ -280,13 +356,13 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       {/* Fallback CSS Lente (si WebGL no estuviera soportado) */}
       {!webGLReady && (
         <div
-          className={`whatsapp-water-lens ${isDragging ? 'is-dragging' : ''} ${isSnapping ? 'is-snapping' : ''}`}
+          className={`whatsapp-water-lens ${isDragging ? 'is-dragging' : ''} ${isMoving ? 'is-snapping' : ''}`}
           style={{
             left: `${clampedLeftPercent}%`,
             width: `${lensWidthPercent}%`,
             transition: isDragging
               ? 'width 0.16s ease-out'
-              : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.30s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              : 'none'
           }}
         >
           <div className="whatsapp-water-lens-optical-rim" />
