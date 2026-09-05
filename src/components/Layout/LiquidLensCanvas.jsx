@@ -498,7 +498,7 @@ export default function LiquidLensCanvas({
     // Recorta con la silueta exacta de la cápsula de la gota en píxeles reales
     const rawCenterPx = (lensCenterXPercent / 100) * width;
     const lensWidthPx = (lensWidthPercent / 100) * width;
-    const lensHeightPx = (isMoving ? 72 : 52) * dpr;
+    const lensHeightPx = (isMoving ? 74 : 52) * dpr;
 
     const halfWidthPx = lensWidthPx * 0.5;
     const edgePaddingPx = 4 * dpr;
@@ -560,10 +560,10 @@ export default function LiquidLensCanvas({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
     gl.uniform1i(uniformsRef.current.u_texture, 0);
 
-    // Uniforms de la gota: en reposo 52px (dentro de la barra), en movimiento 72px (sobresale sutilmente 3px por arriba y abajo)
+    // Uniforms de la gota: en reposo 52px (dentro de la barra), en movimiento 74px (sobresale sutilmente 4px por arriba y abajo)
     const rawCenterPx = (lensCenterXPercent / 100) * pixelWidth;
     const lensWidthPx = (lensWidthPercent / 100) * pixelWidth;
-    const lensHeightPx = (isMoving ? 72 : 52) * dpr;
+    const lensHeightPx = (isMoving ? 74 : 52) * dpr;
 
     // Límite físico: la gota nunca debe sobrepasar el perímetro exterior izquierdo o derecho
     const halfWidthPx = lensWidthPx * 0.5;

@@ -299,7 +299,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
         margin: '0 auto',
         height: '66px',
         borderRadius: '35px',
-        padding: '4px 6px',
+        padding: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
