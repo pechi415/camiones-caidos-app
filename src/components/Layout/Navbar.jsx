@@ -2,23 +2,13 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
 import { Truck, Sun, Moon, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw } from 'lucide-react';
+import { getShortName } from '../../utils/aiCorrector';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const { user, isAdmin, logout, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
   const { dbStatus, refreshData } = useReports();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const avatarInputRef = useRef(null);
-
-  // Helper para abreviar nombre largo (ej: Alexander Francisco Ramirez Cordoba -> Alexander Ramirez)
-  const getShortName = (fullName) => {
-    if (!fullName) return '';
-    const parts = fullName.trim().split(/\s+/);
-    if (parts.length <= 2) return fullName;
-    if (parts.length >= 4) {
-      return `${parts[0]} ${parts[2]}`;
-    }
-    return `${parts[0]} ${parts[1]}`;
-  };
 
   const canSelectPribbenow = isAdmin || user?.mine === 'Pribbenow';
   const canSelectElDescanso = isAdmin || user?.mine === 'El Descanso';
