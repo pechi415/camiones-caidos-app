@@ -106,9 +106,9 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       const targetBaseWidth = getTabBaseWidth(targetIdx);
 
       // 1. SPRING PHYSICS EN POSICIÓN X
-      // Rigidez (k=165) y amortiguación (c=17.5) para un ritmo pausado y orgánico idéntico a WhatsApp
-      const k = p.isDragging ? 480 : 165;
-      const c = p.isDragging ? 38 : 17.5;
+      // Rigidez (k=125) y amortiguación (c=15.2) para un ritmo pausado y orgánico idéntico a WhatsApp
+      const k = p.isDragging ? 480 : 125;
+      const c = p.isDragging ? 38 : 15.2;
       const dx = p.x - currentTargetX;
       const springForce = -k * dx - c * p.vx;
       p.vx += springForce * dt;
