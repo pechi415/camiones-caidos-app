@@ -2,44 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Search, Wrench, Edit, Trash2, Clock, ArrowRightLeft, History, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
-import { getLocalDateISO } from '../../utils/dateUtils';
+import { getLocalDateISO, formatTimeTo24H, formatTime12H } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
-
-// Helper para convertir formato 12h a "HH:mm"
-const formatTimeTo24H = (timeStr) => {
-  if (!timeStr) return '';
-  const str = String(timeStr).trim();
-  if (/^\d{2}:\d{2}$/.test(str)) return str;
-
-  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
-  const isPM = cleaned.includes('pm') || cleaned.includes('p m');
-  const isAM = cleaned.includes('am') || cleaned.includes('a m');
-
-  const match = cleaned.match(/(\d{1,2}):(\d{2})/);
-  if (match) {
-    let hours = parseInt(match[1], 10);
-    const minutes = match[2];
-    if (isPM && hours < 12) hours += 12;
-    if (isAM && hours === 12) hours = 0;
-    return `${String(hours).padStart(2, '0')}:${minutes}`;
-  }
-
-  return '';
-};
-
-// Helper para convertir "HH:mm" a "02:30 PM"
-const formatTime12H = (time24) => {
-  if (!time24) return '';
-  const match = time24.match(/^(\d{2}):(\d{2})$/);
-  if (!match) return time24;
-  let hours = parseInt(match[1], 10);
-  const minutes = match[2];
-  const period = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  if (hours === 0) hours = 12;
-  return `${String(hours).padStart(2, '0')}:${minutes} ${period}`;
-};
 
 export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDeleteReport, onViewHistory, activeMine, activeShift }) {
   const { user, selectedDate, setSelectedDate, getTodayISO, setActiveMine, setActiveShift } = useAuth();
