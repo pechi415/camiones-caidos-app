@@ -282,75 +282,77 @@ export default function LiquidLensCanvas({
         }
       } else if (item.id === 'history') {
         // Reloj de historial
+        const r = s * 0.58;
         if (isFilled) {
           // 1. Disco blanco sólido al entrar la gota
           ctx.beginPath();
-          ctx.arc(0, 0, s * 0.88, 0, Math.PI * 2);
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
 
           // 2. Troquelado en negativo: perfora las manecillas en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.4 * dpr;
+          ctx.lineWidth = 1.9 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.moveTo(0, -s * 0.44);
+          ctx.moveTo(0, -r * 0.52);
           ctx.lineTo(0, 0);
-          ctx.lineTo(s * 0.38, s * 0.20);
+          ctx.lineTo(r * 0.44, r * 0.22);
           ctx.stroke();
 
           // Agujero del eje central
           ctx.beginPath();
-          ctx.arc(0, 0, 1.8 * dpr, 0, Math.PI * 2);
+          ctx.arc(0, 0, 1.2 * dpr, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         } else {
           // Modo línea en reposo
           ctx.lineWidth = 1.75 * dpr;
           ctx.beginPath();
-          ctx.arc(0, 0, s * 0.88, 0, Math.PI * 2);
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.moveTo(0, -s * 0.44);
+          ctx.moveTo(0, -r * 0.52);
           ctx.lineTo(0, 0);
-          ctx.lineTo(s * 0.38, s * 0.20);
+          ctx.lineTo(r * 0.44, r * 0.22);
           ctx.stroke();
         }
       } else if (item.id === 'register') {
         // Botón Registrar (Círculo con '+')
+        const r = s * 0.58;
         if (isFilled) {
           // 1. Disco blanco sólido al entrar la gota
           ctx.beginPath();
-          ctx.arc(0, 0, s * 0.92, 0, Math.PI * 2);
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
 
           // 2. Troquelado en negativo: perfora la cruz '+' en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.8 * dpr;
+          ctx.lineWidth = 2.0 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.moveTo(-s * 0.44, 0);
-          ctx.lineTo(s * 0.44, 0);
-          ctx.moveTo(0, -s * 0.44);
-          ctx.lineTo(0, s * 0.44);
+          ctx.moveTo(-r * 0.48, 0);
+          ctx.lineTo(r * 0.48, 0);
+          ctx.moveTo(0, -r * 0.48);
+          ctx.lineTo(0, r * 0.48);
           ctx.stroke();
           ctx.restore();
         } else {
           // Modo línea en reposo
           ctx.lineWidth = 1.75 * dpr;
           ctx.beginPath();
-          ctx.arc(0, 0, s * 0.92, 0, Math.PI * 2);
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.moveTo(-s * 0.44, 0);
-          ctx.lineTo(s * 0.44, 0);
-          ctx.moveTo(0, -s * 0.44);
-          ctx.lineTo(0, s * 0.44);
+          ctx.moveTo(-r * 0.48, 0);
+          ctx.lineTo(r * 0.48, 0);
+          ctx.moveTo(0, -r * 0.48);
+          ctx.lineTo(0, r * 0.48);
           ctx.stroke();
         }
       } else if (item.id === 'operators') {
