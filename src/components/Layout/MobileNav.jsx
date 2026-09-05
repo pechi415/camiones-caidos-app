@@ -55,6 +55,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   // Estados de arrastre e interacción táctil
   const [isDragging, setIsDragging] = useState(false);
   const [dragHoverIndex, setDragHoverIndex] = useState(null);
+  const dragHoverIndexRef = useRef(null);
 
   const initialWidth = getTabBaseWidth(activeIndex);
 
@@ -105,9 +106,9 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       const targetBaseWidth = getTabBaseWidth(targetIdx);
 
       // 1. SPRING PHYSICS EN POSICIÓN X
-      // Rigidez (k=240) y amortiguación (c=21) para el rebote elástico característico de iOS
-      const k = p.isDragging ? 480 : 240;
-      const c = p.isDragging ? 38 : 21;
+      // Rigidez (k=165) y amortiguación (c=17.5) para un ritmo pausado y orgánico idéntico a WhatsApp
+      const k = p.isDragging ? 480 : 165;
+      const c = p.isDragging ? 38 : 17.5;
       const dx = p.x - currentTargetX;
       const springForce = -k * dx - c * p.vx;
       p.vx += springForce * dt;
@@ -165,6 +166,8 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
   useEffect(() => {
     const newIdx = navItems.findIndex(item => item.id === activeTab);
     if (newIdx !== -1) {
+      physicsRef.current.isDragging = false;
+      physicsRef.current.dragTargetX = null;
       const targetPercent = (newIdx + 0.5) * itemWidthPercent;
       physicsRef.current.targetX = targetPercent;
       startPhysicsLoop();
@@ -176,6 +179,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     return () => {
       if (animFrameIdRef.current) {
         cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
       }
     };
   }, []);
@@ -201,6 +205,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     const centerPercent = (relX / rect.width) * 100;
     const hoverIdx = Math.max(0, Math.min(totalItems - 1, Math.floor((relX / rect.width) * totalItems)));
 
+    dragHoverIndexRef.current = hoverIdx;
     physicsRef.current.isDragging = true;
     physicsRef.current.dragTargetX = centerPercent;
     setIsDragging(true);
@@ -221,6 +226,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     const centerPercent = (relX / rect.width) * 100;
     const hoverIdx = Math.max(0, Math.min(totalItems - 1, Math.floor((relX / rect.width) * totalItems)));
 
+    dragHoverIndexRef.current = hoverIdx;
     physicsRef.current.dragTargetX = centerPercent;
     setDragHoverIndex(hoverIdx);
     startPhysicsLoop();
@@ -233,8 +239,9 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
     physicsRef.current.dragTargetX = null;
     setIsDragging(false);
 
-    const targetIdx = dragHoverIndex !== null ? dragHoverIndex : activeIndex;
+    const targetIdx = dragHoverIndexRef.current !== null ? dragHoverIndexRef.current : activeIndex;
     const targetItem = navItems[targetIdx];
+    dragHoverIndexRef.current = null;
     setDragHoverIndex(null);
 
     if (targetItem) {
