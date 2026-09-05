@@ -266,23 +266,42 @@ export default function LiquidLensCanvas({
       ctx.lineJoin = 'round';
 
       if (item.id === 'dashboard') {
-        // 4 bloques de dashboard
-        const b = 5.2 * dpr;
+        // 4 bloques de dashboard (cuadrícula simétrica uniforme 16.8px x 16.8px)
+        const b = 6.4 * dpr;
         const o = 2.0 * dpr;
+        const r = 1.2 * dpr;
         if (isFilled) {
-          ctx.fillRect(-b - o, -b - o, b, b);
-          ctx.fillRect(o, -b - o, b, b);
-          ctx.fillRect(-b - o, o, b, b);
-          ctx.fillRect(o, o, b, b);
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(-b - o, -b - o, b, b, r);
+            ctx.roundRect(o, -b - o, b, b, r);
+            ctx.roundRect(-b - o, o, b, b, r);
+            ctx.roundRect(o, o, b, b, r);
+            ctx.fill();
+          } else {
+            ctx.fillRect(-b - o, -b - o, b, b);
+            ctx.fillRect(o, -b - o, b, b);
+            ctx.fillRect(-b - o, o, b, b);
+            ctx.fillRect(o, o, b, b);
+          }
         } else {
-          ctx.strokeRect(-b - o, -b - o, b, b);
-          ctx.strokeRect(o, -b - o, b, b);
-          ctx.strokeRect(-b - o, o, b, b);
-          ctx.strokeRect(o, o, b, b);
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(-b - o, -b - o, b, b, r);
+            ctx.roundRect(o, -b - o, b, b, r);
+            ctx.roundRect(-b - o, o, b, b, r);
+            ctx.roundRect(o, o, b, b, r);
+            ctx.stroke();
+          } else {
+            ctx.strokeRect(-b - o, -b - o, b, b);
+            ctx.strokeRect(o, -b - o, b, b);
+            ctx.strokeRect(-b - o, o, b, b);
+            ctx.strokeRect(o, o, b, b);
+          }
         }
       } else if (item.id === 'history') {
-        // Reloj de historial
-        const r = s * 0.58;
+        // Reloj de historial (diámetro uniforme 16.8px)
+        const r = 8.4 * dpr;
         if (isFilled) {
           // 1. Disco blanco sólido al entrar la gota
           ctx.beginPath();
@@ -293,7 +312,7 @@ export default function LiquidLensCanvas({
           // 2. Troquelado en negativo: perfora las manecillas en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 1.9 * dpr;
+          ctx.lineWidth = 2.0 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(0, -r * 0.52);
@@ -303,7 +322,7 @@ export default function LiquidLensCanvas({
 
           // Agujero del eje central
           ctx.beginPath();
-          ctx.arc(0, 0, 1.2 * dpr, 0, Math.PI * 2);
+          ctx.arc(0, 0, 1.4 * dpr, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         } else {
@@ -320,8 +339,9 @@ export default function LiquidLensCanvas({
           ctx.stroke();
         }
       } else if (item.id === 'register') {
-        // Botón Registrar (Círculo con '+')
-        const r = s * 0.58;
+        // Botón Registrar (Círculo con '+', diámetro uniforme 16.8px)
+        const r = 8.4 * dpr;
+        const arm = r * 0.48;
         if (isFilled) {
           // 1. Disco blanco sólido al entrar la gota
           ctx.beginPath();
@@ -332,13 +352,13 @@ export default function LiquidLensCanvas({
           // 2. Troquelado en negativo: perfora la cruz '+' en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.0 * dpr;
+          ctx.lineWidth = 2.1 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.moveTo(-r * 0.48, 0);
-          ctx.lineTo(r * 0.48, 0);
-          ctx.moveTo(0, -r * 0.48);
-          ctx.lineTo(0, r * 0.48);
+          ctx.moveTo(-arm, 0);
+          ctx.lineTo(arm, 0);
+          ctx.moveTo(0, -arm);
+          ctx.lineTo(0, arm);
           ctx.stroke();
           ctx.restore();
         } else {
@@ -349,98 +369,111 @@ export default function LiquidLensCanvas({
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.moveTo(-r * 0.48, 0);
-          ctx.lineTo(r * 0.48, 0);
-          ctx.moveTo(0, -r * 0.48);
-          ctx.lineTo(0, r * 0.48);
+          ctx.moveTo(-arm, 0);
+          ctx.lineTo(arm, 0);
+          ctx.moveTo(0, -arm);
+          ctx.lineTo(0, arm);
           ctx.stroke();
         }
       } else if (item.id === 'operators') {
-        // Operadores: Silueta de persona + checkmark (UserCheck)
+        // Operadores: Silueta de persona + checkmark (altura uniforme 16.8px)
+        const hx = -1.8 * dpr;
+        const hy = -4.5 * dpr;
+        const hr = 3.8 * dpr;
+
         // Cabeza
         ctx.beginPath();
-        ctx.arc(-s * 0.14, -s * 0.35, s * 0.36, 0, Math.PI * 2);
+        ctx.arc(hx, hy, hr, 0, Math.PI * 2);
         if (isFilled) ctx.fill();
         else ctx.stroke();
 
-        // Cuerpo
+        // Cuerpo / Torso
         ctx.beginPath();
-        ctx.arc(-s * 0.14, s * 0.84, s * 0.68, Math.PI * 1.15, Math.PI * 1.85);
-        if (isFilled) ctx.fill();
-        else ctx.stroke();
+        ctx.arc(hx, 10.5 * dpr, 8.4 * dpr, Math.PI * 1.18, Math.PI * 1.82);
+        if (isFilled) {
+          ctx.fill();
+        } else {
+          ctx.stroke();
+        }
 
         // Checkmark distintivo
         ctx.beginPath();
-        ctx.moveTo(s * 0.28, -s * 0.08);
-        ctx.lineTo(s * 0.46, s * 0.10);
-        ctx.lineTo(s * 0.80, -s * 0.26);
+        ctx.moveTo(3.4 * dpr, -0.6 * dpr);
+        ctx.lineTo(5.6 * dpr, 1.6 * dpr);
+        ctx.lineTo(8.8 * dpr, -2.4 * dpr);
         ctx.stroke();
       } else if (item.id === 'users') {
-        // Icono oficial de Comunidades de WhatsApp (Imagen 2: Trío simétrico con separación y aire limpio)
-        
-        // 1. Acompañante izquierdo (separado hacia la izquierda)
+        // Icono de Comunidades (Trío simétrico armónico, altura uniforme 16.8px)
+        // 1. Acompañante izquierdo
         ctx.beginPath();
-        ctx.arc(-s * 0.64, -s * 0.28, s * 0.20, 0, Math.PI * 2); // Cabeza izquierda bien separada
+        ctx.arc(-6.2 * dpr, -2.4 * dpr, 2.3 * dpr, 0, Math.PI * 2);
         if (isFilled) ctx.fill(); else ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(-s * 0.96, s * 0.50);
-        ctx.quadraticCurveTo(-s * 0.78, s * 0.12, -s * 0.44, s * 0.26);
+        ctx.moveTo(-9.2 * dpr, 7.2 * dpr);
+        ctx.quadraticCurveTo(-7.6 * dpr, 1.6 * dpr, -4.0 * dpr, 3.2 * dpr);
         if (isFilled) {
-          ctx.lineTo(-s * 0.44, s * 0.50);
-          ctx.lineTo(-s * 0.96, s * 0.50);
+          ctx.lineTo(-4.0 * dpr, 7.2 * dpr);
           ctx.closePath();
           ctx.fill();
         } else {
           ctx.stroke();
         }
 
-        // 2. Acompañante derecho (simétrico y bien separado)
+        // 2. Acompañante derecho
         ctx.beginPath();
-        ctx.arc(s * 0.64, -s * 0.28, s * 0.20, 0, Math.PI * 2); // Cabeza derecha bien separada
+        ctx.arc(6.2 * dpr, -2.4 * dpr, 2.3 * dpr, 0, Math.PI * 2);
         if (isFilled) ctx.fill(); else ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(s * 0.44, s * 0.26);
-        ctx.quadraticCurveTo(s * 0.78, s * 0.12, s * 0.96, s * 0.50);
+        ctx.moveTo(4.0 * dpr, 3.2 * dpr);
+        ctx.quadraticCurveTo(7.6 * dpr, 1.6 * dpr, 9.2 * dpr, 7.2 * dpr);
         if (isFilled) {
-          ctx.lineTo(s * 0.44, s * 0.50);
+          ctx.lineTo(4.0 * dpr, 7.2 * dpr);
           ctx.closePath();
           ctx.fill();
         } else {
           ctx.stroke();
         }
 
-        // 3. Figura central principal (en el frente, equilibrada)
+        // 3. Figura central principal (en el frente)
         ctx.beginPath();
-        ctx.arc(0, -s * 0.44, s * 0.26, 0, Math.PI * 2); // Cabeza central
+        ctx.arc(0, -4.8 * dpr, 3.3 * dpr, 0, Math.PI * 2);
         if (isFilled) ctx.fill(); else ctx.stroke();
 
-        // Torso central redondeado con respiro nítido hacia los laterales
         ctx.beginPath();
-        ctx.moveTo(-s * 0.38, s * 0.52);
-        ctx.quadraticCurveTo(-s * 0.32, s * 0.08, 0, s * 0.08);
-        ctx.quadraticCurveTo(s * 0.32, s * 0.08, s * 0.38, s * 0.52);
+        ctx.moveTo(-4.4 * dpr, 7.6 * dpr);
+        ctx.quadraticCurveTo(-3.8 * dpr, 0.6 * dpr, 0, 0.6 * dpr);
+        ctx.quadraticCurveTo(3.8 * dpr, 0.6 * dpr, 4.4 * dpr, 7.6 * dpr);
         if (isFilled) {
-          ctx.lineTo(-s * 0.38, s * 0.52);
+          ctx.lineTo(-4.4 * dpr, 7.6 * dpr);
           ctx.closePath();
           ctx.fill();
         } else {
           ctx.stroke();
         }
       } else {
-        // Documento / PDF
-        const w = s * 0.78;
-        const h = s * 0.98;
+        // Documento / PDF (altura uniforme 16.8px, ancho proporcional 12.6px)
+        const w = 12.6 * dpr;
+        const h = 16.8 * dpr;
+        const r = 1.8 * dpr;
+        const lx = -w * 0.5;
+        const ly = -h * 0.5;
         if (isFilled) {
           // 1. Hoja sólida blanca al entrar la gota
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(-w / 2, -h / 2, w, h);
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(lx, ly, w, h, r);
+            ctx.fill();
+          } else {
+            ctx.fillRect(lx, ly, w, h);
+          }
 
           // 2. Troquelado en negativo: perfora las líneas de texto en transparencia pura
           ctx.save();
           ctx.globalCompositeOperation = 'destination-out';
-          ctx.lineWidth = 2.2 * dpr;
+          ctx.lineWidth = 2.0 * dpr;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(-w * 0.28, -h * 0.16);
@@ -452,7 +485,13 @@ export default function LiquidLensCanvas({
         } else {
           // Modo línea en reposo
           ctx.lineWidth = 1.75 * dpr;
-          ctx.strokeRect(-w / 2, -h / 2, w, h);
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(lx, ly, w, h, r);
+            ctx.stroke();
+          } else {
+            ctx.strokeRect(lx, ly, w, h);
+          }
           ctx.beginPath();
           ctx.moveTo(-w * 0.28, -h * 0.16);
           ctx.lineTo(w * 0.28, -h * 0.16);
