@@ -292,7 +292,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
       className="mobile-only mobile-nav-pill"
       style={{
         position: 'fixed',
-        bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+        bottom: '24px',
         left: '16px',
         right: '16px',
         maxWidth: '420px',
