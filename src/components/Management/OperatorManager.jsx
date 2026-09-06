@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserCheck, UserPlus, Search, Save, X, Users, Sparkles } from 'lucide-react';
+import { UserCheck, UserPlus, Search, Save, X, Sparkles } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import OperatorTable from './Operators/OperatorTable';
 import OperatorCardList from './Operators/OperatorCardList';
 import OperatorFilters from './Operators/OperatorFilters';
 import OperatorDeleteModal from './Operators/OperatorDeleteModal';
+import OperatorAddForm from './Operators/OperatorAddForm';
+import { supabase } from '../../lib/supabase';
 
 export default function OperatorManager() {
   const { operators, addOperator, editOperator, deleteOperator } = useReports();
@@ -32,12 +34,6 @@ export default function OperatorManager() {
     };
   }, [editingOp, deleteConfirmOp]);
 
-  const [newOpData, setNewOpData] = useState({
-    name: '',
-    mine: user?.mine || 'Pribbenow',
-    group: 'Grupo 1'
-  });
-
   const filteredOperators = operators.filter(op => {
     const matchSearch = op.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         (op.group && op.group.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -48,15 +44,31 @@ export default function OperatorManager() {
     return matchSearch && matchMine && matchGroup;
   });
 
-  const handleAddSubmit = (e) => {
-    e.preventDefault();
-    if (!newOpData.name.trim()) return;
-    addOperator({
-      name: autoCapitalizeName(newOpData.name),
-      mine: newOpData.mine,
-      group: newOpData.group || 'Grupo 1'
-    });
-    setNewOpData({ name: '', mine: 'Pribbenow', group: 'Grupo 1' });
+  const handleAddSubmit = async (opData) => {
+    if (!opData?.name?.trim()) return;
+    const cleanName = autoCapitalizeName(opData.name);
+    const opId = `OP-${Math.floor(500 + Math.random() * 400)}-${Date.now().toString().slice(-4)}`;
+    const opPayload = {
+      id: opId,
+      name: cleanName,
+      mine: opData.mine,
+      group: opData.group || 'Grupo 1',
+      status: 'Activo'
+    };
+
+    try {
+      await supabase.from('operators').upsert([{
+        id: opId,
+        name: cleanName,
+        mine: opPayload.mine,
+        group_name: opPayload.group,
+        status: 'Activo'
+      }]);
+    } catch (err) {
+      console.warn('Error persistiendo operador en Supabase:', err);
+    }
+
+    addOperator(opPayload);
     setShowAddForm(false);
   };
 
@@ -98,61 +110,10 @@ export default function OperatorManager() {
 
       {/* Formulario Agregar Nuevo Operador */}
       {showAddForm && (
-        <form onSubmit={handleAddSubmit} className="glass-card management-add-form" style={{ padding: '20px', marginBottom: '24px', background: 'rgba(229, 46, 46, 0.05)', border: 'var(--glass-border-red)' }}>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={18} color="var(--brand-red)" /> Registrar Nuevo Operador
-          </h4>
-
-          <div className="management-form-grid">
-            <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-                Nombre del Operador *
-              </label>
-              <input
-                type="text"
-                className="glass-input"
-                placeholder="Ej: Carlos Ramírez"
-                value={newOpData.name}
-                onChange={(e) => setNewOpData({ ...newOpData, name: e.target.value })}
-                onBlur={(e) => setNewOpData({ ...newOpData, name: autoCapitalizeName(e.target.value) })}
-                required
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-                Sede / Mina *
-              </label>
-              <select
-                className="glass-input"
-                value={newOpData.mine}
-                onChange={(e) => setNewOpData({ ...newOpData, mine: e.target.value })}
-              >
-                <option value="Pribbenow">Pribbenow</option>
-                <option value="El Descanso">El Descanso</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-                Grupo *
-              </label>
-              <select
-                className="glass-input"
-                value={newOpData.group}
-                onChange={(e) => setNewOpData({ ...newOpData, group: e.target.value })}
-              >
-                <option value="Grupo 1">Grupo 1</option>
-                <option value="Grupo 2">Grupo 2</option>
-                <option value="Grupo 3">Grupo 3</option>
-              </select>
-            </div>
-
-            <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 22px' }}>
-              <Save size={16} /> Guardar Operador
-            </button>
-          </div>
-        </form>
+        <OperatorAddForm
+          onAddOperator={handleAddSubmit}
+          defaultMine={user?.mine || 'Pribbenow'}
+        />
       )}
 
       {/* Controles de Búsqueda y Filtros Responsivos */}
