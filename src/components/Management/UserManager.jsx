@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Users, UserPlus, Save, X, KeyRound, Trash2 } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
-import AnimatedSearchInput from '../Common/AnimatedSearchInput';
+import UserFilters from './Users/UserFilters';
 import UserTable from './Users/UserTable';
 import UserCardList from './Users/UserCardList';
 
@@ -272,61 +272,17 @@ export default function UserManager() {
       )}
 
       {/* Controles de Búsqueda y Filtros Responsivos */}
-      <div className="user-filters-container">
-        <div className="user-filters-search">
-          <AnimatedSearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholderText="📢 Buscar por nombre de usuario, cédula o grupo asignado..."
-          />
-        </div>
-
-        <div className="user-filters-selects">
-          {/* Filtro Sede */}
-          <select
-            className="glass-input"
-            value={mineFilter}
-            disabled={!isAdmin}
-            onChange={(e) => setMineFilter(e.target.value)}
-            style={{
-              height: '40px',
-              fontSize: '0.85rem',
-              opacity: !isAdmin ? 0.7 : 1,
-              cursor: !isAdmin ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isAdmin && <option value="ALL">Sedes</option>}
-            <option value="Pribbenow">PB (Pribbenow)</option>
-            <option value="El Descanso">ED (El Descanso)</option>
-          </select>
-
-          {/* Filtro Grupo */}
-          <select
-            className="glass-input"
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            style={{ height: '40px', fontSize: '0.85rem' }}
-          >
-            <option value="ALL">Grupos</option>
-            <option value="Grupo 1">G1</option>
-            <option value="Grupo 2">G2</option>
-            <option value="Grupo 3">G3</option>
-          </select>
-
-          {/* Filtro Rol */}
-          <select
-            className="glass-input"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            style={{ height: '40px', fontSize: '0.85rem' }}
-          >
-            <option value="ALL">Roles</option>
-            <option value="Administrador">Admin</option>
-            <option value="Encargado">Encargado</option>
-            <option value="Digitador">Digitador</option>
-          </select>
-        </div>
-      </div>
+      <UserFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        mineFilter={mineFilter}
+        onMineFilterChange={setMineFilter}
+        groupFilter={groupFilter}
+        onGroupFilterChange={setGroupFilter}
+        roleFilter={roleFilter}
+        onRoleFilterChange={setRoleFilter}
+        isAdmin={isAdmin}
+      />
 
       {/* Mensaje de Confirmación de Restablecimiento */}
       {resetMsg && (
