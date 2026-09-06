@@ -8,9 +8,7 @@ import { X, FileSpreadsheet, FileText, ShieldCheck, Eye, Share2, MessageSquare, 
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
-import { downloadOrOpenPdf, sharePdfDoc } from '../../utils/pdfUtils';
-import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
-import { CAT_HEADER_LOGO_BASE64 } from '../../assets/catHeaderLogoBase64';
+import { downloadOrOpenPdf, sharePdfDoc, renderCorporatePdfHeader } from '../../utils/pdfUtils';
 import drummondLogo from '../../assets/drummond-logo.png';
 import catHeaderLogo from '../../assets/cat-header-logo.jpg';
 
@@ -58,58 +56,12 @@ export default function ExportModal({ isOpen, onClose }) {
   const generatePdfDoc = () => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-    // Encabezado Corporativo en Fondo Blanco Limpio
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, 297, 30, 'F');
-
-    // Línea divisora inferior sutil
-    doc.setDrawColor(226, 232, 240);
-    doc.setLineWidth(0.5);
-    doc.line(0, 30, 297, 30);
-
-    // Logo Oficial Izquierda (Drummond Ltd. Colombia)
-    try {
-      doc.addImage(DRUMMOND_LOGO_BASE64, 'PNG', 10, 3, 24, 24, undefined, 'FAST');
-    } catch (e) {
-      console.warn('Could not render logo in PDF:', e);
-    }
-
-    // Imagen Derecha (Reporte de Falla Mecánica - Flota CAT 793)
-    try {
-      doc.addImage(CAT_HEADER_LOGO_BASE64, 'JPEG', 263, 3, 24, 24, undefined, 'FAST');
-    } catch (e) {
-      console.warn('Could not render right header image in PDF:', e);
-    }
-
-    // Título y Subtítulo Centrados
-    const centerX = 297 / 2;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(185, 28, 28); // Rojo Corporativo Drummond
-    doc.text('DEPARTAMENTO DE CAMIONES', centerX, 9, { align: 'center' });
-
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(51, 65, 85);
-    doc.text('Reporte de Camiones Caídos', centerX, 15, { align: 'center' });
-
-    // Datos Generales del Encabezado en Una Sola Línea Centrada
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text(`Mina: ${activeMine}   |   Turno: ${activeShift}   |   Grupo: ${formattedGroup}   |   Responsable: ${responsableName}   |   Fecha: ${formattedDate}`, centerX, 24, { align: 'center' });
-
-    // Resumen Ejecutivo KPIs
-    doc.setFillColor(243, 235, 221);
-    doc.rect(14, 32, 269, 12, 'F');
-
-    doc.setFontSize(9.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(11, 13, 16);
-    doc.text(`Novedades del Turno: ${totalCount}   |   Pendientes en CAMPO: ${totalCarryoverCount}   |   Total DOWN: ${totalGlobalDown}   |   Recuperados: ${totalOperativos}   |   Tasa Recuperación: ${availabilityRate}%`, 18, 39.5);
-
-    let currentY = 50;
+    let currentY = renderCorporatePdfHeader(doc, {
+      subtitle: 'Reporte de Camiones Caídos',
+      metadataText: `Mina: ${activeMine}   |   Turno: ${activeShift}   |   Grupo: ${formattedGroup}   |   Responsable: ${responsableName}   |   Fecha: ${formattedDate}`,
+      kpiText: `Novedades del Turno: ${totalCount}   |   Pendientes en CAMPO: ${totalCarryoverCount}   |   Total DOWN: ${totalGlobalDown}   |   Recuperados: ${totalOperativos}   |   Tasa Recuperación: ${availabilityRate}%`,
+      kpiY: 32
+    });
 
     // Ordenar listas por prioridad (Alta -> Media -> Baja -> Operativo)
     const sortedCarryoverReports = sortReportsByPriority(carryoverReports);

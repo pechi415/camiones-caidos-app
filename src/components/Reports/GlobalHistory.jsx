@@ -20,9 +20,7 @@ import {
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
-import { downloadOrOpenPdf } from '../../utils/pdfUtils';
-import { DRUMMOND_LOGO_BASE64 } from '../../assets/drummondLogoBase64';
-import { CAT_HEADER_LOGO_BASE64 } from '../../assets/catHeaderLogoBase64';
+import { downloadOrOpenPdf, renderCorporatePdfHeader } from '../../utils/pdfUtils';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -186,57 +184,15 @@ const getShortSystemCategory = (name) => {
     try {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-      // Encabezado Corporativo en Fondo Blanco Limpio
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, 297, 30, 'F');
-
-      // Línea divisora inferior sutil
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.5);
-      doc.line(0, 30, 297, 30);
-
-      // Logo Oficial Izquierda (Drummond Ltd. Colombia)
-      try {
-        doc.addImage(DRUMMOND_LOGO_BASE64, 'PNG', 10, 3, 24, 24);
-      } catch (e) {
-        console.warn('Could not render logo in PDF:', e);
-      }
-
-      // Imagen Derecha (Reporte de Falla Mecánica - Flota CAT 793)
-      try {
-        doc.addImage(CAT_HEADER_LOGO_BASE64, 'JPEG', 263, 3, 24, 24);
-      } catch (e) {
-        console.warn('Could not render right header image in PDF:', e);
-      }
-
-      // Título y Subtítulo Centrados
-      const centerX = 297 / 2;
       const formattedShortDate = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const responsableName = getShortName(user?.name) || 'N/A';
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.setTextColor(185, 28, 28);
-      doc.text('DEPARTAMENTO DE CAMIONES', centerX, 9, { align: 'center' });
-
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(51, 65, 85);
-      doc.text('Bitácora Histórica de Camiones Caídos', centerX, 15, { align: 'center' });
-
-      // Datos Generales del Encabezado en Una Sola Línea Centrada
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(15, 23, 42);
-      doc.text(`Sede: ${mineFilter === 'ALL' ? 'Todas' : mineFilter}   |   Registros: ${totalCount}   |   Generado Por: ${responsableName}   |   Fecha: ${formattedShortDate}`, centerX, 24, { align: 'center' });
-
-      doc.setFillColor(243, 235, 221);
-      doc.rect(14, 33, 269, 12, 'F');
-
-      doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(11, 13, 16);
-      doc.text(`Total Novedades: ${totalCount}   |   Equipos Afectados Únicos: ${uniqueTrucks}   |   Sistema Falla Frecuente: ${topSystem}`, 18, 41);
+      renderCorporatePdfHeader(doc, {
+        subtitle: 'Bitácora Histórica de Camiones Caídos',
+        metadataText: `Sede: ${mineFilter === 'ALL' ? 'Todas' : mineFilter}   |   Registros: ${totalCount}   |   Generado Por: ${responsableName}   |   Fecha: ${formattedShortDate}`,
+        kpiText: `Total Novedades: ${totalCount}   |   Equipos Afectados Únicos: ${uniqueTrucks}   |   Sistema Falla Frecuente: ${topSystem}`,
+        kpiY: 33
+      });
 
       const sortedForPdf = sortReportsByPriority(filteredHistory);
       const tableRows = sortedForPdf.map(r => [
