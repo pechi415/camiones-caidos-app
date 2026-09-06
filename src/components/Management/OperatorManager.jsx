@@ -4,9 +4,9 @@ import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserCheck, UserPlus, Search, Trash2, Save, X, Users, Sparkles } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
-import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 import OperatorTable from './Operators/OperatorTable';
 import OperatorCardList from './Operators/OperatorCardList';
+import OperatorFilters from './Operators/OperatorFilters';
 
 export default function OperatorManager() {
   const { operators, addOperator, editOperator, deleteOperator } = useReports();
@@ -155,48 +155,15 @@ export default function OperatorManager() {
       )}
 
       {/* Controles de Búsqueda y Filtros Responsivos */}
-      <div className="user-filters-container">
-        <div className="user-filters-search">
-          <AnimatedSearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholderText="📢 Buscar por nombre del operador, sede o grupo asignado..."
-          />
-        </div>
-
-        <div className="user-filters-selects">
-          {/* Filtro Sede */}
-          <select
-            className="glass-input"
-            value={mineFilter}
-            disabled={!isAdmin}
-            onChange={(e) => setMineFilter(e.target.value)}
-            style={{
-              height: '40px',
-              fontSize: '0.85rem',
-              opacity: !isAdmin ? 0.7 : 1,
-              cursor: !isAdmin ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isAdmin && <option value="ALL">Todas las Sedes</option>}
-            <option value="Pribbenow">PB (Pribbenow)</option>
-            <option value="El Descanso">ED (El Descanso)</option>
-          </select>
-
-          {/* Filtro Grupo */}
-          <select
-            className="glass-input"
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            style={{ height: '40px', fontSize: '0.85rem' }}
-          >
-            <option value="ALL">Todos los Grupos</option>
-            <option value="Grupo 1">G1</option>
-            <option value="Grupo 2">G2</option>
-            <option value="Grupo 3">G3</option>
-          </select>
-        </div>
-      </div>
+      <OperatorFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        mineFilter={mineFilter}
+        onMineFilterChange={setMineFilter}
+        groupFilter={groupFilter}
+        onGroupFilterChange={setGroupFilter}
+        isAdmin={isAdmin}
+      />
 
       {/* Vista Móvil: Tarjetas Compactas de Operadores */}
       <OperatorCardList
