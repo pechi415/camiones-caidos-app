@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Users, UserPlus, Save, X } from 'lucide-react';
+import { Users, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
 import UserFilters from './Users/UserFilters';
@@ -10,6 +9,7 @@ import UserTable from './Users/UserTable';
 import UserCardList from './Users/UserCardList';
 import UserResetPasswordModal from './Users/UserResetPasswordModal';
 import UserDeleteModal from './Users/UserDeleteModal';
+import UserEditModal from './Users/UserEditModal';
 
 export default function UserManager() {
   const { user, isAdmin, usersList, setUsersList, resetUserPassword, deleteUser } = useAuth();
@@ -40,7 +40,7 @@ export default function UserManager() {
     setUsersList(updatedList);
   };
 
-  const handlePhotoUpload = async (e, isEdit = false, targetUserId = null) => {
+  const handlePhotoUpload = async (e, targetUserId = null) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -50,8 +50,6 @@ export default function UserManager() {
       if (targetUserId) {
         const updatedList = usersList.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u);
         saveUsersToStorage(updatedList);
-      } else if (isEdit) {
-        setEditingUser(prev => ({ ...prev, avatar: compressed }));
       }
     } catch (err) {
       console.error('Error al procesar foto de usuario:', err);
@@ -62,7 +60,7 @@ export default function UserManager() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => handlePhotoUpload(e, false, userId);
+    input.onchange = (e) => handlePhotoUpload(e, userId);
     input.click();
   };
 
@@ -85,18 +83,17 @@ export default function UserManager() {
     setShowAddForm(false);
   };
 
-  const handleEditSave = (e) => {
-    e.preventDefault();
-    if (!editingUser || !editingUser.name.trim() || !editingUser.nationalId.trim()) return;
+  const handleEditSave = (updatedUser) => {
+    if (!updatedUser || !updatedUser.name.trim() || !updatedUser.nationalId.trim()) return;
 
-    const updatedList = usersList.map(u => (u.id === editingUser.id ? {
+    const updatedList = usersList.map(u => (u.id === updatedUser.id ? {
       ...u,
-      name: autoCapitalizeName(editingUser.name),
-      nationalId: editingUser.nationalId.trim(),
-      mine: editingUser.mine,
-      group: editingUser.group,
-      role: editingUser.role,
-      avatar: editingUser.avatar !== undefined ? editingUser.avatar : u.avatar
+      name: autoCapitalizeName(updatedUser.name),
+      nationalId: updatedUser.nationalId.trim(),
+      mine: updatedUser.mine,
+      group: updatedUser.group,
+      role: updatedUser.role,
+      avatar: updatedUser.avatar !== undefined ? updatedUser.avatar : u.avatar
     } : u));
 
     saveUsersToStorage(updatedList);
@@ -220,127 +217,11 @@ export default function UserManager() {
       />
 
       {/* Modal Editar Usuario */}
-      {editingUser && createPortal(
-        <div className="modal-overlay" onClick={() => setEditingUser(null)}>
-          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', maxWidth: '500px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', borderBottom: 'var(--glass-border)', paddingBottom: '12px' }}>
-              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
-                Editar Usuario
-              </h3>
-              <button onClick={() => setEditingUser(null)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSave} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  className="glass-input"
-                  value={editingUser.name}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  onBlur={(e) => setEditingUser({ ...editingUser, name: autoCapitalizeName(e.target.value) })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                  Identificación *
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className="glass-input"
-                  value={editingUser.nationalId || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, nationalId: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                  Mina / Sede *
-                </label>
-                <select
-                  className="glass-input"
-                  value={editingUser.mine}
-                  onChange={(e) => setEditingUser({ ...editingUser, mine: e.target.value })}
-                >
-                  <option value="Pribbenow">Pribbenow</option>
-                  <option value="El Descanso">El Descanso</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                  Grupo *
-                </label>
-                <select
-                  className="glass-input"
-                  value={editingUser.group || 'Grupo 1'}
-                  onChange={(e) => setEditingUser({ ...editingUser, group: e.target.value })}
-                >
-                  <option value="Grupo 1">Grupo 1</option>
-                  <option value="Grupo 2">Grupo 2</option>
-                  <option value="Grupo 3">Grupo 3</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                  Rol *
-                </label>
-                <select
-                  className="glass-input"
-                  value={editingUser.role}
-                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                >
-                  <option value="Administrador">Administrador</option>
-                  <option value="Encargado">Encargado</option>
-                  <option value="Digitador">Digitador</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-                  Foto de Perfil
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {editingUser.avatar && (
-                    <img
-                      src={editingUser.avatar}
-                      alt="Preview"
-                      style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)' }}
-                    />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="glass-input"
-                    onChange={(e) => handlePhotoUpload(e, true)}
-                    style={{ padding: '6px', fontSize: '0.8rem', flex: 1 }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button type="button" onClick={() => setEditingUser(null)} className="btn-glass">
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
-                  <Save size={16} /> Guardar Cambios
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      <UserEditModal
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onSave={handleEditSave}
+      />
 
       {/* Modal Restablecer Contraseña */}
       <UserResetPasswordModal
