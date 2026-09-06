@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Users, UserPlus, Save, X, KeyRound, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Save, X } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
 import UserFilters from './Users/UserFilters';
 import UserTable from './Users/UserTable';
 import UserCardList from './Users/UserCardList';
+import UserResetPasswordModal from './Users/UserResetPasswordModal';
+import UserDeleteModal from './Users/UserDeleteModal';
 
 export default function UserManager() {
   const { user, isAdmin, usersList, setUsersList, resetUserPassword, deleteUser } = useAuth();
@@ -130,6 +132,15 @@ export default function UserManager() {
     }
     await deleteUser(deleteConfirmUser.id);
     setDeleteConfirmUser(null);
+  };
+
+  const handleConfirmReset = () => {
+    if (!resetConfirmUser) return;
+
+    resetUserPassword(resetConfirmUser.id);
+    setResetMsg(`✅ Contraseña de ${resetConfirmUser.name} restablecida exitosamente a "caidos1234".`);
+    setResetConfirmUser(null);
+    setTimeout(() => setResetMsg(''), 7000);
   };
 
   const filteredUsers = usersList.filter(u => {
@@ -442,115 +453,18 @@ export default function UserManager() {
       )}
 
       {/* Modal Restablecer Contraseña */}
-      {resetConfirmUser && createPortal(
-        <div className="modal-overlay" onClick={() => setResetConfirmUser(null)}>
-          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '450px', textAlign: 'center' }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background: 'rgba(234, 179, 8, 0.15)',
-              border: '1px solid rgba(234, 179, 8, 0.4)',
-              color: '#FACC15',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px auto'
-            }}>
-              <KeyRound size={28} />
-            </div>
-
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
-              Restablecer Contraseña
-            </h3>
-
-            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '20px', lineHeight: '1.5' }}>
-              ¿Está seguro de restablecer la clave para <strong style={{ color: '#FFFFFF' }}>{resetConfirmUser.name}</strong>?
-              <br />
-              <span style={{ fontSize: '0.82rem', color: 'var(--brand-beige)', display: 'block', marginTop: '10px' }}>
-                🔑 La clave asignada será <strong>caidos1234</strong> y el usuario deberá cambiarla al ingresar.
-              </span>
-            </p>
-
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setResetConfirmUser(null)}
-                className="btn-glass"
-                style={{ padding: '10px 20px' }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  resetUserPassword(resetConfirmUser.id);
-                  setResetMsg(`✅ Contraseña de ${resetConfirmUser.name} restablecida exitosamente a "caidos1234".`);
-                  setResetConfirmUser(null);
-                  setTimeout(() => setResetMsg(''), 7000);
-                }}
-                className="btn-primary"
-                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)', color: '#000000', fontWeight: 700 }}
-              >
-                Sí, Restablecer Clave
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <UserResetPasswordModal
+        user={resetConfirmUser}
+        onClose={() => setResetConfirmUser(null)}
+        onConfirm={handleConfirmReset}
+      />
 
       {/* Modal Eliminar Usuario */}
-      {deleteConfirmUser && createPortal(
-        <div className="modal-overlay" onClick={() => setDeleteConfirmUser(null)}>
-          <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '440px', textAlign: 'center' }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              color: '#EF4444',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px auto'
-            }}>
-              <Trash2 size={28} />
-            </div>
-
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
-              Eliminar Usuario
-            </h3>
-
-            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '20px', lineHeight: '1.5' }}>
-              ¿Está seguro de eliminar al usuario <strong style={{ color: '#FFFFFF' }}>{deleteConfirmUser.name}</strong>?
-              <br />
-              Esta acción no se puede deshacer.
-            </p>
-
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmUser(null)}
-                className="btn-glass"
-                style={{ padding: '10px 20px' }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="btn-primary"
-                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFFFFF', fontWeight: 700 }}
-              >
-                Sí, Eliminar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <UserDeleteModal
+        user={deleteConfirmUser}
+        onClose={() => setDeleteConfirmUser(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
