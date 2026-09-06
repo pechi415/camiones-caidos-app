@@ -3,21 +3,15 @@ import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserCheck, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
-import OperatorTable from './Operators/OperatorTable';
-import OperatorCardList from './Operators/OperatorCardList';
-import OperatorFilters from './Operators/OperatorFilters';
 import OperatorDeleteModal from './Operators/OperatorDeleteModal';
 import OperatorAddForm from './Operators/OperatorAddForm';
 import OperatorEditModal from './Operators/OperatorEditModal';
+import OperatorDirectory from './Operators/OperatorDirectory';
 import { supabase } from '../../lib/supabase';
 
 export default function OperatorManager() {
   const { operators, addOperator, editOperator, deleteOperator } = useReports();
   const { user, isAdmin } = useAuth();
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [mineFilter, setMineFilter] = useState(() => (!isAdmin && user?.mine ? user.mine : 'ALL'));
-  const [groupFilter, setGroupFilter] = useState('ALL');
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOp, setEditingOp] = useState(null);
@@ -33,16 +27,6 @@ export default function OperatorManager() {
       document.body.classList.remove('modal-open');
     };
   }, [editingOp, deleteConfirmOp]);
-
-  const filteredOperators = operators.filter(op => {
-    const matchSearch = op.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (op.group && op.group.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                        op.mine.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchMine = mineFilter === 'ALL' || op.mine === mineFilter;
-    const matchGroup = groupFilter === 'ALL' || op.group === groupFilter;
-
-    return matchSearch && matchMine && matchGroup;
-  });
 
   const handleAddSubmit = async (opData) => {
     if (!opData?.name?.trim()) return;
@@ -134,29 +118,13 @@ export default function OperatorManager() {
         />
       )}
 
-      {/* Controles de Búsqueda y Filtros Responsivos */}
-      <OperatorFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        mineFilter={mineFilter}
-        onMineFilterChange={setMineFilter}
-        groupFilter={groupFilter}
-        onGroupFilterChange={setGroupFilter}
+      {/* Directorio de Operadores: Filtros, Vista Móvil y Tabla Escritorio */}
+      <OperatorDirectory
+        operators={operators}
+        onEdit={setEditingOp}
+        onDelete={setDeleteConfirmOp}
         isAdmin={isAdmin}
-      />
-
-      {/* Vista Móvil: Tarjetas Compactas de Operadores */}
-      <OperatorCardList
-        operators={filteredOperators}
-        onEdit={setEditingOp}
-        onDelete={setDeleteConfirmOp}
-      />
-
-      {/* Vista Escritorio: Tabla Completa */}
-      <OperatorTable
-        operators={filteredOperators}
-        onEdit={setEditingOp}
-        onDelete={setDeleteConfirmOp}
+        userMine={user?.mine}
       />
 
       {/* Modal Editar Operador */}
