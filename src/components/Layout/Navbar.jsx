@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
 import { Truck, Sun, Moon, MapPin, User, ChevronDown, LogOut, Lock, Calendar, Camera, RefreshCw } from 'lucide-react';
 import { getShortName } from '../../utils/aiCorrector';
+import { compressImage } from '../../utils/imageUtils';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const { user, isAdmin, logout, activeMine, setActiveMine, activeShift, setActiveShift, selectedDate, setSelectedDate, getTodayISO, updateUserAvatar } = useAuth();
@@ -13,44 +14,18 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const canSelectPribbenow = isAdmin || user?.mine === 'Pribbenow';
   const canSelectElDescanso = isAdmin || user?.mine === 'El Descanso';
 
-  const handleSelfAvatarUpload = (e) => {
+  const handleSelfAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_DIM = 200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height = Math.round((height * MAX_DIM) / width);
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width = Math.round((width * MAX_DIM) / height);
-            height = MAX_DIM;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressed = canvas.toDataURL('image/jpeg', 0.85);
-        if (user && user.id && updateUserAvatar) {
-          updateUserAvatar(user.id, compressed);
-        }
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      if (user && user.id && updateUserAvatar) {
+        updateUserAvatar(user.id, compressed);
+      }
+    } catch (err) {
+      console.error('Error al procesar avatar:', err);
+    }
   };
 
   return (

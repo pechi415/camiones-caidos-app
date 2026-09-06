@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Users, Shield, MapPin, UserPlus, Search, Edit, Trash2, Save, X, IdCard, Sparkles, KeyRound, RotateCcw, Camera } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
+import { compressImage } from '../../utils/imageUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 
 export default function UserManager() {
@@ -43,50 +44,24 @@ export default function UserManager() {
     setUsersList(updatedList);
   };
 
-  const handlePhotoUpload = (e, isEdit = false, targetUserId = null) => {
+  const handlePhotoUpload = async (e, isEdit = false, targetUserId = null) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_DIM = 200;
-        let width = img.width;
-        let height = img.height;
+    try {
+      const compressed = await compressImage(file);
 
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height = Math.round((height * MAX_DIM) / width);
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width = Math.round((width * MAX_DIM) / height);
-            height = MAX_DIM;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressed = canvas.toDataURL('image/jpeg', 0.85);
-
-        if (targetUserId) {
-          const updatedList = usersList.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u);
-          saveUsersToStorage(updatedList);
-        } else if (isEdit) {
-          setEditingUser(prev => ({ ...prev, avatar: compressed }));
-        } else {
-          setNewUserData(prev => ({ ...prev, avatar: compressed }));
-        }
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+      if (targetUserId) {
+        const updatedList = usersList.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u);
+        saveUsersToStorage(updatedList);
+      } else if (isEdit) {
+        setEditingUser(prev => ({ ...prev, avatar: compressed }));
+      } else {
+        setNewUserData(prev => ({ ...prev, avatar: compressed }));
+      }
+    } catch (err) {
+      console.error('Error al procesar foto de usuario:', err);
+    }
   };
 
   const handleAddSubmit = (e) => {
