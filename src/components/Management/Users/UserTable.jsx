@@ -1,5 +1,6 @@
 import React from 'react';
-import { Users, Camera, IdCard, MapPin, Shield, Edit, KeyRound, Trash2 } from 'lucide-react';
+import { Users, Camera, IdCard, MapPin, Shield } from 'lucide-react';
+import UserActionButtons from './UserActionButtons';
 
 export default function UserTable({
   users,
@@ -131,52 +132,13 @@ export default function UserTable({
 
                 {/* Acciones (Solo Iconos) */}
                 <td style={{ padding: '14px 16px', borderRadius: '0 10px 10px 0', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                    <button
-                      onClick={() => onEdit && onEdit(u)}
-                      title="Editar Usuario"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: 'var(--glass-border)',
-                        color: '#FFFFFF',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Edit size={15} />
-                    </button>
-
-                    <button
-                      onClick={() => onResetPassword && onResetPassword(u)}
-                      title="Restablecer Contraseña"
-                      style={{
-                        background: 'rgba(234, 179, 8, 0.15)',
-                        border: '1px solid rgba(234, 179, 8, 0.3)',
-                        color: '#FACC15',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <KeyRound size={15} />
-                    </button>
-
-                    <button
-                      onClick={() => onDelete && onDelete(u)}
-                      title="Eliminar Usuario"
-                      style={{
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        color: '#EF4444',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
+                  <UserActionButtons
+                    user={u}
+                    onEdit={onEdit}
+                    onResetPassword={onResetPassword}
+                    onDelete={onDelete}
+                    style={{ justifyContent: 'flex-end' }}
+                  />
                 </td>
               </tr>
             ))

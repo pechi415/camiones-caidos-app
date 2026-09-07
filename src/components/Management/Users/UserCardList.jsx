@@ -1,5 +1,6 @@
 import React from 'react';
-import { Users, Camera, IdCard, Shield, Edit, KeyRound, Trash2 } from 'lucide-react';
+import { Users, Camera, IdCard, Shield } from 'lucide-react';
+import UserActionButtons from './UserActionButtons';
 
 export default function UserCardList({
   users,
@@ -96,52 +97,13 @@ export default function UserCardList({
             </div>
 
             {/* Acciones Móvil (Solo Iconos) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              <button
-                onClick={() => onEdit && onEdit(u)}
-                title="Editar Usuario"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'var(--glass-border)',
-                  color: '#FFFFFF',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Edit size={15} />
-              </button>
-
-              <button
-                onClick={() => onResetPassword && onResetPassword(u)}
-                title="Restablecer Contraseña"
-                style={{
-                  background: 'rgba(234, 179, 8, 0.15)',
-                  border: '1px solid rgba(234, 179, 8, 0.3)',
-                  color: '#FACC15',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                <KeyRound size={15} />
-              </button>
-
-              <button
-                onClick={() => onDelete && onDelete(u)}
-                title="Eliminar Usuario"
-                style={{
-                  background: 'rgba(239, 68, 68, 0.15)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#EF4444',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
+            <UserActionButtons
+              user={u}
+              onEdit={onEdit}
+              onResetPassword={onResetPassword}
+              onDelete={onDelete}
+              style={{ flexShrink: 0 }}
+            />
           </div>
         ))
       )}
