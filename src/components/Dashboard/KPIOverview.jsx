@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Truck, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
@@ -7,31 +7,56 @@ import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truck
 export default function KPIOverview({ reports, activeMine, activeShift }) {
   const { selectedDate } = useAuth();
 
-  // 1. Novedades del Turno
-  const filteredReports = reports.filter(r => {
-    const matchMine = r.mine === activeMine;
-    const matchShift = r.shift === activeShift;
-    const reportDateStr = r.date || (r.createdAt ? getLocalDateISO(r.createdAt) : '');
-    const matchDate = !selectedDate || !reportDateStr || reportDateStr === selectedDate;
-    return matchMine && matchShift && matchDate;
-  });
+  const {
+    totalReports,
+    totalDown,
+    totalOperativos,
+    availabilityRate,
+    currentDownCount,
+    carryoverCount
+  } = useMemo(() => {
+    // 1. Novedades del Turno
+    const filtered = reports.filter(r => {
+      const matchMine = r.mine === activeMine;
+      const matchShift = r.shift === activeShift;
+      const reportDateStr = r.date || (r.createdAt ? getLocalDateISO(r.createdAt) : '');
+      const matchDate = !selectedDate || !reportDateStr || reportDateStr === selectedDate;
+      return matchMine && matchShift && matchDate;
+    });
 
-  // 2. Equipos Pendientes en CAMPO de Turnos Anteriores
-  const carryoverReports = reports.filter(r => {
-    const matchMine = r.mine === activeMine;
-    const isDown = r.status === 'DOWN';
-    const inField = isEquipmentInField(r.bayLocation);
-    const isPrevious = isReportPreviousToCurrent(r, activeShift, selectedDate);
-    return matchMine && isDown && inField && isPrevious;
-  });
+    // 2. Equipos Pendientes en CAMPO de Turnos Anteriores
+    const carryover = reports.filter(r => {
+      const matchMine = r.mine === activeMine;
+      const isDown = r.status === 'DOWN';
+      const inField = isEquipmentInField(r.bayLocation);
+      const isPrevious = isReportPreviousToCurrent(r, activeShift, selectedDate);
+      return matchMine && isDown && inField && isPrevious;
+    });
 
-  const carryoverCount = carryoverReports.length;
-  const currentDownCount = filteredReports.filter(r => r.status === 'DOWN').length;
-  const totalDown = currentDownCount + carryoverCount;
-  const totalOperativos = filteredReports.filter(r => r.status === 'OPERATIVO').length;
-  const totalReports = filteredReports.length;
+    // Conteo consolidado en un solo recorrido sobre filtered
+    let currentDown = 0;
+    let operativos = 0;
+    for (let i = 0; i < filtered.length; i++) {
+      if (filtered[i].status === 'DOWN') currentDown++;
+      else if (filtered[i].status === 'OPERATIVO') operativos++;
+    }
 
-  const availabilityRate = totalReports === 0 ? 100 : Math.round((totalOperativos / (totalReports + carryoverCount)) * 100);
+    const shiftReportsCount = filtered.length;
+    const carryoverLen = carryover.length;
+    const downTotal = currentDown + carryoverLen;
+    const rate = shiftReportsCount === 0
+      ? 100
+      : Math.round((operativos / (shiftReportsCount + carryoverLen)) * 100);
+
+    return {
+      totalReports: shiftReportsCount,
+      totalDown: downTotal,
+      totalOperativos: operativos,
+      availabilityRate: rate,
+      currentDownCount: currentDown,
+      carryoverCount: carryoverLen
+    };
+  }, [reports, activeMine, activeShift, selectedDate]);
 
   return (
     <div style={{
