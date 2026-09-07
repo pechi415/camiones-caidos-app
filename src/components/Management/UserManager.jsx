@@ -3,21 +3,14 @@ import { useAuth } from '../../context/AuthContext';
 import { Users, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
-import UserFilters from './Users/UserFilters';
 import UserAddForm from './Users/UserAddForm';
-import UserTable from './Users/UserTable';
-import UserCardList from './Users/UserCardList';
+import UserDirectory from './Users/UserDirectory';
 import UserResetPasswordModal from './Users/UserResetPasswordModal';
 import UserDeleteModal from './Users/UserDeleteModal';
 import UserEditModal from './Users/UserEditModal';
 
 export default function UserManager() {
   const { user, isAdmin, usersList, setUsersList, resetUserPassword, deleteUser } = useAuth();
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [mineFilter, setMineFilter] = useState(() => (!isAdmin && user?.mine ? user.mine : 'ALL'));
-  const [roleFilter, setRoleFilter] = useState('ALL');
-  const [groupFilter, setGroupFilter] = useState('ALL');
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -128,17 +121,6 @@ export default function UserManager() {
     setTimeout(() => setResetMsg(''), 7000);
   };
 
-  const filteredUsers = usersList.filter(u => {
-    const matchSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (u.nationalId && u.nationalId.includes(searchTerm)) ||
-                        (u.group && u.group.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchMine = mineFilter === 'ALL' || u.mine === mineFilter;
-    const matchRole = roleFilter === 'ALL' || u.role === roleFilter;
-    const matchGroup = groupFilter === 'ALL' || u.group === groupFilter;
-
-    return matchSearch && matchMine && matchRole && matchGroup;
-  });
-
   return (
     <div className="glass-panel" style={{ padding: '24px' }}>
       {/* Header */}
@@ -169,19 +151,6 @@ export default function UserManager() {
         <UserAddForm onAddUser={handleAddSubmit} />
       )}
 
-      {/* Controles de Búsqueda y Filtros Responsivos */}
-      <UserFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        mineFilter={mineFilter}
-        onMineFilterChange={setMineFilter}
-        groupFilter={groupFilter}
-        onGroupFilterChange={setGroupFilter}
-        roleFilter={roleFilter}
-        onRoleFilterChange={setRoleFilter}
-        isAdmin={isAdmin}
-      />
-
       {/* Mensaje de Confirmación de Restablecimiento */}
       {resetMsg && (
         <div style={{
@@ -198,22 +167,15 @@ export default function UserManager() {
         </div>
       )}
 
-      {/* Vista Móvil: Tarjetas Compactas Abreviadas */}
-      <UserCardList
-        users={filteredUsers}
+      {/* Directorio de Usuarios: Filtros, Vista Móvil y Tabla Escritorio */}
+      <UserDirectory
+        users={usersList}
         onEdit={setEditingUser}
         onResetPassword={setResetConfirmUser}
         onDelete={handleDeleteUser}
         onAvatarChange={handleAvatarChange}
-      />
-
-      {/* Vista Escritorio: Tabla Completa */}
-      <UserTable
-        users={filteredUsers}
-        onEdit={setEditingUser}
-        onResetPassword={setResetConfirmUser}
-        onDelete={handleDeleteUser}
-        onAvatarChange={handleAvatarChange}
+        isAdmin={isAdmin}
+        userMine={user?.mine}
       />
 
       {/* Modal Editar Usuario */}
