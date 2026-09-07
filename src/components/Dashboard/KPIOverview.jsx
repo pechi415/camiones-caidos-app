@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Truck, AlertTriangle, CheckCircle, Clock, Activity } from 'lucide-react';
+import { Truck, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truckUtils';
 

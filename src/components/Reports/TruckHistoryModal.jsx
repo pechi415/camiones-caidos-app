@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { getLocalDateISO } from '../../utils/dateUtils';
 import TruckHistoryHeader from './History/TruckHistoryHeader';
 import TruckHistoryTimeline from './History/TruckHistoryTimeline';
@@ -8,20 +9,7 @@ export default function TruckHistoryModal({ isOpen, onClose, initialTruckId, rep
   const [searchTruckId, setSearchTruckId] = useState(initialTruckId || '');
   const [isInputFocused, setIsInputFocused] = useState(false);
 
-  // Bloqueo de Scroll de Fondo cuando el Modal está abierto
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.style.overflow = '';
-      document.body.classList.remove('modal-open');
-    }
-    return () => {
-      document.body.style.overflow = '';
-      document.body.classList.remove('modal-open');
-    };
-  }, [isOpen]);
+  useModalScrollLock(isOpen);
 
   if (!isOpen) return null;
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, PlusCircle, Users, UserCheck, FileSpreadsheet, LogOut, Truck, History } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Users, UserCheck, FileSpreadsheet, History } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, onOpenNewReport, onOpenExport }) {
   const { user } = useAuth();
