@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, Save } from 'lucide-react';
-import { autoCapitalizeName } from '../../../utils/aiCorrector';
-import { compressImage } from '../../../utils/imageUtils';
+import UserFormFields from './UserFormFields';
 
 export default function UserAddForm({ onAddUser }) {
   const [formData, setFormData] = useState({
@@ -12,18 +11,6 @@ export default function UserAddForm({ onAddUser }) {
     role: 'Encargado',
     avatar: ''
   });
-
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const compressed = await compressImage(file);
-      setFormData(prev => ({ ...prev, avatar: compressed }));
-    } catch (err) {
-      console.error('Error al procesar foto de usuario:', err);
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -47,93 +34,11 @@ export default function UserAddForm({ onAddUser }) {
       </h4>
 
       <div className="management-form-grid user-form-grid">
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Nombre *
-          </label>
-          <input
-            type="text"
-            className="glass-input"
-            placeholder="Nombre completo"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            onBlur={(e) => setFormData({ ...formData, name: autoCapitalizeName(e.target.value) })}
-            required
-          />
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Identificación *
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            className="glass-input"
-            placeholder="Número Cédula / Ficha"
-            value={formData.nationalId}
-            onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
-            required
-          />
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Mina / Sede *
-          </label>
-          <select
-            className="glass-input"
-            value={formData.mine}
-            onChange={(e) => setFormData({ ...formData, mine: e.target.value })}
-          >
-            <option value="Pribbenow">Pribbenow</option>
-            <option value="El Descanso">El Descanso</option>
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Grupo *
-          </label>
-          <select
-            className="glass-input"
-            value={formData.group}
-            onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-          >
-            <option value="Grupo 1">Grupo 1</option>
-            <option value="Grupo 2">Grupo 2</option>
-            <option value="Grupo 3">Grupo 3</option>
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Rol *
-          </label>
-          <select
-            className="glass-input"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-          >
-            <option value="Administrador">Administrador</option>
-            <option value="Encargado">Encargado</option>
-            <option value="Digitador">Digitador</option>
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Foto de Perfil (Avatar)
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            className="glass-input"
-            onChange={handlePhotoUpload}
-            style={{ padding: '6px', fontSize: '0.78rem' }}
-          />
-        </div>
+        <UserFormFields
+          formData={formData}
+          setFormData={setFormData}
+          isEditing={false}
+        />
 
         <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 20px' }}>
           <Save size={16} /> Guardar Usuario
@@ -142,3 +47,4 @@ export default function UserAddForm({ onAddUser }) {
     </form>
   );
 }
+
