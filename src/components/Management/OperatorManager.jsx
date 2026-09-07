@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserCheck, UserPlus } from 'lucide-react';
@@ -17,16 +18,7 @@ export default function OperatorManager() {
   const [editingOp, setEditingOp] = useState(null);
   const [deleteConfirmOp, setDeleteConfirmOp] = useState(null);
 
-  useEffect(() => {
-    if (editingOp || deleteConfirmOp) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [editingOp, deleteConfirmOp]);
+  useModalScrollLock(Boolean(editingOp || deleteConfirmOp));
 
   const handleAddSubmit = async (opData) => {
     if (!opData?.name?.trim()) return;

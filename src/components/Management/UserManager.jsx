@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useAuth } from '../../context/AuthContext';
 import { Users, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
@@ -18,16 +19,7 @@ export default function UserManager() {
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [resetMsg, setResetMsg] = useState('');
 
-  useEffect(() => {
-    if (editingUser || resetConfirmUser || deleteConfirmUser) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [editingUser, resetConfirmUser, deleteConfirmUser]);
+  useModalScrollLock(Boolean(editingUser || resetConfirmUser || deleteConfirmUser));
 
   const saveUsersToStorage = (updatedList) => {
     setUsersList(updatedList);
