@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Users, Save } from 'lucide-react';
 import { autoCapitalizeName } from '../../../utils/aiCorrector';
+import OperatorFormFields from './OperatorFormFields';
 
 export default function OperatorAddForm({ onAddOperator, defaultMine = 'Pribbenow' }) {
   const [newOpData, setNewOpData] = useState({
@@ -33,49 +34,11 @@ export default function OperatorAddForm({ onAddOperator, defaultMine = 'Pribbeno
       </h4>
 
       <div className="management-form-grid">
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Nombre del Operador *
-          </label>
-          <input
-            type="text"
-            className="glass-input"
-            placeholder="Ej: Carlos Ramírez"
-            value={newOpData.name}
-            onChange={(e) => setNewOpData({ ...newOpData, name: e.target.value })}
-            onBlur={(e) => setNewOpData({ ...newOpData, name: autoCapitalizeName(e.target.value) })}
-            required
-          />
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Sede / Mina *
-          </label>
-          <select
-            className="glass-input"
-            value={newOpData.mine}
-            onChange={(e) => setNewOpData({ ...newOpData, mine: e.target.value })}
-          >
-            <option value="Pribbenow">Pribbenow</option>
-            <option value="El Descanso">El Descanso</option>
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '4px', display: 'block' }}>
-            Grupo *
-          </label>
-          <select
-            className="glass-input"
-            value={newOpData.group}
-            onChange={(e) => setNewOpData({ ...newOpData, group: e.target.value })}
-          >
-            <option value="Grupo 1">Grupo 1</option>
-            <option value="Grupo 2">Grupo 2</option>
-            <option value="Grupo 3">Grupo 3</option>
-          </select>
-        </div>
+        <OperatorFormFields
+          formData={newOpData}
+          setFormData={setNewOpData}
+          isEditing={false}
+        />
 
         <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 22px' }}>
           <Save size={16} /> Guardar Operador
@@ -84,3 +47,4 @@ export default function OperatorAddForm({ onAddOperator, defaultMine = 'Pribbeno
     </form>
   );
 }
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Save, X } from 'lucide-react';
 import { autoCapitalizeName } from '../../../utils/aiCorrector';
+import OperatorFormFields from './OperatorFormFields';
 
 export default function OperatorEditModal({ operator, onClose, onSave }) {
   const [formData, setFormData] = useState(() => ({
@@ -48,48 +49,11 @@ export default function OperatorEditModal({ operator, onClose, onSave }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              className="glass-input"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              onBlur={(e) => setFormData({ ...formData, name: autoCapitalizeName(e.target.value) })}
-              required
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-              Sede / Mina
-            </label>
-            <select
-              className="glass-input"
-              value={formData.mine}
-              onChange={(e) => setFormData({ ...formData, mine: e.target.value })}
-            >
-              <option value="Pribbenow">Pribbenow</option>
-              <option value="El Descanso">El Descanso</option>
-            </select>
-          </div>
-
-          <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-beige)', marginBottom: '6px', display: 'block' }}>
-              Grupo
-            </label>
-            <select
-              className="glass-input"
-              value={formData.group || 'Grupo 1'}
-              onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-            >
-              <option value="Grupo 1">Grupo 1</option>
-              <option value="Grupo 2">Grupo 2</option>
-              <option value="Grupo 3">Grupo 3</option>
-            </select>
-          </div>
+          <OperatorFormFields
+            formData={formData}
+            setFormData={setFormData}
+            isEditing={true}
+          />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
             <button type="button" onClick={onClose} className="btn-glass">
@@ -105,3 +69,4 @@ export default function OperatorEditModal({ operator, onClose, onSave }) {
     document.body
   );
 }
+
