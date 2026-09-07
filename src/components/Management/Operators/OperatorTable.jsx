@@ -1,5 +1,6 @@
 import React from 'react';
-import { MapPin, Edit, Trash2 } from 'lucide-react';
+import { MapPin } from 'lucide-react';
+import OperatorActionButtons from './OperatorActionButtons';
 
 export default function OperatorTable({
   operators,
@@ -67,45 +68,13 @@ export default function OperatorTable({
 
                 {/* Acciones (Editar & Eliminar) */}
                 <td style={{ padding: '14px 16px', borderRadius: '0 10px 10px 0', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                    <button
-                      onClick={() => onEdit(op)}
-                      title="Editar Operador"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: 'var(--glass-border)',
-                        color: '#FFFFFF',
-                        padding: '7px 10px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.78rem'
-                      }}
-                    >
-                      <Edit size={14} /> Editar
-                    </button>
-
-                    <button
-                      onClick={() => onDelete(op)}
-                      title="Eliminar Operador"
-                      style={{
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        color: '#EF4444',
-                        padding: '7px 10px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.78rem'
-                      }}
-                    >
-                      <Trash2 size={14} /> Eliminar
-                    </button>
-                  </div>
+                  <OperatorActionButtons
+                    operator={op}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    showText={true}
+                    style={{ justifyContent: 'flex-end' }}
+                  />
                 </td>
               </tr>
             ))

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import OperatorActionButtons from './OperatorActionButtons';
 
 export default function OperatorCardList({
   operators,
@@ -42,37 +42,12 @@ export default function OperatorCardList({
             </div>
 
             {/* Acciones Móvil (Solo Iconos) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button
-                onClick={() => onEdit(op)}
-                title="Editar Operador"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: 'var(--glass-border)',
-                  color: '#FFFFFF',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Edit size={15} />
-              </button>
-
-              <button
-                onClick={() => onDelete(op)}
-                title="Eliminar Operador"
-                style={{
-                  background: 'rgba(239, 68, 68, 0.15)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#EF4444',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
+            <OperatorActionButtons
+              operator={op}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              showText={false}
+            />
           </div>
         ))
       )}
