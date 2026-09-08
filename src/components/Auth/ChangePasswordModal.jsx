@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useAuth } from '../../context/AuthContext';
 import { ShieldAlert, KeyRound, Check, AlertCircle } from 'lucide-react';
 
@@ -9,6 +11,8 @@ export default function ChangePasswordModal({ isOpen }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useModalScrollLock(Boolean(isOpen && user));
 
   if (!isOpen || !user) return null;
 
@@ -38,7 +42,7 @@ export default function ChangePasswordModal({ isOpen }) {
     }, 1200);
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" style={{ backdropFilter: 'blur(16px)', zIndex: 9999 }}>
       <div className="modal-content glass-panel" style={{
         maxWidth: '420px',
@@ -158,6 +162,7 @@ export default function ChangePasswordModal({ isOpen }) {
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
