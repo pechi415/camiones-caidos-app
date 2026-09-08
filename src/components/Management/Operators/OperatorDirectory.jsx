@@ -24,6 +24,14 @@ export default function OperatorDirectory({
     return matchSearch && matchMine && matchGroup;
   });
 
+  const sortedOperators = [...filteredOperators].sort((a, b) =>
+    (a.name || '').trim().localeCompare(
+      (b.name || '').trim(),
+      'es',
+      { sensitivity: 'base' }
+    )
+  );
+
   return (
     <>
       {/* Controles de Búsqueda y Filtros Responsivos */}
@@ -39,14 +47,14 @@ export default function OperatorDirectory({
 
       {/* Vista Móvil: Tarjetas Compactas de Operadores */}
       <OperatorCardList
-        operators={filteredOperators}
+        operators={sortedOperators}
         onEdit={onEdit}
         onDelete={onDelete}
       />
 
       {/* Vista Escritorio: Tabla Completa */}
       <OperatorTable
-        operators={filteredOperators}
+        operators={sortedOperators}
         onEdit={onEdit}
         onDelete={onDelete}
       />
