@@ -17,7 +17,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { getLocalDateISO } from '../../utils/dateUtils';
+import { getLocalDateISO, formatTimeTo24H } from '../../utils/dateUtils';
 import { getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
 import { downloadOrOpenPdf, renderCorporatePdfHeader } from '../../utils/pdfUtils';
@@ -74,13 +74,27 @@ export default function GlobalHistory({ onViewHistory }) {
     return matchSearch && matchMine && matchShift && matchCategory && matchStartDate && matchEndDate;
   });
 
+  // Ordenar cronológicamente: Fecha DESCENDENTE, Hora ASCENDENTE dentro de la misma fecha
+  const sortedHistory = [...filteredHistory].sort((a, b) => {
+    const dateA = a.date || (a.createdAt ? getLocalDateISO(a.createdAt) : '');
+    const dateB = b.date || (b.createdAt ? getLocalDateISO(b.createdAt) : '');
+
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA);
+    }
+
+    const timeA = formatTimeTo24H(a.reportTime) || '00:00';
+    const timeB = formatTimeTo24H(b.reportTime) || '00:00';
+    return timeA.localeCompare(timeB);
+  });
+
   // Métricas del historial inalterable
-  const totalCount = filteredHistory.length;
-  const uniqueTrucks = Array.from(new Set(filteredHistory.map(r => r.truckId))).length;
+  const totalCount = sortedHistory.length;
+  const uniqueTrucks = Array.from(new Set(sortedHistory.map(r => r.truckId))).length;
 
   // Sistema más recurrente
   const categoryCounts = {};
-  filteredHistory.forEach(r => {
+  sortedHistory.forEach(r => {
     if (r.systemCategory) {
       categoryCounts[r.systemCategory] = (categoryCounts[r.systemCategory] || 0) + 1;
     }
@@ -110,10 +124,10 @@ const getShortSystemCategory = (name) => {
     .replace(/Hidráulico/gi, 'Hidrául.');
 };
 
-  // Cálculo de Paginación (20 camiones por página)
-  const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE) || 1;
+  // Cálculo de Paginación (20 camiones por página) sobre el array ordenado
+  const totalPages = Math.ceil(sortedHistory.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedHistory = filteredHistory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedHistory = sortedHistory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Alternar despliegue de una tarjeta individual
   const toggleCard = (id) => {

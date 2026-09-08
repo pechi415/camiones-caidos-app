@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import useModalScrollLock from '../../hooks/useModalScrollLock';
-import { getLocalDateISO } from '../../utils/dateUtils';
+import { getLocalDateISO, formatTimeTo24H } from '../../utils/dateUtils';
 import TruckHistoryHeader from './History/TruckHistoryHeader';
 import TruckHistoryTimeline from './History/TruckHistoryTimeline';
 import { exportTruckHistoryPdf } from './History/truckHistoryPdfExport';
@@ -16,9 +16,23 @@ export default function TruckHistoryModal({ isOpen, onClose, initialTruckId, rep
   const currentTruckId = searchTruckId || initialTruckId;
 
   // Filtrar el historial histórico completo de este camión específico (todas las fechas y sedes)
-  const truckHistory = reports.filter(r => 
+  const filteredTruckReports = reports.filter(r =>
     currentTruckId && r.truckId.toLowerCase().includes(currentTruckId.toLowerCase().trim())
   );
+
+  // Ordenar cronológicamente: Fecha DESCENDENTE, Hora ASCENDENTE dentro de la misma fecha
+  const truckHistory = [...filteredTruckReports].sort((a, b) => {
+    const dateA = a.date || (a.createdAt ? getLocalDateISO(a.createdAt) : '');
+    const dateB = b.date || (b.createdAt ? getLocalDateISO(b.createdAt) : '');
+
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA);
+    }
+
+    const timeA = formatTimeTo24H(a.reportTime) || '00:00';
+    const timeB = formatTimeTo24H(b.reportTime) || '00:00';
+    return timeA.localeCompare(timeB);
+  });
 
   const totalEvents = truckHistory.length;
   const downEvents = truckHistory.filter(r => r.status === 'DOWN').length;
