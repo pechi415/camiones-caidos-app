@@ -28,6 +28,14 @@ export default function UserDirectory({
     return matchSearch && matchMine && matchRole && matchGroup;
   });
 
+  const sortedUsers = [...filteredUsers].sort((a, b) =>
+    (a.name || '').trim().localeCompare(
+      (b.name || '').trim(),
+      'es',
+      { sensitivity: 'base' }
+    )
+  );
+
   return (
     <>
       {/* Controles de Búsqueda y Filtros Responsivos */}
@@ -45,7 +53,7 @@ export default function UserDirectory({
 
       {/* Vista Móvil: Tarjetas Compactas Abreviadas */}
       <UserCardList
-        users={filteredUsers}
+        users={sortedUsers}
         onEdit={onEdit}
         onResetPassword={onResetPassword}
         onDelete={onDelete}
@@ -54,7 +62,7 @@ export default function UserDirectory({
 
       {/* Vista Escritorio: Tabla Completa */}
       <UserTable
-        users={filteredUsers}
+        users={sortedUsers}
         onEdit={onEdit}
         onResetPassword={onResetPassword}
         onDelete={onDelete}
