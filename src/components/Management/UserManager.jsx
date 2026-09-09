@@ -11,19 +11,30 @@ import UserDeleteModal from './Users/UserDeleteModal';
 import UserEditModal from './Users/UserEditModal';
 
 export default function UserManager() {
-  const { user, isAdmin, usersList, setUsersList, resetUserPassword, deleteUser } = useAuth();
+  const {
+    user,
+    isAdmin,
+    usersList,
+    setUsersList,
+    adminCreateUser,
+    resetUserPassword,
+    deleteUser,
+    adminUpdateUserProfile,
+    updateUserAvatar
+  } = useAuth();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [resetConfirmUser, setResetConfirmUser] = useState(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [resetMsg, setResetMsg] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useModalScrollLock(Boolean(editingUser || resetConfirmUser || deleteConfirmUser));
-
-  const saveUsersToStorage = (updatedList) => {
-    setUsersList(updatedList);
-  };
 
   const handlePhotoUpload = async (e, targetUserId = null) => {
     const file = e.target.files?.[0];
@@ -33,8 +44,8 @@ export default function UserManager() {
       const compressed = await compressImage(file);
 
       if (targetUserId) {
-        const updatedList = usersList.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u);
-        saveUsersToStorage(updatedList);
+        await updateUserAvatar(targetUserId, compressed);
+        setUsersList(prev => prev.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u));
       }
     } catch (err) {
       console.error('Error al procesar foto de usuario:', err);
@@ -49,68 +60,133 @@ export default function UserManager() {
     input.click();
   };
 
-  const handleAddSubmit = (userData) => {
-    if (!userData.name.trim() || !userData.nationalId.trim()) return;
+  const handleAddSubmit = async (userData) => {
+    if (!userData.name.trim() || !userData.nationalId.trim() || createLoading) return;
 
-    const newUser = {
-      id: `u-${Date.now()}`,
-      name: autoCapitalizeName(userData.name),
-      nationalId: userData.nationalId.trim(),
-      mine: userData.mine,
-      group: userData.group,
-      role: userData.role,
-      password: 'caidos1234',
-      mustChangePassword: true,
-      avatar: userData.avatar || ''
-    };
+    setCreateLoading(true);
+    setCreateError('');
 
-    saveUsersToStorage([...usersList, newUser]);
-    setShowAddForm(false);
+    try {
+      const result = await adminCreateUser({
+        name: autoCapitalizeName(userData.name),
+        nationalId: userData.nationalId.trim(),
+        mine: userData.mine,
+        group: userData.group,
+        role: userData.role,
+        avatar: userData.avatar || ''
+      });
+
+      if (result.success) {
+        setShowAddForm(false);
+        setResetMsg(`✅ Usuario ${result.user.name} registrado exitosamente en el sistema.`);
+        setTimeout(() => setResetMsg(''), 7000);
+      } else {
+        setCreateError(result.error || 'Error al registrar el usuario.');
+      }
+    } catch (err) {
+      console.error('Error al invocar creación de usuario:', err);
+      setCreateError('Error inesperado al intentar crear el usuario.');
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
-  const handleEditSave = (updatedUser) => {
+  const handleEditSave = async (updatedUser) => {
     if (!updatedUser || !updatedUser.name.trim() || !updatedUser.nationalId.trim()) return;
 
-    const updatedList = usersList.map(u => (u.id === updatedUser.id ? {
-      ...u,
-      name: autoCapitalizeName(updatedUser.name),
-      nationalId: updatedUser.nationalId.trim(),
-      mine: updatedUser.mine,
-      group: updatedUser.group,
-      role: updatedUser.role,
-      avatar: updatedUser.avatar !== undefined ? updatedUser.avatar : u.avatar
-    } : u));
+    try {
+      const cleanName = autoCapitalizeName(updatedUser.name);
 
-    saveUsersToStorage(updatedList);
-    setEditingUser(null);
+      await adminUpdateUserProfile(updatedUser.id, {
+        name: cleanName,
+        mine: updatedUser.mine,
+        group: updatedUser.group,
+        role: updatedUser.role,
+        ...(updatedUser.avatar !== undefined ? { avatar: updatedUser.avatar } : {})
+      });
+
+      setUsersList(prev => prev.map(u => (u.id === updatedUser.id ? {
+        ...u,
+        name: cleanName,
+        mine: updatedUser.mine,
+        group: updatedUser.group,
+        role: updatedUser.role,
+        avatar: updatedUser.avatar !== undefined ? updatedUser.avatar : u.avatar
+      } : u)));
+
+      setEditingUser(null);
+      setResetMsg(`✅ Usuario ${cleanName} actualizado correctamente.`);
+      setTimeout(() => setResetMsg(''), 7000);
+    } catch (err) {
+      console.error('Error al actualizar usuario:', err);
+      setDeleteError('No fue posible actualizar el perfil del usuario.');
+      setTimeout(() => setDeleteError(''), 7000);
+    }
   };
 
   const handleDeleteUser = (targetUser) => {
+    if (deleteLoading) return;
     if (usersList.length <= 1) {
-      alert('Debe permanecer al menos un usuario en el sistema.');
+      setDeleteError('Debe permanecer al menos un usuario en el sistema.');
+      setTimeout(() => setDeleteError(''), 7000);
       return;
     }
+    setDeleteError('');
     setDeleteConfirmUser(targetUser);
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteConfirmUser) return;
+    if (!deleteConfirmUser || deleteLoading) return;
     if (usersList.length <= 1) {
-      alert('Debe permanecer al menos un usuario en el sistema.');
+      setDeleteError('Debe permanecer al menos un usuario en el sistema.');
+      setTimeout(() => setDeleteError(''), 7000);
       setDeleteConfirmUser(null);
       return;
     }
-    await deleteUser(deleteConfirmUser.id);
-    setDeleteConfirmUser(null);
+
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      const result = await deleteUser(deleteConfirmUser.id);
+      if (result.success) {
+        const deletedName = deleteConfirmUser.name;
+        setDeleteConfirmUser(null);
+        setResetMsg(`✅ Usuario ${deletedName} eliminado exitosamente del sistema.`);
+        setTimeout(() => setResetMsg(''), 7000);
+      } else {
+        setDeleteConfirmUser(null);
+        setDeleteError(result.error || 'No fue posible eliminar el usuario.');
+        setTimeout(() => setDeleteError(''), 7000);
+      }
+    } catch (err) {
+      console.error('Error al eliminar usuario:', err);
+      setDeleteConfirmUser(null);
+      setDeleteError('Error inesperado al intentar eliminar el usuario.');
+      setTimeout(() => setDeleteError(''), 7000);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
-  const handleConfirmReset = () => {
-    if (!resetConfirmUser) return;
+  const handleConfirmReset = async () => {
+    if (!resetConfirmUser || resetLoading) return;
 
-    resetUserPassword(resetConfirmUser.id);
-    setResetMsg(`✅ Contraseña de ${resetConfirmUser.name} restablecida exitosamente a "caidos1234".`);
-    setResetConfirmUser(null);
-    setTimeout(() => setResetMsg(''), 7000);
+    setResetLoading(true);
+    try {
+      const result = await resetUserPassword(resetConfirmUser.id);
+      if (result.success) {
+        setResetMsg(`✅ Contraseña de ${resetConfirmUser.name} restablecida exitosamente a la clave temporal.`);
+        setResetConfirmUser(null);
+        setTimeout(() => setResetMsg(''), 7000);
+      } else {
+        alert(result.error || 'Error al restablecer la contraseña.');
+      }
+    } catch (err) {
+      console.error('Error al restablecer contraseña:', err);
+      alert('Error inesperado al restablecer la contraseña.');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -130,9 +206,11 @@ export default function UserManager() {
           onClick={() => {
             setShowAddForm(!showAddForm);
             setEditingUser(null);
+            setCreateError('');
           }}
           className="btn-primary management-header-btn"
           style={{ fontSize: '0.85rem' }}
+          disabled={createLoading}
         >
           <UserPlus size={16} /> {showAddForm ? 'Cancelar' : 'Crear Nuevo Usuario'}
         </button>
@@ -140,10 +218,46 @@ export default function UserManager() {
 
       {/* Formulario Agregar Usuario */}
       {showAddForm && (
-        <UserAddForm onAddUser={handleAddSubmit} />
+        <div style={{ marginBottom: '24px' }}>
+          {createLoading && (
+            <div style={{
+              background: 'rgba(59, 130, 246, 0.15)',
+              border: '1px solid rgba(59, 130, 246, 0.4)',
+              color: '#60A5FA',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              marginBottom: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              ⏳ Creando usuario en Supabase Auth y sincronizando perfil...
+            </div>
+          )}
+          {createError && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#F87171',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              marginBottom: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              ⚠️ {createError}
+            </div>
+          )}
+          <UserAddForm onAddUser={handleAddSubmit} />
+        </div>
       )}
 
-      {/* Mensaje de Confirmación de Restablecimiento */}
+      {/* Mensaje de Confirmación de Restablecimiento / Eliminación */}
       {resetMsg && (
         <div style={{
           background: 'rgba(34, 197, 94, 0.2)',
@@ -156,6 +270,25 @@ export default function UserManager() {
           marginBottom: '16px'
         }}>
           {resetMsg}
+        </div>
+      )}
+
+      {/* Mensaje de Error Visual en Eliminación */}
+      {deleteError && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.15)',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          color: '#F87171',
+          padding: '12px 16px',
+          borderRadius: '12px',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          ⚠️ {deleteError}
         </div>
       )}
 
@@ -180,14 +313,18 @@ export default function UserManager() {
       {/* Modal Restablecer Contraseña */}
       <UserResetPasswordModal
         user={resetConfirmUser}
-        onClose={() => setResetConfirmUser(null)}
+        onClose={() => {
+          if (!resetLoading) setResetConfirmUser(null);
+        }}
         onConfirm={handleConfirmReset}
       />
 
       {/* Modal Eliminar Usuario */}
       <UserDeleteModal
         user={deleteConfirmUser}
-        onClose={() => setDeleteConfirmUser(null)}
+        onClose={() => {
+          if (!deleteLoading) setDeleteConfirmUser(null);
+        }}
         onConfirm={handleConfirmDelete}
       />
     </div>

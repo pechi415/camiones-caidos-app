@@ -164,9 +164,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let isMounted = true;
 
-    // Limpieza de almacenamiento obsoleto que almacenaba contraseñas en texto plano
-    localStorage.removeItem('camiones_all_users');
-
     const initSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -280,9 +277,7 @@ export function AuthProvider({ children }) {
   }, [activeMine]);
 
   /**
-   * Inicio de sesión híbrido:
-   * 1. Intenta Supabase Auth (usuarios migrados).
-   * 2. Si el usuario no tiene auth_user_id en BD, aplica fallback legacy.
+   * Inicio de sesión exclusivo mediante Supabase Auth oficial.
    */
   const login = async (nationalId, inputPassword) => {
     const cleanId = cleanNationalId(nationalId);
@@ -295,7 +290,7 @@ export function AuthProvider({ children }) {
 
     const technicalEmail = nationalIdToTechnicalEmail(cleanId);
 
-    // Intento 1: Supabase Auth oficial (para usuarios ya migrados)
+    // Supabase Auth oficial
     let authSuccess = false;
     let authUser = null;
     try {
@@ -332,56 +327,7 @@ export function AuthProvider({ children }) {
       };
     }
 
-    // Intento 2: Fallback temporal exclusivo para usuarios no migrados (auth_user_id IS NULL).
-    // NOTA: Este bloque es transitorio y se eliminará al completar la migración de los 21 usuarios a Auth.
-    try {
-      const { data: legacyUser, error: legacyErr } = await supabase
-        .from('app_users')
-        .select('id, national_id, name, role, mine, group_name, password, must_change_password, avatar, auth_user_id')
-        .eq('national_id', cleanId)
-        .maybeSingle();
-
-      if (legacyErr || !legacyUser) {
-        return { success: false, message: 'El número de identificación no se encuentra registrado.' };
-      }
-
-      // Si el usuario ya está migrado a Auth (auth_user_id != null), NO se admite fallback legacy.
-      // Su fallo en signInWithPassword indica contraseña incorrecta.
-      if (legacyUser.auth_user_id !== null) {
-        return { success: false, message: 'La contraseña ingresada es incorrecta.' };
-      }
-
-      // Si aún no está migrado (auth_user_id === null), se valida contra la contraseña histórica
-      if (legacyUser.password !== inputPassword) {
-        return { success: false, message: 'La contraseña ingresada es incorrecta.' };
-      }
-
-      // Login legacy exitoso en memoria
-      const legacyProfile = {
-        id: legacyUser.id,
-        nationalId: legacyUser.national_id,
-        name: legacyUser.name,
-        role: legacyUser.role,
-        mine: legacyUser.mine,
-        group: legacyUser.group_name || 'Grupo 1',
-        mustChangePassword: legacyUser.must_change_password !== undefined ? legacyUser.must_change_password : false,
-        avatar: legacyUser.avatar || '',
-        authUserId: null
-      };
-
-      setUser(legacyProfile);
-      if (legacyProfile.mine) {
-        setActiveMine(legacyProfile.mine.replace(' (PB)', '').replace(' (ED)', ''));
-      }
-
-      return {
-        success: true,
-        mustChangePassword: legacyProfile.mustChangePassword === true
-      };
-    } catch (fallbackErr) {
-      console.error('Error durante verificación de fallback legacy:', fallbackErr);
-      return { success: false, message: 'No se pudo conectar con el servidor. Verifique su conexión.' };
-    }
+    return { success: false, message: 'El número de identificación o la contraseña son incorrectos.' };
   };
 
   /**
@@ -397,73 +343,147 @@ export function AuthProvider({ children }) {
       currentProfileRef.current = null;
       pendingProfilePromiseRef.current = null;
       setUser(null);
-      localStorage.removeItem('camiones_user');
     }
   };
 
   /**
-   * Actualización de contraseña:
+   * Actualización de contraseña oficial en Supabase Auth:
    * 1. Actualiza en Supabase Auth mediante updateUser({ password }).
    * 2. Si Auth tiene éxito, actualiza must_change_password = false en public.app_users.
    * 3. Si falla el paso 2, lanza error explícito para evitar falsos positivos.
    */
   const changePassword = async (userId, newPassword) => {
-    if (user?.authUserId) {
-      // Usuario con cuenta oficial Supabase Auth
-      const { error: authErr } = await supabase.auth.updateUser({ password: newPassword });
-      if (authErr) {
-        console.error('Error actualizando contraseña en Supabase Auth:', authErr);
-        throw new Error(authErr.message || 'Error al actualizar la contraseña en el servidor de autenticación.');
+    const { error: authErr } = await supabase.auth.updateUser({ password: newPassword });
+    if (authErr) {
+      console.error('Error actualizando contraseña en Supabase Auth:', authErr);
+      throw new Error(authErr.message || 'Error al actualizar la contraseña en el servidor de autenticación.');
+    }
+
+    const { error: dbErr } = await supabase
+      .from('app_users')
+      .update({ must_change_password: false })
+      .eq('id', userId);
+
+    if (dbErr) {
+      console.error('Error actualizando must_change_password en app_users:', dbErr);
+      throw new Error('La contraseña fue registrada en el sistema de seguridad, pero la confirmación del perfil no pudo completarse. Por favor pulse nuevamente Guardar para completar el proceso.');
+    }
+
+    if (currentProfileRef.current) {
+      currentProfileRef.current.mustChangePassword = false;
+    }
+    setUser(prev => prev ? { ...prev, mustChangePassword: false } : null);
+    return { success: true };
+  };
+
+  /**
+   * Creación administrativa segura mediante Supabase Edge Function 'admin-create-user'.
+   * La Edge Function genera la identidad en Supabase Auth, asigna la clave temporal
+   * e inserta el perfil en public.app_users vinculando auth_user_id.
+   */
+  const adminCreateUser = async (userData) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          name: userData.name.trim(),
+          nationalId: userData.nationalId.trim(),
+          role: userData.role,
+          mine: userData.mine,
+          group: userData.group || 'Grupo 1',
+          avatar: userData.avatar || ''
+        }
+      });
+
+      if (error) {
+        let safeMessage = 'Error en el servidor al procesar la solicitud. Por favor intente más tarde.';
+        let statusCode = error.context?.status || 500;
+        try {
+          const body = await error.context?.json();
+          if (body?.error) safeMessage = body.error;
+        } catch {
+          // Mantener mensaje seguro
+        }
+
+        if (statusCode === 401) {
+          safeMessage = 'Su sesión ha expirado. Por favor inicie sesión nuevamente.';
+          await logout();
+        } else if (statusCode === 403) {
+          safeMessage = 'Acceso denegado: solo administradores pueden realizar esta acción.';
+        } else if (statusCode === 409) {
+          safeMessage = 'El número de identificación ya se encuentra registrado.';
+        } else if (statusCode === 404) {
+          safeMessage = 'El usuario seleccionado ya no existe en el sistema.';
+        }
+
+        return { success: false, error: safeMessage, status: statusCode };
       }
 
-      const { error: dbErr } = await supabase
-        .from('app_users')
-        .update({ must_change_password: false })
-        .eq('auth_user_id', user.authUserId);
+      if (data?.success && data.user) {
+        const newUser = {
+          id: data.user.id,
+          nationalId: data.user.nationalId,
+          name: data.user.name,
+          role: data.user.role,
+          mine: data.user.mine,
+          group: data.user.group || 'Grupo 1',
+          mustChangePassword: data.user.mustChangePassword !== undefined ? data.user.mustChangePassword : true,
+          avatar: data.user.avatar || '',
+          authUserId: data.user.authUserId,
+          createdAt: data.user.createdAt
+        };
 
-      if (dbErr) {
-        console.error('Error actualizando must_change_password en app_users:', dbErr);
-        throw new Error('La contraseña fue registrada en el sistema de seguridad, pero la confirmación del perfil no pudo completarse. Por favor pulse nuevamente Guardar para completar el proceso.');
+        setUsersList(prev => [...prev, newUser]);
+        return { success: true, user: newUser };
       }
 
-      if (currentProfileRef.current) {
-        currentProfileRef.current.mustChangePassword = false;
-      }
-      setUser(prev => prev ? { ...prev, mustChangePassword: false } : null);
-      return { success: true };
-    } else {
-      // Fallback para usuario no migrado
-      const { error: dbErr } = await supabase
-        .from('app_users')
-        .update({ password: newPassword, must_change_password: false })
-        .eq('id', userId);
-
-      if (dbErr) {
-        console.error('Error actualizando contraseña legacy en app_users:', dbErr);
-        throw new Error('Error al actualizar la contraseña en el servidor.');
-      }
-
-      setUser(prev => prev ? { ...prev, mustChangePassword: false } : null);
-      return { success: true };
+      return { success: false, error: 'Respuesta inesperada del servidor.' };
+    } catch (err) {
+      console.error('Error al crear usuario mediante Edge Function:', err);
+      return { success: false, error: 'Error de conexión al procesar la solicitud.' };
     }
   };
 
   /**
-   * Restablecimiento de contraseña por Administrador (Fija 'caidos1234' y must_change_password = true)
+   * Restablecimiento administrativo de contraseña mediante Edge Function 'admin-reset-password'.
+   * Actualiza la clave temporal en Supabase Auth y activa must_change_password = true.
    */
   const resetUserPassword = async (userId) => {
     try {
-      const { error } = await supabase
-        .from('app_users')
-        .update({ password: 'caidos1234', must_change_password: true })
-        .eq('id', userId);
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: { target_app_user_id: userId }
+      });
 
-      if (error) throw error;
-      await loadUsersForAdmin();
-      return true;
-    } catch (e) {
-      console.error('Error al restablecer contraseña de usuario:', e);
-      return false;
+      if (error) {
+        let safeMessage = 'Error en el servidor al procesar la solicitud. Por favor intente más tarde.';
+        let statusCode = error.context?.status || 500;
+        try {
+          const body = await error.context?.json();
+          if (body?.error) safeMessage = body.error;
+        } catch {
+          // Mantener mensaje seguro
+        }
+
+        if (statusCode === 401) {
+          safeMessage = 'Su sesión ha expirado. Por favor inicie sesión nuevamente.';
+          await logout();
+        } else if (statusCode === 403) {
+          safeMessage = 'Acceso denegado: solo administradores pueden realizar esta acción.';
+        } else if (statusCode === 404) {
+          safeMessage = 'El usuario seleccionado ya no existe en el sistema.';
+        }
+
+        return { success: false, error: safeMessage, status: statusCode };
+      }
+
+      if (data?.success) {
+        setUsersList(prev => prev.map(u => u.id === userId ? { ...u, mustChangePassword: true } : u));
+        return { success: true, message: data.message };
+      }
+
+      return { success: false, error: 'Respuesta inesperada del servidor.' };
+    } catch (err) {
+      console.error('Error al restablecer contraseña mediante Edge Function:', err);
+      return { success: false, error: 'Error de conexión al procesar la solicitud.' };
     }
   };
 
@@ -479,36 +499,102 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /**
+   * Eliminación administrativa segura mediante Edge Function 'admin-delete-user'.
+   * Elimina la identidad en Supabase Auth y el registro en public.app_users de forma coordinada.
+   */
   const deleteUser = async (userId) => {
     try {
-      const { error } = await supabase.from('app_users').delete().eq('id', userId);
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { target_app_user_id: userId }
+      });
+
       if (error) {
-        console.error('Error eliminando usuario en Supabase:', error.message);
-      } else {
-        await loadUsersForAdmin();
+        let safeMessage = 'No fue posible eliminar el usuario';
+        let statusCode = error.context?.status || 500;
+        let body = null;
+        try {
+          body = await error.context?.json();
+          if (body?.error) safeMessage = body.error;
+        } catch {
+          // Mantener mensaje seguro
+        }
+
+        if (statusCode === 401) {
+          safeMessage = 'No autorizado';
+          await logout();
+        } else if (statusCode === 403) {
+          safeMessage = 'No tienes permisos para realizar esta operación';
+        } else if (statusCode === 400) {
+          safeMessage = body?.error || 'No fue posible realizar la operación con los datos suministrados';
+        } else if (statusCode === 404) {
+          safeMessage = 'Usuario no encontrado';
+        } else if (statusCode === 405) {
+          safeMessage = 'No fue posible realizar la operación';
+        } else if (statusCode === 500) {
+          safeMessage = 'No fue posible eliminar el usuario';
+        }
+
+        return { success: false, error: safeMessage, status: statusCode };
       }
-    } catch (e) {
-      console.warn('Excepción eliminando usuario de Supabase:', e);
+
+      if (data?.success) {
+        setUsersList(prev => prev.filter(u => u.id !== userId));
+        return {
+          success: true,
+          message: data.message || 'Usuario eliminado correctamente',
+          targetAppUserId: data.targetAppUserId,
+          targetAuthUserId: data.targetAuthUserId
+        };
+      }
+
+      return { success: false, error: 'Respuesta inesperada del servidor.' };
+    } catch (err) {
+      console.error('Error al invocar eliminación de usuario mediante Edge Function:', err);
+      return { success: false, error: 'Error de conexión al procesar la solicitud.' };
     }
   };
 
-  const updateUsersListGlobal = async (newList) => {
-    setUsersList(newList);
+  /**
+   * Actualización puntual del perfil de un usuario por parte de un Administrador.
+   * Modifica ÚNICAMENTE los campos permitidos del perfil sin sobreescribir auth_user_id
+   * ni reescribir toda la tabla con upsert.
+   */
+  const adminUpdateUserProfile = async (userId, fields) => {
     try {
-      const dbPayload = newList.map(u => ({
-        id: u.id,
-        national_id: u.nationalId,
-        name: u.name,
-        role: u.role,
-        mine: u.mine,
-        group_name: u.group,
-        must_change_password: u.mustChangePassword,
-        avatar: u.avatar || '',
-        auth_user_id: u.authUserId || null
-      }));
-      await supabase.from('app_users').upsert(dbPayload);
-    } catch (e) {
-      console.warn('Error guardando usuarios en Supabase:', e);
+      const updatePayload = {};
+      if (fields.name !== undefined) updatePayload.name = fields.name.trim();
+      if (fields.role !== undefined) updatePayload.role = fields.role;
+      if (fields.mine !== undefined) updatePayload.mine = fields.mine;
+      if (fields.group !== undefined) updatePayload.group_name = fields.group;
+      if (fields.group_name !== undefined) updatePayload.group_name = fields.group_name;
+      if (fields.avatar !== undefined) updatePayload.avatar = fields.avatar;
+
+      const { error } = await supabase
+        .from('app_users')
+        .update(updatePayload)
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error actualizando perfil en app_users:', error.message);
+        throw error;
+      }
+
+      if (user && user.id === userId) {
+        setUser(prev => prev ? {
+          ...prev,
+          ...(updatePayload.name ? { name: updatePayload.name } : {}),
+          ...(updatePayload.role ? { role: updatePayload.role } : {}),
+          ...(updatePayload.mine ? { mine: updatePayload.mine } : {}),
+          ...(updatePayload.group_name ? { group: updatePayload.group_name } : {}),
+          ...(updatePayload.avatar !== undefined ? { avatar: updatePayload.avatar } : {})
+        } : null);
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('Excepción actualizando perfil de usuario:', err);
+      throw err;
     }
   };
 
@@ -533,11 +619,13 @@ export function AuthProvider({ children }) {
       login,
       logout,
       changePassword,
+      adminCreateUser,
       resetUserPassword,
+      adminUpdateUserProfile,
       updateUserAvatar,
       deleteUser,
       usersList,
-      setUsersList: updateUsersListGlobal,
+      setUsersList,
       activeMine,
       setActiveMine: changeActiveMine,
       activeShift,

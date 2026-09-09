@@ -1,6 +1,10 @@
 -- Script de Creación de Tablas para Camiones Caídos en Supabase
 
--- 1. Tabla de Usuarios
+-- 1. Tabla de Usuarios (Perfiles de aplicación vinculados a Supabase Auth)
+-- La autenticación se gestiona exclusivamente en auth.users (Supabase Auth).
+-- app_users almacena el perfil de aplicación y metadatos operativos.
+-- La columna legacy 'password' no pertenece a app_users.
+-- 'must_change_password' se conserva como bandera funcional válida.
 CREATE TABLE IF NOT EXISTS app_users (
     id TEXT PRIMARY KEY,
     national_id TEXT UNIQUE NOT NULL,
@@ -8,10 +12,10 @@ CREATE TABLE IF NOT EXISTS app_users (
     role TEXT NOT NULL DEFAULT 'Encargado',
     mine TEXT NOT NULL DEFAULT 'Pribbenow',
     group_name TEXT NOT NULL DEFAULT 'Grupo 1',
-    password TEXT NOT NULL DEFAULT 'caidos1234',
     must_change_password BOOLEAN DEFAULT TRUE,
     avatar TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    auth_user_id UUID UNIQUE
 );
 
 -- 2. Tabla de Operadores
@@ -64,8 +68,8 @@ CREATE POLICY "Acceso público actualización truck_reports" ON truck_reports FO
 CREATE POLICY "Acceso público eliminación truck_reports" ON truck_reports FOR DELETE USING (true);
 
 -- Insertar usuarios iniciales obligatorios si no existen
-INSERT INTO app_users (id, national_id, name, role, mine, group_name, password, must_change_password)
+INSERT INTO app_users (id, national_id, name, role, mine, group_name, must_change_password)
 VALUES 
-    ('u1', '7574445', 'Alexander Francisco Ramirez Cordoba', 'Administrador', 'El Descanso', 'Grupo 1', 'caidos1234', true),
-    ('u2', '1234567', 'Efrain Tafur', 'Encargado', 'El Descanso', 'Grupo 1', 'caidos1234', true)
+    ('u1', '7574445', 'Alexander Francisco Ramirez Cordoba', 'Administrador', 'El Descanso', 'Grupo 1', true),
+    ('u2', '1234567', 'Efrain Tafur', 'Encargado', 'El Descanso', 'Grupo 1', true)
 ON CONFLICT (national_id) DO NOTHING;
