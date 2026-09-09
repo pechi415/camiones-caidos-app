@@ -1,12 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_OPERATORS_808 } from '../data/operatorsList';
 import { getLocalDateISO, getOperationalDateISO } from '../utils/dateUtils';
 import { supabase } from '../lib/supabase';
 
 const ReportContext = createContext();
 
 const INITIAL_TRUCK_REPORTS = [];
-const INITIAL_OPERATORS = INITIAL_OPERATORS_808;
 
 // Mapeos de Reportes (Soporta nombres de Supabase y alias de la UI)
 const mapSupabaseReport = (r) => {
@@ -77,24 +75,6 @@ const mapAppOperatorToSupabase = (op) => ({
   avatar: op.avatar || ''
 });
 
-// Helper para fusionar lista inicial de 808 operadores con registros de Supabase
-const mergeOperators = (baseList, dbOps) => {
-  const map = new Map();
-  if (Array.isArray(baseList)) {
-    baseList.forEach(op => map.set(op.id, op));
-  }
-  if (Array.isArray(dbOps)) {
-    dbOps.forEach(raw => {
-      const mapped = mapSupabaseOperator(raw);
-      if (mapped.status === 'Eliminado') {
-        map.delete(mapped.id);
-      } else {
-        map.set(mapped.id, mapped);
-      }
-    });
-  }
-  return Array.from(map.values());
-};
 
 export function ReportProvider({ children }) {
   const [reports, setReports] = useState(() => {
@@ -110,15 +90,15 @@ export function ReportProvider({ children }) {
 
   const [operators, setOperators] = useState(() => {
     const saved = localStorage.getItem('camiones_operators');
-    if (!saved) return INITIAL_OPERATORS;
+    if (!saved) return [];
     try {
       const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed) || parsed.length < 100) {
-        return INITIAL_OPERATORS;
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return [];
       }
       return parsed;
     } catch (e) {
-      return INITIAL_OPERATORS;
+      return [];
     }
   });
 
@@ -156,13 +136,23 @@ export function ReportProvider({ children }) {
         localStorage.setItem('camiones_reports', JSON.stringify(mappedReps));
       }
 
-      // Cargar Operadores (Fusionando con la base de 808 sin borrado masivo)
+      // Cargar Operadores directamente desde Supabase (Fuente Primaria)
       const opsPromise = supabase.from('operators').select('*');
       const { data: dbOps, error: opErr } = await withTimeout(opsPromise, 12000).catch(() => ({ data: null, error: true }));
-      if (!opErr && Array.isArray(dbOps)) {
-        const mergedOps = mergeOperators(INITIAL_OPERATORS, dbOps);
-        setOperators(mergedOps);
-        localStorage.setItem('camiones_operators', JSON.stringify(mergedOps));
+
+      if (!opErr && Array.isArray(dbOps) && dbOps.length > 0) {
+        // Fuente Primaria: Supabase centralizado (excluir bajas lógicas y ordenar alfabéticamente)
+        const activeOps = dbOps
+          .map(mapSupabaseOperator)
+          .filter(op => op.status !== 'Eliminado')
+          .sort((a, b) => (a.name || '').trim().localeCompare((b.name || '').trim(), 'es', { sensitivity: 'base' }));
+
+        setOperators(activeOps);
+        localStorage.setItem('camiones_operators', JSON.stringify(activeOps));
+      } else if (opErr) {
+        console.warn('Error o timeout leyendo operators de Supabase:', opErr.message || opErr);
+      } else if (Array.isArray(dbOps) && dbOps.length === 0) {
+        console.warn('Supabase retornó 0 operadores; conservando catálogo en caché/fallback');
       }
     } catch (err) {
       console.warn('Excepción o timeout cargando datos desde Supabase:', err.message);
