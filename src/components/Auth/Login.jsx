@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Truck, LogIn, Eye, EyeOff, KeyRound, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Truck, LogIn, Eye, EyeOff, KeyRound, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -9,8 +9,9 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nationalId.trim()) {
       setErrorMsg('Por favor ingrese su número de identificación.');
@@ -21,9 +22,18 @@ export default function Login() {
       return;
     }
 
-    const result = login(nationalId, password);
-    if (!result.success) {
-      setErrorMsg(result.message);
+    setIsLoading(true);
+    setErrorMsg('');
+
+    try {
+      const result = await login(nationalId, password);
+      if (!result.success) {
+        setErrorMsg(result.message || 'Error al iniciar sesión.');
+      }
+    } catch {
+      setErrorMsg('No se pudo conectar con el servidor. Verifique su conexión.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -133,6 +143,7 @@ export default function Login() {
               className="glass-input"
               placeholder="Ej: 7574445"
               value={nationalId}
+              disabled={isLoading}
               onChange={(e) => {
                 setNationalId(e.target.value.replace(/\D/g, ''));
                 setErrorMsg('');
@@ -152,6 +163,7 @@ export default function Login() {
                 className="glass-input"
                 placeholder="Ingrese su contraseña"
                 value={password}
+                disabled={isLoading}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setErrorMsg('');
@@ -162,6 +174,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
                 style={{
                   position: 'absolute',
                   right: '12px',
@@ -201,16 +214,25 @@ export default function Login() {
           <button
             type="submit"
             className="btn-primary"
+            disabled={isLoading}
             style={{
               height: '48px',
               fontSize: '0.95rem',
               fontWeight: 700,
               width: '100%',
               marginTop: '4px',
-              boxShadow: '0 8px 20px rgba(229, 46, 46, 0.4)'
+              boxShadow: '0 8px 20px rgba(229, 46, 46, 0.4)',
+              opacity: isLoading ? 0.7 : 1,
+              cursor: isLoading ? 'not-allowed' : 'pointer'
             }}
           >
-            <LogIn size={18} /> Iniciar Sesión
+            {isLoading ? (
+              <span>Verificando credenciales...</span>
+            ) : (
+              <>
+                <LogIn size={18} /> Iniciar Sesión
+              </>
+            )}
           </button>
         </form>
       </div>

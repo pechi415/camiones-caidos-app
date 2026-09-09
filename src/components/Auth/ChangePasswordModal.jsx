@@ -11,12 +11,13 @@ export default function ChangePasswordModal({ isOpen }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useModalScrollLock(Boolean(isOpen && user));
 
   if (!isOpen || !user) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newPassword.trim()) {
       setErrorMsg('Por favor ingrese la nueva contraseña.');
@@ -35,11 +36,25 @@ export default function ChangePasswordModal({ isOpen }) {
       return;
     }
 
-    changePassword(user.id, newPassword);
-    setSuccessMsg('Contraseña actualizada correctamente. ¡Bienvenido!');
-    setTimeout(() => {
-      setSuccessMsg('');
-    }, 1200);
+    setIsLoading(true);
+    setErrorMsg('');
+
+    try {
+      await changePassword(user.id, newPassword);
+      setSuccessMsg('Contraseña actualizada correctamente. ¡Bienvenido!');
+      setTimeout(() => {
+        setSuccessMsg('');
+      }, 1200);
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg.includes('confirmación') || msg.includes('perfil') || msg.includes('registrada')) {
+        setErrorMsg('La contraseña fue registrada en el sistema de seguridad, pero la confirmación del perfil no pudo completarse. Por favor pulse nuevamente Guardar para completar el proceso.');
+      } else {
+        setErrorMsg(msg || 'Error al actualizar la contraseña. Intente nuevamente.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return createPortal(
@@ -122,6 +137,7 @@ export default function ChangePasswordModal({ isOpen }) {
               className="glass-input"
               placeholder="Mínimo 6 caracteres"
               value={newPassword}
+              disabled={isLoading}
               onChange={(e) => {
                 setNewPassword(e.target.value);
                 setErrorMsg('');
@@ -139,6 +155,7 @@ export default function ChangePasswordModal({ isOpen }) {
               className="glass-input"
               placeholder="Repita la nueva contraseña"
               value={confirmPassword}
+              disabled={isLoading}
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
                 setErrorMsg('');
@@ -150,15 +167,24 @@ export default function ChangePasswordModal({ isOpen }) {
           <button
             type="submit"
             className="btn-primary"
+            disabled={isLoading}
             style={{
               height: '46px',
               fontSize: '0.9rem',
               fontWeight: 700,
               width: '100%',
-              marginTop: '6px'
+              marginTop: '6px',
+              opacity: isLoading ? 0.7 : 1,
+              cursor: isLoading ? 'not-allowed' : 'pointer'
             }}
           >
-            <KeyRound size={18} /> Guardar Contraseña y Continuar
+            {isLoading ? (
+              <span>Actualizando contraseña...</span>
+            ) : (
+              <>
+                <KeyRound size={18} /> Guardar Contraseña y Continuar
+              </>
+            )}
           </button>
         </form>
       </div>

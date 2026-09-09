@@ -16,7 +16,7 @@ import Login from './components/Auth/Login';
 import ChangePasswordModal from './components/Auth/ChangePasswordModal';
 
 function MainContent() {
-  const { user, isAdmin, activeMine, activeShift } = useAuth();
+  const { user, isAdmin, activeMine, activeShift, loadingSession } = useAuth();
   const { reports, updateReportStatus, deleteReport } = useReports();
 
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | history | operators | users
@@ -36,6 +36,39 @@ function MainContent() {
       setActiveTab('dashboard');
     }
   }, [user, isAdmin, activeTab]);
+
+  if (loadingSession) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'radial-gradient(circle at 50% 20%, rgba(229, 46, 46, 0.15) 0%, rgba(10, 10, 15, 0.95) 70%)',
+        color: '#FFFFFF',
+        fontFamily: 'var(--font-sans)'
+      }}>
+        <div style={{
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          border: '3px solid rgba(229, 46, 46, 0.2)',
+          borderTopColor: 'var(--brand-red)',
+          animation: 'spin 0.8s linear infinite',
+          marginBottom: '16px'
+        }} />
+        <p style={{ fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.7)', letterSpacing: '0.5px' }}>
+          Iniciando sesión segura...
+        </p>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Login />;
