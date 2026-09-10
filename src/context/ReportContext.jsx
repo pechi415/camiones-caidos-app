@@ -103,7 +103,7 @@ export function ReportProvider({ children }) {
     }
   });
 
-  const { user } = useAuth();
+  const { user, loadingSession } = useAuth();
   const [dbStatus, setDbStatus] = useState('connecting'); // connecting | online | error
   const isSyncingRef = React.useRef(false);
   const currentAuthIdRef = React.useRef(user?.authUserId || null);
@@ -178,6 +178,8 @@ export function ReportProvider({ children }) {
 
   // Sincronizar ciclo de vida de datos con Supabase Auth
   useEffect(() => {
+    if (loadingSession) return;
+
     const authId = user?.authUserId || null;
     currentAuthIdRef.current = authId;
 
@@ -216,7 +218,7 @@ export function ReportProvider({ children }) {
       supabase.removeChannel(reportsChannel);
       supabase.removeChannel(operatorsChannel);
     };
-  }, [user?.authUserId]);
+  }, [user?.authUserId, loadingSession]);
 
   useEffect(() => {
     if (user?.authUserId) {
