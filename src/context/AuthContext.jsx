@@ -6,6 +6,8 @@ const AuthContext = createContext();
 
 const AUTH_DOMAIN = 'camionescaidos.internal';
 
+const CACHE_PROFILE_KEY = 'camiones_user_profile';
+
 /**
  * Normaliza la cédula eliminando espacios y caracteres no numéricos.
  */
@@ -18,6 +20,75 @@ const nationalIdToTechnicalEmail = (id) => {
   const cleaned = cleanNationalId(id);
   if (!cleaned) throw new Error('Cédula inválida para generar email técnico.');
   return `${cleaned}@${AUTH_DOMAIN}`;
+};
+
+/**
+ * Guarda el perfil validado en caché local para soporte offline seguro.
+ */
+const saveCachedProfile = (profile) => {
+  if (!profile || !profile.authUserId) return;
+  try {
+    localStorage.setItem(CACHE_PROFILE_KEY, JSON.stringify(profile));
+  } catch (err) {
+    console.warn('No fue posible guardar el perfil en caché local:', err);
+  }
+};
+
+/**
+ * Lee el perfil validado previamente desde el caché local.
+ */
+const getCachedProfile = () => {
+  try {
+    const raw = localStorage.getItem(CACHE_PROFILE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.authUserId) {
+      return parsed;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Error leyendo perfil en caché local:', err);
+    return null;
+  }
+};
+
+/**
+ * Elimina el perfil del caché local al cerrar sesión o invalidar credenciales.
+ */
+const clearCachedProfile = () => {
+  try {
+    localStorage.removeItem(CACHE_PROFILE_KEY);
+  } catch (err) {
+    console.warn('Error limpiando perfil en caché local:', err);
+  }
+};
+
+/**
+ * Determina de forma precisa si un error se debe a fallas de red, transporte o pérdida de conexión.
+ */
+const isNetworkOrConnectionError = (error, err) => {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return true;
+  }
+  if (error?.status === 0 || err?.status === 0 || (typeof TypeError !== 'undefined' && err instanceof TypeError)) {
+    return true;
+  }
+  const msg = (error?.message || err?.message || String(error || err || '')).toLowerCase();
+  if (
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network error') ||
+    msg.includes('timeout') ||
+    msg.includes('abort') ||
+    msg.includes('connection') ||
+    msg.includes('load failed') ||
+    msg.includes('offline') ||
+    msg.includes('err_internet_disconnected') ||
+    msg.includes('err_name_not_resolved')
+  ) {
+    return true;
+  }
+  return false;
 };
 
 export function AuthProvider({ children }) {
@@ -48,22 +119,49 @@ export function AuthProvider({ children }) {
   /**
    * Consulta el perfil de aplicación en public.app_users correspondiente
    * al auth_user_id autenticado en Supabase Auth.
-   * Solicita únicamente los campos de perfil necesarios (nunca contraseñas).
+   * Si la red falla, consulta de forma segura el perfil previamente validado en caché.
    */
-  const fetchProfileByAuthId = async (authUserId) => {
+  const fetchProfileByAuthId = async (authUserId, options = {}) => {
     try {
+      // Si el navegador ya detecta que no hay conexión y no se fuerza consulta al servidor
+      if (typeof navigator !== 'undefined' && navigator.onLine === false && !options.forceServer) {
+        const cached = getCachedProfile();
+        if (cached && cached.authUserId === authUserId) {
+          return { profile: cached, isNetworkError: true, notFound: false };
+        }
+        return { profile: null, isNetworkError: true, notFound: false };
+      }
+
       const { data, error } = await supabase
         .from('app_users')
         .select('id, national_id, name, role, mine, group_name, must_change_password, avatar, auth_user_id')
         .eq('auth_user_id', authUserId)
         .single();
 
-      if (error || !data) {
+      if (error) {
+        // Distinguir error de red vs error del servidor / usuario inexistente
+        if (isNetworkOrConnectionError(error)) {
+          const cached = getCachedProfile();
+          if (cached && cached.authUserId === authUserId) {
+            return { profile: cached, isNetworkError: true, notFound: false };
+          }
+          return { profile: null, isNetworkError: true, notFound: false };
+        }
+
+        // Si el código es PGRST116 (0 filas encontradas), el usuario fue eliminado de app_users
+        if (error.code === 'PGRST116') {
+          return { profile: null, isNetworkError: false, notFound: true };
+        }
+
         console.error('Error al consultar perfil en app_users por auth_user_id:', error);
-        return null;
+        return { profile: null, isNetworkError: false, notFound: false, error };
       }
 
-      return {
+      if (!data) {
+        return { profile: null, isNetworkError: false, notFound: true };
+      }
+
+      const freshProfile = {
         id: data.id,
         nationalId: data.national_id,
         name: data.name,
@@ -74,9 +172,22 @@ export function AuthProvider({ children }) {
         avatar: data.avatar || '',
         authUserId: data.auth_user_id
       };
+
+      // Guardar snapshot actualizado en caché local seguro
+      saveCachedProfile(freshProfile);
+
+      return { profile: freshProfile, isNetworkError: false, notFound: false };
     } catch (err) {
+      if (isNetworkOrConnectionError(null, err)) {
+        const cached = getCachedProfile();
+        if (cached && cached.authUserId === authUserId) {
+          return { profile: cached, isNetworkError: true, notFound: false };
+        }
+        return { profile: null, isNetworkError: true, notFound: false };
+      }
+
       console.error('Excepción consultando perfil por auth_user_id:', err);
-      return null;
+      return { profile: null, isNetworkError: false, notFound: false, error: err };
     }
   };
 
@@ -84,16 +195,17 @@ export function AuthProvider({ children }) {
    * Carga el perfil de aplicación deduplicando peticiones en curso y
    * reutilizando el perfil en memoria si ya fue cargado para el mismo auth_user_id.
    */
-  const getOrFetchProfile = async (authUserId) => {
+  const getOrFetchProfile = async (authUserId, options = {}) => {
     if (!authUserId) return null;
 
-    // Si ya tenemos el perfil de este auth_user_id cargado en memoria, reutilizarlo
-    if (currentAuthIdRef.current === authUserId && currentProfileRef.current) {
-      return currentProfileRef.current;
+    // Si ya tenemos el perfil de este auth_user_id cargado en memoria
+    if (!options.forceServer && currentAuthIdRef.current === authUserId && currentProfileRef.current) {
+      return { profile: currentProfileRef.current, isNetworkError: false, notFound: false };
     }
 
     // Si ya existe una petición en curso para este auth_user_id, reutilizar la misma promesa
     if (
+      !options.forceServer &&
       pendingProfilePromiseRef.current &&
       pendingProfilePromiseRef.current.authUserId === authUserId
     ) {
@@ -104,11 +216,11 @@ export function AuthProvider({ children }) {
 
     const fetchPromise = (async () => {
       try {
-        const profile = await fetchProfileByAuthId(authUserId);
-        if (profile) {
-          currentProfileRef.current = profile;
+        const result = await fetchProfileByAuthId(authUserId, options);
+        if (result?.profile && currentAuthIdRef.current === authUserId) {
+          currentProfileRef.current = result.profile;
         }
-        return profile;
+        return result;
       } finally {
         if (pendingProfilePromiseRef.current?.authUserId === authUserId) {
           pendingProfilePromiseRef.current = null;
@@ -160,7 +272,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 1. Inicialización de sesión oficial y escucha de cambios de Supabase Auth
+  // 1. Inicialización de sesión oficial, escucha de cambios de Supabase Auth y revalidación en reconexión
   useEffect(() => {
     let isMounted = true;
 
@@ -173,17 +285,26 @@ export function AuthProvider({ children }) {
 
         const sessionAuthId = session?.user?.id;
         if (sessionAuthId && isMounted) {
-          const profile = await getOrFetchProfile(sessionAuthId);
+          const result = await getOrFetchProfile(sessionAuthId);
+          const profile = result?.profile;
+
           if (profile && isMounted) {
             setUser(profile);
             if (profile.mine) {
               setActiveMine(profile.mine.replace(' (PB)', '').replace(' (ED)', ''));
             }
           } else if (isMounted) {
-            currentAuthIdRef.current = null;
-            currentProfileRef.current = null;
-            await supabase.auth.signOut();
-            setUser(null);
+            // Solo cerrar sesión si NO es un error de transporte/red
+            if (!result?.isNetworkError) {
+              clearCachedProfile();
+              currentAuthIdRef.current = null;
+              currentProfileRef.current = null;
+              await supabase.auth.signOut();
+              setUser(null);
+            } else {
+              // Error de red sin caché previo: mantener en login sin forzar signOut
+              setUser(null);
+            }
           }
         } else if (isMounted && !currentAuthIdRef.current) {
           setUser(null);
@@ -209,6 +330,7 @@ export function AuthProvider({ children }) {
       if (!isMounted) return;
 
       if (event === 'SIGNED_OUT') {
+        clearCachedProfile();
         currentAuthIdRef.current = null;
         currentProfileRef.current = null;
         pendingProfilePromiseRef.current = null;
@@ -221,17 +343,24 @@ export function AuthProvider({ children }) {
         const sessionAuthId = session?.user?.id;
         if (sessionAuthId) {
           try {
-            const profile = await getOrFetchProfile(sessionAuthId);
+            const result = await getOrFetchProfile(sessionAuthId);
+            const profile = result?.profile;
+
             if (profile && isMounted) {
               setUser(profile);
               if (profile.mine) {
                 setActiveMine(profile.mine.replace(' (PB)', '').replace(' (ED)', ''));
               }
             } else if (isMounted) {
-              currentAuthIdRef.current = null;
-              currentProfileRef.current = null;
-              await supabase.auth.signOut();
-              setUser(null);
+              if (!result?.isNetworkError) {
+                clearCachedProfile();
+                currentAuthIdRef.current = null;
+                currentProfileRef.current = null;
+                await supabase.auth.signOut();
+                setUser(null);
+              } else {
+                setUser(null);
+              }
             }
           } catch (err) {
             console.error('Error sincronizando perfil en evento auth:', err);
@@ -258,9 +387,55 @@ export function AuthProvider({ children }) {
       }
     });
 
+    // Revalidación silenciosa en segundo plano al recuperar la conexión a internet
+    const handleOnline = async () => {
+      if (!isMounted) return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const activeAuthId = session?.user?.id;
+        if (!activeAuthId) return;
+
+        const freshResult = await fetchProfileByAuthId(activeAuthId, { forceServer: true });
+        if (!isMounted || currentAuthIdRef.current !== activeAuthId) return;
+
+        if (freshResult?.profile) {
+          setUser(prev => {
+            const p = freshResult.profile;
+            if (
+              !prev ||
+              prev.role !== p.role ||
+              prev.mine !== p.mine ||
+              prev.name !== p.name ||
+              prev.group !== p.group ||
+              prev.mustChangePassword !== p.mustChangePassword ||
+              prev.avatar !== p.avatar
+            ) {
+              if (p.mine) {
+                setActiveMine(p.mine.replace(' (PB)', '').replace(' (ED)', ''));
+              }
+              return p;
+            }
+            return prev;
+          });
+        } else if (freshResult?.notFound) {
+          console.warn('Usuario eliminado o revocado del sistema. Cerrando sesión...');
+          clearCachedProfile();
+          currentAuthIdRef.current = null;
+          currentProfileRef.current = null;
+          await supabase.auth.signOut();
+          if (isMounted) setUser(null);
+        }
+      } catch (err) {
+        console.warn('Error durante la revalidación silenciosa en reconexión online:', err);
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+
     return () => {
       isMounted = false;
       subscription?.unsubscribe();
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 
@@ -299,17 +474,29 @@ export function AuthProvider({ children }) {
         password: inputPassword
       });
 
+      if (error) {
+        if (isNetworkOrConnectionError(error)) {
+          return { success: false, message: 'Sin conexión a internet. Para iniciar sesión se requiere conexión a la red.' };
+        }
+      }
+
       if (!error && data?.user) {
         authSuccess = true;
         authUser = data.user;
       }
     } catch (err) {
+      if (isNetworkOrConnectionError(null, err)) {
+        return { success: false, message: 'Sin conexión a internet. Para iniciar sesión se requiere conexión a la red.' };
+      }
       console.warn('Error intentando login con Supabase Auth:', err);
     }
 
     if (authSuccess && authUser) {
-      const profile = await getOrFetchProfile(authUser.id);
+      const result = await getOrFetchProfile(authUser.id, { forceServer: true });
+      const profile = result?.profile;
+
       if (!profile) {
+        clearCachedProfile();
         currentAuthIdRef.current = null;
         currentProfileRef.current = null;
         await supabase.auth.signOut();
@@ -339,6 +526,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.warn('Error al cerrar sesión en Supabase Auth:', err);
     } finally {
+      clearCachedProfile();
       currentAuthIdRef.current = null;
       currentProfileRef.current = null;
       pendingProfilePromiseRef.current = null;
@@ -371,8 +559,13 @@ export function AuthProvider({ children }) {
 
     if (currentProfileRef.current) {
       currentProfileRef.current.mustChangePassword = false;
+      saveCachedProfile(currentProfileRef.current);
     }
-    setUser(prev => prev ? { ...prev, mustChangePassword: false } : null);
+    setUser(prev => {
+      const updated = prev ? { ...prev, mustChangePassword: false } : null;
+      if (updated) saveCachedProfile(updated);
+      return updated;
+    });
     return { success: true };
   };
 
@@ -491,7 +684,14 @@ export function AuthProvider({ children }) {
     try {
       await supabase.from('app_users').update({ avatar: newAvatar }).eq('id', userId);
       if (user && user.id === userId) {
-        setUser(prev => prev ? { ...prev, avatar: newAvatar } : null);
+        setUser(prev => {
+          const updated = prev ? { ...prev, avatar: newAvatar } : null;
+          if (updated) {
+            saveCachedProfile(updated);
+            if (currentProfileRef.current) currentProfileRef.current.avatar = newAvatar;
+          }
+          return updated;
+        });
       }
       await loadUsersForAdmin();
     } catch (e) {
@@ -581,14 +781,21 @@ export function AuthProvider({ children }) {
       }
 
       if (user && user.id === userId) {
-        setUser(prev => prev ? {
-          ...prev,
-          ...(updatePayload.name ? { name: updatePayload.name } : {}),
-          ...(updatePayload.role ? { role: updatePayload.role } : {}),
-          ...(updatePayload.mine ? { mine: updatePayload.mine } : {}),
-          ...(updatePayload.group_name ? { group: updatePayload.group_name } : {}),
-          ...(updatePayload.avatar !== undefined ? { avatar: updatePayload.avatar } : {})
-        } : null);
+        setUser(prev => {
+          const updated = prev ? {
+            ...prev,
+            ...(updatePayload.name ? { name: updatePayload.name } : {}),
+            ...(updatePayload.role ? { role: updatePayload.role } : {}),
+            ...(updatePayload.mine ? { mine: updatePayload.mine } : {}),
+            ...(updatePayload.group_name ? { group: updatePayload.group_name } : {}),
+            ...(updatePayload.avatar !== undefined ? { avatar: updatePayload.avatar } : {})
+          } : null;
+          if (updated) {
+            saveCachedProfile(updated);
+            if (currentProfileRef.current) currentProfileRef.current = updated;
+          }
+          return updated;
+        });
       }
 
       return { success: true };
