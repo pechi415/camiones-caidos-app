@@ -44,5 +44,44 @@ export default defineConfig({
         enabled: true
       }
     })
-  ]
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/xlsx') ||
+            id.includes('node_modules/codepage') ||
+            id.includes('node_modules/cfb') ||
+            id.includes('node_modules/ssf') ||
+            id.includes('node_modules/adler-32') ||
+            id.includes('node_modules/crc-32') ||
+            id.includes('node_modules/wmf') ||
+            id.includes('node_modules/word')
+          ) {
+            return 'vendor-export-xlsx';
+          }
+          if (
+            id.includes('node_modules/jspdf') ||
+            id.includes('node_modules/jspdf-autotable') ||
+            id.includes('node_modules/html2canvas') ||
+            id.includes('node_modules/dompurify') ||
+            id.includes('node_modules/purify')
+          ) {
+            return 'vendor-export-pdf';
+          }
+          if (id.includes('node_modules/@supabase/')) {
+            return 'vendor-supabase';
+          }
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+        }
+      }
+    }
+  }
 })
