@@ -1,4 +1,4 @@
--- Script de Creación de Tablas para Camiones Caídos en Supabase
+-- Script de Creación de Tablas, Funciones y Seguridad para Camiones Caídos en Supabase
 
 -- 1. Tabla de Usuarios (Perfiles de aplicación vinculados a Supabase Auth)
 -- La autenticación se gestiona exclusivamente en auth.users (Supabase Auth).
@@ -44,32 +44,200 @@ CREATE TABLE IF NOT EXISTS truck_reports (
     actual_return_time TEXT,
     date TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    operator_id TEXT
 );
 
--- Habilitar Row Level Security (RLS) y permitir lectura/escritura pública
+-- ==============================================================================
+-- 4. Funciones Helper de Autorización (SECURITY DEFINER, STABLE, search_path = public)
+-- ==============================================================================
+
+CREATE OR REPLACE FUNCTION public.get_auth_user_role()
+RETURNS text
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT role FROM public.app_users WHERE auth_user_id = auth.uid() LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_auth_user_mine()
+RETURNS text
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT mine FROM public.app_users WHERE auth_user_id = auth.uid() LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.app_users
+    WHERE auth_user_id = auth.uid() AND role = 'Administrador'
+  );
+$$;
+
+-- Restricción de permisos de ejecución: solo authenticated y service_role
+REVOKE EXECUTE ON FUNCTION public.get_auth_user_role() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_auth_user_mine() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_admin() FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION public.get_auth_user_role() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_auth_user_mine() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
+
+-- ==============================================================================
+-- 5. Blindaje de Columnas de app_users (Trigger BEFORE UPDATE)
+-- ==============================================================================
+
+CREATE OR REPLACE FUNCTION public.trg_protect_app_users_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  -- 1. Reglas de Inmutabilidad Absoluta (Aplica a TODO UPDATE: Admin, service_role y usuarios):
+  IF NEW.id IS DISTINCT FROM OLD.id THEN
+    RAISE EXCEPTION 'Operación denegada: id es inmutable.' USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.national_id IS DISTINCT FROM OLD.national_id THEN
+    RAISE EXCEPTION 'Operación denegada: national_id es inmutable.' USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.auth_user_id IS DISTINCT FROM OLD.auth_user_id THEN
+    RAISE EXCEPTION 'Operación denegada: auth_user_id es inmutable.' USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'Operación denegada: created_at es inmutable.' USING ERRCODE = '42501';
+  END IF;
+
+  -- 2. Bypass seguro para backend / service_role (Edge Functions con service_role o DBA directo sin JWT):
+  -- CRÍTICO: NO usar current_user = 'postgres' porque al ser una función SECURITY DEFINER,
+  -- current_user siempre evalúa al dueño de la función ('postgres') para TODOS los llamantes (incluso anon o Digitador).
+  -- Se valida estrictamente el claim del token JWT o una sesión nativa de base de datos sin JWT:
+  IF (auth.jwt() ->> 'role') = 'service_role' OR (session_user = 'postgres' AND auth.jwt() IS NULL) THEN
+    RETURN NEW;
+  END IF;
+
+  -- 3. Restricciones para usuarios NO Administradores:
+  IF NOT public.is_admin() THEN
+    -- Prohibir alteración de role
+    IF NEW.role IS DISTINCT FROM OLD.role THEN
+      RAISE EXCEPTION 'Operación denegada: No tiene privilegios para modificar role.' USING ERRCODE = '42501';
+    END IF;
+
+    -- Prohibir alteración de mine
+    IF NEW.mine IS DISTINCT FROM OLD.mine THEN
+      RAISE EXCEPTION 'Operación denegada: No tiene privilegios para modificar mine.' USING ERRCODE = '42501';
+    END IF;
+
+    -- Prohibir alteración de group_name
+    IF NEW.group_name IS DISTINCT FROM OLD.group_name THEN
+      RAISE EXCEPTION 'Operación denegada: No tiene privilegios para modificar group_name.' USING ERRCODE = '42501';
+    END IF;
+
+    -- Prohibir alteración de name
+    IF NEW.name IS DISTINCT FROM OLD.name THEN
+      RAISE EXCEPTION 'Operación denegada: No tiene privilegios para modificar name.' USING ERRCODE = '42501';
+    END IF;
+
+    -- Respecto a must_change_password:
+    -- permitir true -> false, pero impedir false -> true
+    IF OLD.must_change_password IS FALSE AND NEW.must_change_password IS TRUE THEN
+      RAISE EXCEPTION 'Operación denegada: No puede reactivar el cambio obligatorio de contraseña.' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS protect_app_users_columns_trigger ON public.app_users;
+CREATE TRIGGER protect_app_users_columns_trigger
+BEFORE UPDATE ON public.app_users
+FOR EACH ROW
+EXECUTE FUNCTION public.trg_protect_app_users_columns();
+
+-- ==============================================================================
+-- 6. Row Level Security (RLS) y Policies Restrictivas (11 Policies)
+-- ==============================================================================
+
 ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE operators ENABLE ROW LEVEL SECURITY;
 ALTER TABLE truck_reports ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Acceso público lectura app_users" ON app_users FOR SELECT USING (true);
-CREATE POLICY "Acceso público inserción app_users" ON app_users FOR INSERT WITH CHECK (true);
-CREATE POLICY "Acceso público actualización app_users" ON app_users FOR UPDATE USING (true);
-CREATE POLICY "Acceso público eliminación app_users" ON app_users FOR DELETE USING (true);
+-- ------------------------------------------------------------------------------
+-- 6.1 Policies para public.app_users (3 policies)
+-- Nota: No hay policies de INSERT ni DELETE para authenticated; la creación y
+-- eliminación se realiza de forma segura vía Edge Functions (service_role).
+-- ------------------------------------------------------------------------------
+CREATE POLICY "app_users_select_authenticated" ON public.app_users
+FOR SELECT TO authenticated
+USING (is_admin() OR (auth_user_id = auth.uid()));
 
-CREATE POLICY "Acceso público lectura operators" ON operators FOR SELECT USING (true);
-CREATE POLICY "Acceso público inserción operators" ON operators FOR INSERT WITH CHECK (true);
-CREATE POLICY "Acceso público actualización operators" ON operators FOR UPDATE USING (true);
-CREATE POLICY "Acceso público eliminación operators" ON operators FOR DELETE USING (true);
+CREATE POLICY "app_users_update_admin" ON public.app_users
+FOR UPDATE TO authenticated
+USING (is_admin())
+WITH CHECK (is_admin());
 
-CREATE POLICY "Acceso público lectura truck_reports" ON truck_reports FOR SELECT USING (true);
-CREATE POLICY "Acceso público inserción truck_reports" ON truck_reports FOR INSERT WITH CHECK (true);
-CREATE POLICY "Acceso público actualización truck_reports" ON truck_reports FOR UPDATE USING (true);
-CREATE POLICY "Acceso público eliminación truck_reports" ON truck_reports FOR DELETE USING (true);
+CREATE POLICY "app_users_update_self" ON public.app_users
+FOR UPDATE TO authenticated
+USING (auth_user_id = auth.uid())
+WITH CHECK (auth_user_id = auth.uid());
 
--- Insertar usuarios iniciales obligatorios si no existen
+-- ------------------------------------------------------------------------------
+-- 6.2 Policies para public.operators (4 policies)
+-- ------------------------------------------------------------------------------
+CREATE POLICY "operators_select_authenticated" ON public.operators
+FOR SELECT TO authenticated
+USING (true);
+
+CREATE POLICY "operators_insert_admin" ON public.operators
+FOR INSERT TO authenticated
+WITH CHECK (is_admin());
+
+CREATE POLICY "operators_update_admin" ON public.operators
+FOR UPDATE TO authenticated
+USING (is_admin())
+WITH CHECK (is_admin());
+
+CREATE POLICY "operators_delete_admin" ON public.operators
+FOR DELETE TO authenticated
+USING (is_admin());
+
+-- ------------------------------------------------------------------------------
+-- 6.3 Policies para public.truck_reports (4 policies)
+-- ------------------------------------------------------------------------------
+CREATE POLICY "truck_reports_select_authenticated" ON public.truck_reports
+FOR SELECT TO authenticated
+USING (is_admin() OR (mine = get_auth_user_mine()));
+
+CREATE POLICY "truck_reports_insert_authenticated" ON public.truck_reports
+FOR INSERT TO authenticated
+WITH CHECK (is_admin() OR (mine = get_auth_user_mine()));
+
+CREATE POLICY "truck_reports_update_authenticated" ON public.truck_reports
+FOR UPDATE TO authenticated
+USING (is_admin() OR (mine = get_auth_user_mine()))
+WITH CHECK (is_admin() OR (mine = get_auth_user_mine()));
+
+CREATE POLICY "truck_reports_delete_authenticated" ON public.truck_reports
+FOR DELETE TO authenticated
+USING (is_admin() OR ((get_auth_user_role() = 'Encargado') AND (mine = get_auth_user_mine())));
+
+-- ==============================================================================
+-- 7. Datos Iniciales Obligatorios (Seed Opcional)
+-- ==============================================================================
 INSERT INTO app_users (id, national_id, name, role, mine, group_name, must_change_password)
 VALUES 
     ('u1', '7574445', 'Alexander Francisco Ramirez Cordoba', 'Administrador', 'El Descanso', 'Grupo 1', true),
-    ('u2', '1234567', 'Efrain Tafur', 'Encargado', 'El Descanso', 'Grupo 1', true)
+    ('u2', '18955918', 'Efrain Jose Tafur Buelvas', 'Encargado', 'El Descanso', 'Grupo 1', false)
 ON CONFLICT (national_id) DO NOTHING;
