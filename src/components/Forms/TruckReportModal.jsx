@@ -67,10 +67,21 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
     if (!isOpen) return;
 
     if (editingReport) {
+      const currentOpName = editingReport.operatorName || editingReport.operator || '';
+      let resolvedOperatorId = editingReport.operatorId || '';
+
+      // Resolución automática para reportes históricos sin operatorId si hay coincidencia única inequívoca
+      if (!resolvedOperatorId && currentOpName) {
+        const matches = operators.filter(op => op.name === currentOpName);
+        if (matches.length === 1) {
+          resolvedOperatorId = matches[0].id;
+        }
+      }
+
       setFormData({
         truckId: editingReport.truckId || '',
-        operatorId: editingReport.operatorId || '',
-        operatorName: editingReport.operatorName || editingReport.operator || '',
+        operatorId: resolvedOperatorId,
+        operatorName: currentOpName,
         mine: editingReport.mine || activeMine,
         shift: editingReport.shift || getCurrentShiftByTime(),
         reportTime: editingReport.reportTime || editingReport.downTime || '',
