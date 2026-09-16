@@ -18,7 +18,6 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [loadingDoc, setLoadingDoc] = useState(null); // 'user' | 'admin' | null
   const [docError, setDocError] = useState(null);
-  const [fallbackUrl, setFallbackUrl] = useState(null);
   const avatarInputRef = useRef(null);
 
   const handleSelfAvatarUpload = async (e) => {
@@ -40,7 +39,6 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
 
     setLoadingDoc(docType);
     setDocError(null);
-    setFallbackUrl(null);
 
     try {
       const { data, error } = await supabase.functions.invoke('get-doc-url', {
@@ -67,17 +65,19 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
       }
 
       const signedUrl = data.url;
-      const newWindow = window.open(signedUrl, '_blank', 'noopener,noreferrer');
 
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        // Bloqueador de popups detectado: no redirigir la PWA, conservar la URL en memoria y ofrecer fallback interactivo
-        setFallbackUrl(signedUrl);
-      } else {
-        // Apertura exitosa en nueva pestaña: cerrar menú y limpiar estados
-        setShowRoleMenu(false);
-        setDocError(null);
-        setFallbackUrl(null);
-      }
+      // Navegación segura mediante elemento <a> nativo con target="_blank" y rel="noopener noreferrer"
+      const link = document.createElement('a');
+      link.href = signedUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cierre del menú y limpieza de estados sin falsos positivos
+      setShowRoleMenu(false);
+      setDocError(null);
     } catch (err) {
       console.error('Error al solicitar URL del manual:', err);
       setDocError('Error de conexión al obtener el documento.');
@@ -89,7 +89,6 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
   const toggleRoleMenu = () => {
     if (showRoleMenu) {
       setDocError(null);
-      setFallbackUrl(null);
       setShowRoleMenu(false);
     } else {
       setShowRoleMenu(true);
@@ -214,7 +213,6 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
               type="button"
               onClick={() => {
                 setDocError(null);
-                setFallbackUrl(null);
                 setShowRoleMenu(false);
                 avatarInputRef.current?.click();
               }}
@@ -349,44 +347,6 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                   <div style={{ flex: 1 }}>{docError}</div>
                 </div>
               )}
-
-              {/* Enlace Fallback si el Navegador Bloqueó la Ventana Emergente */}
-              {fallbackUrl && (
-                <div style={{
-                  marginTop: '4px',
-                  marginBottom: '4px',
-                  padding: '6px 8px',
-                  borderRadius: '8px',
-                  background: 'rgba(234, 179, 8, 0.15)',
-                  border: '1px solid rgba(234, 179, 8, 0.35)',
-                  color: '#FEF08A',
-                  fontSize: '0.74rem',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ marginBottom: '6px' }}>No se pudo abrir automáticamente.</div>
-                  <a
-                    href={fallbackUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      setFallbackUrl(null);
-                      setShowRoleMenu(false);
-                    }}
-                    style={{
-                      display: 'inline-block',
-                      color: '#0F1115',
-                      background: 'var(--brand-beige)',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    Abrir Manual
-                  </a>
-                </div>
-              )}
             </div>
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '6px', paddingTop: '6px' }}>
@@ -394,7 +354,6 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                 type="button"
                 onClick={() => {
                   setDocError(null);
-                  setFallbackUrl(null);
                   setShowRoleMenu(false);
                   logout();
                 }}
