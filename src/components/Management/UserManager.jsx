@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { Users, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
@@ -23,16 +24,16 @@ export default function UserManager() {
     updateUserAvatar
   } = useAuth();
 
+  const { toast } = useToast();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [resetConfirmUser, setResetConfirmUser] = useState(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
-  const [resetMsg, setResetMsg] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
 
   useModalScrollLock(Boolean(editingUser || resetConfirmUser || deleteConfirmUser));
 
@@ -46,9 +47,11 @@ export default function UserManager() {
       if (targetUserId) {
         await updateUserAvatar(targetUserId, compressed);
         setUsersList(prev => prev.map(u => u.id === targetUserId ? { ...u, avatar: compressed } : u));
+        toast.success('Foto de perfil actualizada correctamente.');
       }
     } catch (err) {
       console.error('Error al procesar foto de usuario:', err);
+      toast.error('No se pudo actualizar la foto de perfil.');
     }
   };
 
@@ -78,8 +81,7 @@ export default function UserManager() {
 
       if (result.success) {
         setShowAddForm(false);
-        setResetMsg(`✅ Usuario ${result.user.name} registrado exitosamente en el sistema.`);
-        setTimeout(() => setResetMsg(''), 7000);
+        toast.success(`Usuario ${result.user?.name || userData.name} registrado exitosamente.`);
       } else {
         setCreateError(result.error || 'Error al registrar el usuario.');
       }
@@ -115,54 +117,54 @@ export default function UserManager() {
       } : u)));
 
       setEditingUser(null);
-      setResetMsg(`✅ Usuario ${cleanName} actualizado correctamente.`);
-      setTimeout(() => setResetMsg(''), 7000);
+      toast.success(`Usuario ${cleanName} actualizado correctamente.`);
     } catch (err) {
       console.error('Error al actualizar usuario:', err);
-      setDeleteError('No fue posible actualizar el perfil del usuario.');
-      setTimeout(() => setDeleteError(''), 7000);
+      toast.error('No fue posible actualizar el perfil del usuario.');
     }
   };
 
   const handleDeleteUser = (targetUser) => {
     if (deleteLoading) return;
-    if (usersList.length <= 1) {
-      setDeleteError('Debe permanecer al menos un usuario en el sistema.');
-      setTimeout(() => setDeleteError(''), 7000);
+    if (targetUser?.id === user?.id) {
+      toast.error('No es posible eliminarse a sí mismo como administrador.');
       return;
     }
-    setDeleteError('');
+    if (usersList.length <= 1) {
+      toast.error('Debe permanecer al menos un usuario en el sistema.');
+      return;
+    }
     setDeleteConfirmUser(targetUser);
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirmUser || deleteLoading) return;
+    if (deleteConfirmUser.id === user?.id) {
+      toast.error('No es posible eliminarse a sí mismo como administrador.');
+      setDeleteConfirmUser(null);
+      return;
+    }
     if (usersList.length <= 1) {
-      setDeleteError('Debe permanecer al menos un usuario en el sistema.');
-      setTimeout(() => setDeleteError(''), 7000);
+      toast.error('Debe permanecer al menos un usuario en el sistema.');
       setDeleteConfirmUser(null);
       return;
     }
 
     setDeleteLoading(true);
-    setDeleteError('');
     try {
       const result = await deleteUser(deleteConfirmUser.id);
       if (result.success) {
         const deletedName = deleteConfirmUser.name;
         setDeleteConfirmUser(null);
-        setResetMsg(`✅ Usuario ${deletedName} eliminado exitosamente del sistema.`);
-        setTimeout(() => setResetMsg(''), 7000);
+        toast.success(`Usuario ${deletedName} eliminado exitosamente del sistema.`);
       } else {
         setDeleteConfirmUser(null);
-        setDeleteError(result.error || 'No fue posible eliminar el usuario.');
-        setTimeout(() => setDeleteError(''), 7000);
+        toast.error(result.error || 'No fue posible eliminar el usuario.');
       }
     } catch (err) {
       console.error('Error al eliminar usuario:', err);
       setDeleteConfirmUser(null);
-      setDeleteError('Error inesperado al intentar eliminar el usuario.');
-      setTimeout(() => setDeleteError(''), 7000);
+      toast.error('Error inesperado al intentar eliminar el usuario.');
     } finally {
       setDeleteLoading(false);
     }
@@ -175,15 +177,15 @@ export default function UserManager() {
     try {
       const result = await resetUserPassword(resetConfirmUser.id);
       if (result.success) {
-        setResetMsg(`✅ Contraseña de ${resetConfirmUser.name} restablecida exitosamente a la clave temporal.`);
+        const userName = resetConfirmUser.name;
         setResetConfirmUser(null);
-        setTimeout(() => setResetMsg(''), 7000);
+        toast.success(`Contraseña de ${userName} restablecida exitosamente.`);
       } else {
-        alert(result.error || 'Error al restablecer la contraseña.');
+        toast.error(result.error || 'Error al restablecer la contraseña.');
       }
     } catch (err) {
       console.error('Error al restablecer contraseña:', err);
-      alert('Error inesperado al restablecer la contraseña.');
+      toast.error('Error inesperado al restablecer la contraseña.');
     } finally {
       setResetLoading(false);
     }
@@ -254,41 +256,6 @@ export default function UserManager() {
             </div>
           )}
           <UserAddForm onAddUser={handleAddSubmit} />
-        </div>
-      )}
-
-      {/* Mensaje de Confirmación de Restablecimiento / Eliminación */}
-      {resetMsg && (
-        <div style={{
-          background: 'rgba(34, 197, 94, 0.2)',
-          border: '1px solid rgba(34, 197, 94, 0.4)',
-          color: '#4ADE80',
-          padding: '12px 16px',
-          borderRadius: '12px',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          marginBottom: '16px'
-        }}>
-          {resetMsg}
-        </div>
-      )}
-
-      {/* Mensaje de Error Visual en Eliminación */}
-      {deleteError && (
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.15)',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          color: '#F87171',
-          padding: '12px 16px',
-          borderRadius: '12px',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          ⚠️ {deleteError}
         </div>
       )}
 

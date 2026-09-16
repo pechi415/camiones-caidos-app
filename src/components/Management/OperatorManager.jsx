@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { UserCheck, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import OperatorDeleteModal from './Operators/OperatorDeleteModal';
@@ -13,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 export default function OperatorManager() {
   const { operators, addOperator, editOperator, deleteOperator } = useReports();
   const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOp, setEditingOp] = useState(null);
@@ -33,19 +35,27 @@ export default function OperatorManager() {
     };
 
     try {
-      await supabase.from('operators').upsert([{
+      const { error } = await supabase.from('operators').upsert([{
         id: opId,
         name: cleanName,
         mine: opPayload.mine,
         group_name: opPayload.group,
         status: 'Activo'
       }]);
-    } catch (err) {
-      console.warn('Error persistiendo operador en Supabase:', err);
-    }
 
-    addOperator(opPayload);
-    setShowAddForm(false);
+      if (error) {
+        console.error('Error persistiendo operador en Supabase:', error);
+        toast.error('No fue posible registrar el operador.');
+        return;
+      }
+
+      addOperator(opPayload);
+      setShowAddForm(false);
+      toast.success(`Operador ${cleanName} registrado correctamente.`);
+    } catch (err) {
+      console.error('Error al registrar operador:', err);
+      toast.error('Error inesperado al registrar el operador.');
+    }
   };
 
   const handleEditSave = async (updatedData) => {
@@ -63,6 +73,7 @@ export default function OperatorManager() {
 
       if (error) {
         console.error('Error al actualizar operador en Supabase:', error);
+        toast.error('No fue posible actualizar el operador.');
         return;
       }
 
@@ -72,8 +83,24 @@ export default function OperatorManager() {
         group: updatedData.group || 'Grupo 1'
       });
       setEditingOp(null);
+      toast.success(`Operador ${cleanName} actualizado correctamente.`);
     } catch (err) {
       console.error('Excepción al actualizar operador en Supabase:', err);
+      toast.error('Error inesperado al actualizar el operador.');
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmOp) return;
+    const opName = deleteConfirmOp.name;
+    try {
+      await deleteOperator(deleteConfirmOp.id);
+      setDeleteConfirmOp(null);
+      toast.success(`Operador ${opName} eliminado correctamente.`);
+    } catch (err) {
+      console.error('Error al eliminar operador:', err);
+      setDeleteConfirmOp(null);
+      toast.error('No fue posible eliminar el operador.');
     }
   };
 
@@ -130,10 +157,7 @@ export default function OperatorManager() {
       <OperatorDeleteModal
         operator={deleteConfirmOp}
         onClose={() => setDeleteConfirmOp(null)}
-        onConfirm={() => {
-          deleteOperator(deleteConfirmOp.id);
-          setDeleteConfirmOp(null);
-        }}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );
