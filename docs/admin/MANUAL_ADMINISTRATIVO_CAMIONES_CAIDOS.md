@@ -10,7 +10,7 @@
 ## 1. INTRODUCCIÓN ADMINISTRATIVA
 El presente Manual Administrativo establece los estándares y procedimientos para la administración y supervisión técnica y funcional de la plataforma **Camiones Caídos** en las operaciones mineras de acarreo de carbón a cielo abierto de **Mina Pribbenow** y **Mina El Descanso**.
 
-A través de este documento, el Administrador y el Encargado de Despacho/Mantenimiento comprenderán exactamente cómo gestionar cuentas de usuario, mantener depurado el censo de operadores, gobernar la segregación territorial de datos entre minas y coordinar el ciclo de vida de los reportes de camiones caídos.
+A través de este documento, el Administrador y el Encargado comprenderán exactamente cómo gestionar cuentas de usuario, mantener depurado el censo de operadores, gobernar la segregación territorial de datos entre minas y coordinar el ciclo de vida de los reportes de camiones caídos.
 
 ---
 
@@ -29,7 +29,7 @@ El sistema implementa tres niveles de rol, de los cuales dos tienen responsabili
 El módulo de Gestión de Usuarios es de acceso exclusivo para el rol Administrador y se encuentra disponible en la barra superior o menú de navegación.
 
 ### 3.1 Directorio, Búsqueda Reactiva y Orden A-Z
-El directorio lista los 22 usuarios registrados en el sistema. Cuenta con una barra de búsqueda reactiva que filtra en tiempo real por nombre, número de cédula o grupo operativo. El listado se mantiene automáticamente clasificado en orden alfabético A-Z de acuerdo con el nombre del colaborador.
+El directorio lista los usuarios registrados en el sistema. Cuenta con una barra de búsqueda reactiva que filtra en tiempo real por nombre, número de cédula o grupo operativo. El listado se mantiene automáticamente clasificado en orden alfabético A-Z de acuerdo con el nombre del colaborador.
 
 ### 3.2 Registro de un Nuevo Usuario (Paso a Paso)
 1. En la pestaña Usuarios, pulse el botón rojo **"+ Crear Nuevo Usuario"**.
@@ -37,7 +37,7 @@ El directorio lista los 22 usuarios registrados en el sistema. Cuenta con una ba
 3. **Número de Cédula (Obligatorio):** Digite la identificación oficial sin puntos ni comas (mínimo 5 dígitos numéricos). Constituye el usuario de login.
 4. **Rol:** Seleccione entre Administrador, Encargado o Digitador según las funciones operacionales del trabajador.
 5. **Mina:** Asigne El Descanso o Pribbenow. Si el rol es Administrador, tendrá alcance a ambas sedes independientemente de la sede base.
-6. **Grupo:** Asigne el grupo de turno correspondiente (Grupo 1, Grupo 2, Grupo 3 o Grupo 4).
+6. **Grupo:** Asigne el grupo de turno correspondiente (Grupo 1, Grupo 2 o Grupo 3).
 7. **Fotografía / Avatar (Opcional):** Permite cargar una foto que se comprime automáticamente en el navegador para no saturar la red.
 8. **Guardar:** Presione "Guardar Usuario". La cuenta se sincroniza atómicamente con Supabase Auth y la base de datos.
 
@@ -70,14 +70,14 @@ A partir de la auditoría de código en `admin-create-user` y `admin-reset-passw
 - **Valor Oficial de Clave Temporal:** `caidos1234` (verificada idéntica tanto en creación como en reseteo).
 - **Comportamiento:** Todo usuario nuevo o reseteado queda registrado con `must_change_password: true`.
 - **Pantalla Bloqueante:** Al ingresar con `caidos1234`, la aplicación intercepta la sesión y despliega de inmediato un modal bloqueante que exige definir una contraseña personal.
-- **Reglas de Seguridad:** Mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo especial; confirmación coincidente obligatoria; no se admite volver a usar la clave temporal.
+- **Reglas de Seguridad:** Mínimo 6 caracteres; confirmación coincidente obligatoria; no se admite volver a usar la clave temporal `caidos1234`.
 
 ---
 
 ## 6. ADMINISTRACIÓN DEL CENSO DE OPERADORES
-El módulo Gestión de Operadores administra el censo oficial de 814 conductores de camiones de extracción:
+El módulo Gestión de Operadores administra el censo oficial de operadores de camiones de extracción:
 
-- **Búsqueda y Filtros:** Búsqueda reactiva por nombre, filtro por Mina (Todas, Pribbenow, El Descanso) y filtro por Grupo de Turno (Todos, Grupo 1 a 4).
+- **Búsqueda y Filtros:** Búsqueda reactiva por nombre, filtro por Mina (Todas, Pribbenow, El Descanso) y filtro por Grupo de Turno (Todos, Grupo 1 a 3).
 - **Orden A-Z:** Clasificación alfabética continua según apellidos y nombres.
 - **Registro de Operador:** Botón "+ Registrar Nuevo Operador", id generado `OP-xxx-xxxx`, mayúsculas automáticas y estado 'Activo'.
 - **Reglas de Eliminación:** La eliminación física está reservada exclusivamente para el Administrador vía RLS (`operators_delete_admin`). En la base de datos se conserva el snapshot textual en todos los reportes históricos previos.
@@ -87,7 +87,7 @@ El módulo Gestión de Operadores administra el censo oficial de 814 conductores
 ## 7. ADMINISTRACIÓN DE REPORTES DE CAMIONES
 El control de flota en campo se realiza desde el Dashboard principal:
 
-- **Creación:** Botón "+ Registrar Camión Caído". Se selecciona el número de camión (serie 2xxx de 4 dígitos), se autocompleta el operador desde el censo oficial (814), se selecciona subsistema mecánico/eléctrico, componente, síntoma, bahía/tajo y hora de caída.
+- **Creación:** Botón "+ Registrar Camión Caído". Se selecciona el número de camión (serie 2xxx de 4 dígitos), se autocompleta el operador desde el censo oficial, se selecciona subsistema mecánico/eléctrico, componente, síntoma, bahía/Pit y hora de caída.
 - **Transición DOWN / OPERATIVO:** Los camiones caídos inician en estado DOWN. Al repararse, el Encargado presiona 'Operativo', registra la hora real de retorno y confirma la salida a circuito.
 - **Reapertura:** Si una unidad entregada vuelve a fallar o requiere ajuste de diagnóstico, el Encargado puede pulsar 'Reabrir' para reintegrarlo a la lista de caídos.
 - **Eliminación según Rol:** El Administrador puede eliminar cualquier reporte erróneo. El Encargado puede eliminar reportes únicamente si pertenecen a su propia mina. El Digitador tiene la eliminación bloqueada.
@@ -97,7 +97,7 @@ El control de flota en campo se realiza desde el Dashboard principal:
 ## 8. CONTROL Y AISLAMIENTO POR MINA
 La plataforma opera bajo el principio de estricta segregación minera:
 
-- Mina Pribbenow y Mina El Descanso cuentan con tajos, flotas y despachos independientes.
+- Mina Pribbenow y Mina El Descanso cuentan con Pit, flotas y despachos independientes.
 - Los Encargados y Digitadores tienen restringida su vista mediante Row Level Security (`mine = get_auth_user_mine()`). Un encargado de El Descanso no puede ver ni modificar datos de Pribbenow.
 - El Administrador dispone de un selector global en el encabezado para alternar entre minas o supervisar la operación consolidada.
 
@@ -124,8 +124,8 @@ La plataforma permite emitir documentos oficiales con un solo clic:
 
 ## 11. PWA Y OPERACIÓN SIN CONEXIÓN
 - **Instalación en Móviles:** Aplicación Web Progresiva instalable directamente desde Chrome (Android) o Safari (iOS) sin pasar por tiendas de aplicaciones.
-- **Consulta en Tajo Sin Señal:** Los reportes del turno y el censo de operadores se mantienen en la memoria segura del dispositivo (`localStorage`).
-- **Persistencia de Sesión:** La aplicación no expulsa al usuario ni solicita login si se pierde la conectividad en botaderos o tajos profundos; restaura el perfil validado de `camiones_user_profile`.
+- **Consulta en Pit Sin Señal:** Los reportes del turno y el censo de operadores se mantienen en la memoria segura del dispositivo (`localStorage`).
+- **Persistencia de Sesión:** La aplicación no expulsa al usuario ni solicita login si se pierde la conectividad en botaderos o pits profundos; restaura el perfil validado de `camiones_user_profile`.
 - **Sincronización al Retorno:** Al detectar señal de red o Wi-Fi minero, la aplicación revalida silenciosamente los datos con el servidor central.
 
 ---
@@ -146,7 +146,7 @@ La plataforma permite emitir documentos oficiales con un solo clic:
 | **Usuario no puede entrar tras reset** | Ingresó cédula con puntos o escribió mal la clave temporal. | Indique al usuario que escriba la cédula sin símbolos y la clave en minúsculas: `caidos1234`. Si persiste, ejecute un nuevo reset. |
 | **Encargado no ve camiones de otra mina** | Comportamiento normal por política de aislamiento RLS. | Los encargados solo tienen visión sobre su mina asignada. Si requiere supervisión global, un Administrador debe elevar su rol a Administrador. |
 | **No permite eliminar a un usuario** | Intento de autoeliminación o de borrar al único administrador. | El sistema protege la cuenta del usuario en sesión y salvaguarda al último administrador para evitar pérdida de gobernanza. |
-| **Reportes no sincronizan en campo** | Pérdida de cobertura de datos móviles en el tajo. | La aplicación continuará en modo consulta offline. Al retornar a zona con señal de red, el sistema sincronizará automáticamente. |
+| **Reportes no sincronizan en campo** | Pérdida de cobertura de datos móviles en el Pit. | La aplicación continuará en modo consulta offline. Al retornar a zona con señal de red, el sistema sincronizará automáticamente. |
 
 ---
 
