@@ -8,8 +8,8 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenNewReport, onOp
   const navItems = [
     { id: 'dashboard', label: 'Dashboard & Equipos', icon: LayoutDashboard },
     { id: 'history', label: 'Historial General', icon: History },
-    { id: 'operators', label: 'Gestión de Operadores', icon: UserCheck, adminOnly: true },
-    { id: 'users', label: 'Gestión de Usuarios', icon: Users, adminOnly: true },
+    { id: 'operators', label: 'Gestión de Operadores', icon: Users, adminOnly: true },
+    { id: 'users', label: 'Gestión de Usuarios', icon: UserCheck, adminOnly: true },
   ];
 
   return (

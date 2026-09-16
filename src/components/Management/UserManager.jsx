@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Users, UserPlus } from 'lucide-react';
+import { UserCheck, UserPlus } from 'lucide-react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
 import UserAddForm from './Users/UserAddForm';
@@ -197,7 +197,7 @@ export default function UserManager() {
       <div className="management-header-container" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '20px' }}>
         <div>
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Users color="var(--brand-red)" size={24} /> Gestión de Usuarios
+            <UserCheck color="var(--brand-red)" size={24} /> Gestión de Usuarios
           </h3>
           <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
             Administración de cuentas, identificaciones, roles y sedes de la plataforma
