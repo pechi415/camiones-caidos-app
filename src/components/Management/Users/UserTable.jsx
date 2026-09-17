@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Camera, IdCard, MapPin, Shield } from 'lucide-react';
+import { Users, Camera, IdentificationCard, MapPin, Shield } from '@phosphor-icons/react';
 import UserActionButtons from './UserActionButtons';
 
 export default function UserTable({
@@ -52,7 +52,7 @@ export default function UserTable({
                         <img src={u.avatar} alt={u.name} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)' }} />
                       ) : (
                         <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Users size={16} color="rgba(255, 255, 255, 0.6)" />
+                          <Users size={16} color="rgba(255, 255, 255, 0.6)" weight="duotone" />
                         </div>
                       )}
                       <div style={{
@@ -68,7 +68,7 @@ export default function UserTable({
                         justifyContent: 'center',
                         border: '1px solid #1A1A1A'
                       }}>
-                        <Camera size={7} color="#FFFFFF" />
+                        <Camera size={7} color="#FFFFFF" weight="bold" />
                       </div>
                     </div>
                     <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#FFFFFF' }}>
@@ -80,7 +80,7 @@ export default function UserTable({
                 {/* Identificación */}
                 <td style={{ padding: '14px 16px' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>
-                    <IdCard size={15} color="var(--brand-beige)" />
+                    <IdentificationCard size={15} color="var(--brand-beige)" weight="duotone" />
                     {u.nationalId || '10654321'}
                   </div>
                 </td>
@@ -88,7 +88,7 @@ export default function UserTable({
                 {/* Mina / Sede */}
                 <td style={{ padding: '14px 16px' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--brand-beige)', background: 'rgba(243, 235, 221, 0.1)', padding: '4px 10px', borderRadius: '6px', border: 'var(--glass-border-beige)' }}>
-                    <MapPin size={14} color="var(--brand-beige)" />
+                    <MapPin size={14} color="var(--brand-beige)" weight="duotone" />
                     {u.mine}
                   </div>
                 </td>
@@ -125,7 +125,7 @@ export default function UserTable({
                     color: u.role === 'Administrador' ? '#E52E2E' : 'var(--brand-beige)',
                     border: u.role === 'Administrador' ? '1px solid rgba(229, 46, 46, 0.4)' : '1px solid rgba(255, 255, 255, 0.2)'
                   }}>
-                    <Shield size={12} />
+                    <Shield size={12} weight="duotone" />
                     {u.role}
                   </span>
                 </td>

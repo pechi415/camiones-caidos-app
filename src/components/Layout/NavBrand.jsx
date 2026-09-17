@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, RefreshCw } from 'lucide-react';
+import { Truck, ArrowsClockwise } from '@phosphor-icons/react';
 
 export default function NavBrand({ isAdmin, dbStatus, refreshData }) {
   return (
@@ -15,7 +15,7 @@ export default function NavBrand({ isAdmin, dbStatus, refreshData }) {
         boxShadow: '0 0 18px rgba(229, 46, 46, 0.4)',
         flexShrink: 0
       }}>
-        <Truck size={22} color="#FFFFFF" style={{ animation: 'bounce 2s infinite' }} />
+        <Truck size={22} weight="duotone" color="#FFFFFF" style={{ animation: 'bounce 2s infinite' }} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <h1 style={{
@@ -52,7 +52,7 @@ export default function NavBrand({ isAdmin, dbStatus, refreshData }) {
             >
               <span className={dbStatus === 'online' ? 'pulse-dot-green' : 'pulse-dot-red'} style={{ width: '5px', height: '5px' }}></span>
               {dbStatus === 'online' ? 'Nube Conectada' : 'Reconectar Nube'}
-              <RefreshCw size={9} />
+              <ArrowsClockwise size={9} weight="duotone" />
             </button>
           </div>
         )}

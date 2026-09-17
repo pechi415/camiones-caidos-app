@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash } from '@phosphor-icons/react';
 
 export default function ConfirmDeleteModal({
   isOpen = true,
@@ -34,7 +34,7 @@ export default function ConfirmDeleteModal({
             margin: '0 auto 16px auto'
           }}
         >
-          <Trash2 size={28} />
+          <Trash size={28} weight="duotone" />
         </div>
 
         <h3

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin } from '@phosphor-icons/react';
 import OperatorActionButtons from './OperatorActionButtons';
 
 export default function OperatorTable({
@@ -46,7 +46,7 @@ export default function OperatorTable({
                 {/* Sede / Mina */}
                 <td style={{ padding: '14px 16px' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--brand-beige)', background: 'rgba(243, 235, 221, 0.1)', padding: '4px 10px', borderRadius: '6px', border: 'var(--glass-border-beige)' }}>
-                    <MapPin size={14} color="var(--brand-beige)" />
+                    <MapPin size={14} color="var(--brand-beige)" weight="duotone" />
                     {op.mine}
                   </div>
                 </td>

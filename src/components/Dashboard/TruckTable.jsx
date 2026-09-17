@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Wrench, Edit, Trash2, Clock, ArrowRightLeft, History, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
+import {
+  Wrench,
+  PencilSimple,
+  Trash,
+  Clock,
+  ArrowsLeftRight,
+  ClockCounterClockwise,
+  Warning,
+  MapPin,
+  CheckCircle
+} from '@phosphor-icons/react';
 import { getLocalDateISO, formatTimeTo24H, formatTime12H } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
@@ -125,7 +135,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                 cursor: 'pointer'
               }}
             >
-              <History size={14} color={isCarryover ? '#F87171' : '#FACC15'} /> Camión {report.truckId}
+              <ClockCounterClockwise size={14} weight="duotone" color={isCarryover ? '#F87171' : '#FACC15'} /> Camión {report.truckId}
             </div>
 
             {report.status === 'DOWN' ? (
@@ -186,7 +196,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                 fontWeight: 700
               }}
             >
-              <ArrowRightLeft size={14} />
+              <ArrowsLeftRight size={14} weight="bold" />
               {report.status === 'DOWN' ? 'Operativo' : 'Reabrir'}
             </button>
 
@@ -195,7 +205,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               onClick={() => onViewHistory && onViewHistory(report.truckId)}
               style={{ background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)', color: '#FACC15', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}
             >
-              <History size={16} />
+              <ClockCounterClockwise size={16} weight="duotone" />
             </button>
 
             <button
@@ -203,7 +213,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               onClick={() => onEditReport(report)}
               style={{ background: 'rgba(255, 255, 255, 0.08)', border: 'var(--glass-border)', color: '#FFFFFF', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}
             >
-              <Edit size={16} />
+              <PencilSimple size={16} weight="duotone" />
             </button>
 
             {(user.role === 'Administrador' || user.role === 'Encargado') && (
@@ -212,7 +222,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                 onClick={() => setDeleteConfirmReport(report)}
                 style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#EF4444', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}
               >
-                <Trash2 size={16} />
+                <Trash size={16} weight="duotone" />
               </button>
             )}
           </div>
@@ -274,7 +284,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                       cursor: 'pointer'
                     }}
                   >
-                    <History size={13} color={isCarryover ? '#F87171' : '#FACC15'} /> {report.truckId}
+                    <ClockCounterClockwise size={13} weight="duotone" color={isCarryover ? '#F87171' : '#FACC15'} /> {report.truckId}
                   </div>
                 </td>
 
@@ -305,7 +315,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                 {/* Ubicación */}
                 <td style={{ padding: '14px' }}>
                   <div style={{ fontSize: '0.82rem', color: isCarryover ? '#FCA5A5' : 'rgba(255, 255, 255, 0.7)', fontWeight: isCarryover ? 600 : 400, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={13} color={isCarryover ? '#F87171' : 'rgba(255,255,255,0.5)'} />
+                    <MapPin size={13} weight="duotone" color={isCarryover ? '#F87171' : 'rgba(255,255,255,0.5)'} />
                     {report.bayLocation || 'Sin Ubicación'}
                   </div>
                 </td>
@@ -338,7 +348,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                   ) : (
                     <>
                       <div style={{ fontSize: '0.8rem', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Clock size={14} color="var(--brand-red)" /> <b>{report.reportTime}</b>
+                        <Clock size={14} weight="duotone" color="var(--brand-red)" /> <b>{report.reportTime}</b>
                       </div>
                       {report.status === 'OPERATIVO' && report.actualReturnTime && (
                         <div style={{ fontSize: '0.75rem', color: 'var(--status-operativo)', marginTop: '2px', fontWeight: 600 }}>
@@ -383,7 +393,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                         fontWeight: 700
                       }}
                     >
-                      <ArrowRightLeft size={14} />
+                      <ArrowsLeftRight size={14} weight="bold" />
                       {report.status === 'DOWN' ? 'Operativo' : 'Reabrir'}
                     </button>
 
@@ -400,7 +410,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                         cursor: 'pointer'
                       }}
                     >
-                      <History size={15} />
+                      <ClockCounterClockwise size={15} weight="duotone" />
                     </button>
 
                     {/* Editar */}
@@ -416,7 +426,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                         cursor: 'pointer'
                       }}
                     >
-                      <Edit size={15} />
+                      <PencilSimple size={15} weight="duotone" />
                     </button>
 
                     {/* Eliminar (Admin y Encargado) */}
@@ -433,7 +443,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                           cursor: 'pointer'
                         }}
                       >
-                        <Trash2 size={15} />
+                        <Trash size={15} weight="duotone" />
                       </button>
                     )}
                   </div>
@@ -512,7 +522,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
         <div style={{ marginBottom: '30px', background: 'rgba(239, 68, 68, 0.04)', borderRadius: '16px', padding: '16px', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#F87171', fontWeight: 800, fontSize: '0.95rem' }}>
-              <AlertTriangle size={18} color="#EF4444" />
+              <Warning size={18} weight="duotone" color="#EF4444" />
               Equipos Caídos Pendientes en CAMPO (Turnos Anteriores - {activeMine})
             </div>
             <span style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.2)', color: '#FCA5A5', padding: '2px 10px', borderRadius: '12px', fontWeight: 700 }}>
@@ -526,7 +536,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
       {/* SECCIÓN 2: Novedades del Turno Actual */}
       <div>
         <div style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Clock size={16} color="var(--brand-beige)" />
+          <Clock size={16} weight="duotone" color="var(--brand-beige)" />
           Novedades Registradas en la Jornada Actual ({activeMine} - Turno {activeShift})
         </div>
 
@@ -538,7 +548,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
             borderRadius: '12px',
             border: 'var(--glass-border)'
           }}>
-            <Wrench size={36} color="rgba(255, 255, 255, 0.3)" style={{ marginBottom: '10px' }} />
+            <Wrench size={36} weight="duotone" color="rgba(255, 255, 255, 0.3)" style={{ marginBottom: '10px' }} />
             <h4 style={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 600 }}>No hay registros para este turno</h4>
             <p style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px', maxWidth: '500px', marginInLine: 'auto' }}>
               {reports.length > 0 
@@ -581,7 +591,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               justifyContent: 'center',
               margin: '0 auto 16px auto'
             }}>
-              <CheckCircle2 size={28} />
+              <CheckCircle size={28} weight="duotone" />
             </div>
 
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
@@ -665,7 +675,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               justifyContent: 'center',
               margin: '0 auto 16px auto'
             }}>
-              <Trash2 size={28} />
+              <Trash size={28} weight="duotone" />
             </div>
 
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>

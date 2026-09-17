@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
-import { X, Truck, Save } from 'lucide-react';
+import { X, Truck, FloppyDisk } from '@phosphor-icons/react';
 import AnimatedInput from '../Common/AnimatedInput';
 import SearchableSelect from '../Common/SearchableSelect';
 import { correctTextWithAI } from '../../utils/aiCorrector';
@@ -221,7 +221,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: 'var(--glass-border)', paddingBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'var(--brand-red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Truck size={20} color="#FFFFFF" />
+              <Truck size={20} weight="duotone" color="#FFFFFF" />
             </div>
             <div>
               <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF' }}>
@@ -234,7 +234,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
           </div>
 
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
-            <X size={22} />
+            <X size={22} weight="bold" />
           </button>
         </div>
 
@@ -449,7 +449,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
               Cancelar
             </button>
             <button type="submit" className="btn-primary">
-              <Save size={18} /> {editingReport ? 'Guardar Cambios' : 'Guardar Registro'}
+              <FloppyDisk size={18} weight="duotone" /> {editingReport ? 'Guardar Cambios' : 'Guardar Registro'}
             </button>
           </div>
         </form>

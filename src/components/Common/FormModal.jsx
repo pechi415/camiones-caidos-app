@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Save, X } from 'lucide-react';
+import { FloppyDisk, X } from '@phosphor-icons/react';
 
 export default function FormModal({
   isOpen = true,
@@ -9,7 +9,7 @@ export default function FormModal({
   onSubmit,
   cancelText = 'Cancelar',
   submitText = 'Guardar Cambios',
-  submitIcon = <Save size={16} />,
+  submitIcon = <FloppyDisk size={16} weight="duotone" />,
   maxWidth = '500px',
   children
 }) {
@@ -52,7 +52,7 @@ export default function FormModal({
               cursor: 'pointer'
             }}
           >
-            <X size={20} />
+            <X size={20} weight="bold" />
           </button>
         </div>
 

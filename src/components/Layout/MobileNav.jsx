@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, History, PlusCircle, UserCheck, Users, FileSpreadsheet } from 'lucide-react';
+import { SquaresFour, ClockCounterClockwise, PlusCircle, UserCheck, Users, FileXls } from '@phosphor-icons/react';
 import LiquidLensCanvas from './LiquidLensCanvas';
 
 export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, onOpenExport }) {
@@ -25,14 +25,14 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
 
   // Definición de pestañas en total sintonía visual
   const navItems = [
-    { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, action: () => setActiveTab('dashboard') },
-    { id: 'history', label: 'Historial', icon: History, action: () => setActiveTab('history') },
+    { id: 'dashboard', label: 'Inicio', icon: SquaresFour, action: () => setActiveTab('dashboard') },
+    { id: 'history', label: 'Historial', icon: ClockCounterClockwise, action: () => setActiveTab('history') },
     { id: 'register', label: 'Registrar', icon: PlusCircle, isAction: true, action: onOpenNewReport },
     ...(isAdmin ? [
       { id: 'operators', label: 'Operad.', icon: UserCheck, action: () => setActiveTab('operators') },
       { id: 'users', label: 'Usuarios', icon: Users, action: () => setActiveTab('users') }
     ] : []),
-    { id: 'export', label: 'PDF', icon: FileSpreadsheet, action: onOpenExport }
+    { id: 'export', label: 'PDF', icon: FileXls, action: onOpenExport }
   ];
 
   const totalItems = navItems.length;
@@ -474,11 +474,10 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenNewReport, on
             >
               <Icon
                 size={20}
+                weight="duotone"
                 color={isCoveredByLens ? '#FFFFFF' : 'rgba(255, 255, 255, 0.62)'}
-                strokeWidth={isCoveredByLens ? 2.2 : 1.85}
-                fill={getFill()}
                 style={{
-                  transition: 'fill 0.25s ease, color 0.2s ease'
+                  transition: 'color 0.2s ease'
                 }}
               />
             </div>

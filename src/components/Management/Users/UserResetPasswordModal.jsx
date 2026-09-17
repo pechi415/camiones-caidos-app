@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { KeyRound } from 'lucide-react';
+import { Key } from '@phosphor-icons/react';
 
 export default function UserResetPasswordModal({ user, onClose, onConfirm }) {
   if (!user) return null;
@@ -20,7 +20,7 @@ export default function UserResetPasswordModal({ user, onClose, onConfirm }) {
           justifyContent: 'center',
           margin: '0 auto 16px auto'
         }}>
-          <KeyRound size={28} />
+          <Key size={28} weight="duotone" />
         </div>
 
         <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>

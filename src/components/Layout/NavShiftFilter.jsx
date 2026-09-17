@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon } from '@phosphor-icons/react';
 
 export default function NavShiftFilter({
   variant = 'desktop',
@@ -37,7 +37,7 @@ export default function NavShiftFilter({
           whiteSpace: 'nowrap'
         }}
       >
-        <Sun size={isMobile ? 12 : 14} />
+        <Sun size={isMobile ? 12 : 14} weight="duotone" />
         {isMobile ? ' D' : <span className="nav-filter-text"> Diurno</span>}
       </button>
 
@@ -60,7 +60,7 @@ export default function NavShiftFilter({
           whiteSpace: 'nowrap'
         }}
       >
-        <Moon size={isMobile ? 12 : 14} />
+        <Moon size={isMobile ? 12 : 14} weight="duotone" />
         {isMobile ? ' N' : <span className="nav-filter-text"> Nocturno</span>}
       </button>
     </div>

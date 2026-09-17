@@ -3,7 +3,7 @@ import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useReports } from '../../context/ReportContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Users, UserPlus } from 'lucide-react';
+import { Users, UserPlus } from '@phosphor-icons/react';
 import { autoCapitalizeName } from '../../utils/aiCorrector';
 import OperatorDeleteModal from './Operators/OperatorDeleteModal';
 import OperatorAddForm from './Operators/OperatorAddForm';
@@ -110,7 +110,7 @@ export default function OperatorManager() {
       <div className="management-header-container" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '20px' }}>
         <div>
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Users color="var(--brand-red)" size={24} /> Gestión de Operadores
+            <Users color="var(--brand-red)" size={24} weight="duotone" /> Gestión de Operadores
           </h3>
           <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
             Listado general de operadores de transporte de acarreo en minas Pribbenow y El Descanso
@@ -125,7 +125,7 @@ export default function OperatorManager() {
           className="btn-primary management-header-btn"
           style={{ fontSize: '0.85rem' }}
         >
-          <UserPlus size={16} /> {showAddForm ? 'Cancelar' : 'Registrar Nuevo Operador'}
+          <UserPlus size={16} weight="duotone" /> {showAddForm ? 'Cancelar' : 'Registrar Nuevo Operador'}
         </button>
       </div>
 

@@ -1,13 +1,13 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, PlusCircle, Users, UserCheck, FileSpreadsheet, History } from 'lucide-react';
+import { SquaresFour, PlusCircle, Users, UserCheck, FileXls, ClockCounterClockwise } from '@phosphor-icons/react';
 
 export default function Sidebar({ activeTab, setActiveTab, onOpenNewReport, onOpenExport }) {
   const { user } = useAuth();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard & Equipos', icon: LayoutDashboard },
-    { id: 'history', label: 'Historial General', icon: History },
+    { id: 'dashboard', label: 'Dashboard & Equipos', icon: SquaresFour },
+    { id: 'history', label: 'Historial General', icon: ClockCounterClockwise },
     { id: 'operators', label: 'Gestión de Operadores', icon: Users, adminOnly: true },
     { id: 'users', label: 'Gestión de Usuarios', icon: UserCheck, adminOnly: true },
   ];
@@ -37,7 +37,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenNewReport, onOp
             fontSize: '0.95rem'
           }}
         >
-          <PlusCircle size={18} /> Registrar Camión Caído
+          <PlusCircle size={18} weight="duotone" /> Registrar Camión Caído
         </button>
 
         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', paddingLeft: '10px', marginBottom: '4px' }}>
@@ -69,7 +69,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenNewReport, onOp
                 transition: 'all 0.2s ease'
               }}
             >
-              <Icon size={18} color={isActive ? '#E52E2E' : 'rgba(255, 255, 255, 0.7)'} />
+              <Icon size={18} weight="duotone" color={isActive ? '#E52E2E' : 'rgba(255, 255, 255, 0.7)'} />
               {item.label}
             </button>
           );
@@ -88,7 +88,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenNewReport, onOp
             marginBottom: '12px'
           }}
         >
-          <FileSpreadsheet size={18} /> Cierre de Turno / PDF
+          <FileXls size={18} weight="duotone" /> Cierre de Turno / PDF
         </button>
 
         <div style={{

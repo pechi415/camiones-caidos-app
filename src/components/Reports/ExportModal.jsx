@@ -4,7 +4,7 @@ import { useReports } from '../../context/ReportContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { X, FileSpreadsheet, FileText, ShieldCheck, Eye, Share2, MessageSquare, Download } from 'lucide-react';
+import { X, FileText, FileXls, ShieldCheck, ShareNetwork } from '@phosphor-icons/react';
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
@@ -321,7 +321,7 @@ export default function ExportModal({ isOpen, onClose }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <img src={catHeaderLogo} alt="Flota CAT 793" style={{ height: '42px', width: '42px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)' }} />
             <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-              <X size={22} />
+              <X size={22} weight="bold" />
             </button>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function ExportModal({ isOpen, onClose }) {
           </div>
 
           <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck size={16} color="var(--brand-beige)" />
+            <ShieldCheck size={16} weight="duotone" color="var(--brand-beige)" />
             El archivo generado contiene el consolidado listo para auditoría y entrega de turno.
           </div>
         </div>
@@ -362,7 +362,7 @@ export default function ExportModal({ isOpen, onClose }) {
             className="btn-primary"
             style={{ padding: '14px', justifyContent: 'center', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
           >
-            <FileText size={18} /> Exportar PDF
+            <FileText size={18} weight="duotone" /> Exportar PDF
           </button>
 
           {/* 2. Compartir PDF (Web Share API Nativo) */}
@@ -389,7 +389,7 @@ export default function ExportModal({ isOpen, onClose }) {
               opacity: (downloading || (totalCount === 0 && totalCarryoverCount === 0)) ? 0.6 : 1
             }}
           >
-            <Share2 size={18} />
+            <ShareNetwork size={18} weight="duotone" />
             {downloading ? '⏳ Procesando...' : 'Compartir PDF'}
           </button>
 
@@ -400,7 +400,7 @@ export default function ExportModal({ isOpen, onClose }) {
             className="btn-beige"
             style={{ padding: '14px', justifyContent: 'center', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
           >
-            <FileSpreadsheet size={18} /> Exportar Excel
+            <FileXls size={18} weight="duotone" /> Exportar Excel
           </button>
         </div>
       </div>

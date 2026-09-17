@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wrench, Truck, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Wrench, Truck, CalendarBlank, Clock, Warning } from '@phosphor-icons/react';
 
 export default function TruckHistoryTimeline({
   truckHistory = [],
@@ -11,7 +11,7 @@ export default function TruckHistoryTimeline({
       {/* Lista de Registros Históricos con Scroll Vertical Dedicado */}
       {truckHistory.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-          <Wrench size={36} color="rgba(255,255,255,0.2)" style={{ marginBottom: '10px' }} />
+          <Wrench size={36} color="rgba(255,255,255,0.2)" weight="duotone" style={{ marginBottom: '10px' }} />
           <p style={{ fontSize: '0.95rem', fontWeight: 600 }}>
             {currentTruckId ? `No se encontraron registros de fallas para el Camión ${currentTruckId}.` : 'Ingrese un número de camión para consultar su historial.'}
           </p>
@@ -44,15 +44,15 @@ export default function TruckHistoryTimeline({
                     alignItems: 'center',
                     gap: '5px'
                   }}>
-                    <Truck size={14} color="var(--brand-red)" /> {item.truckId}
+                    <Truck size={14} color="var(--brand-red)" weight="duotone" /> {item.truckId}
                   </span>
 
                   <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <Calendar size={13} color="var(--brand-beige)" /> {getItemDate(item)}
+                    <CalendarBlank size={13} color="var(--brand-beige)" weight="duotone" /> {getItemDate(item)}
                   </span>
 
                   <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={13} color="var(--brand-beige)" /> {item.reportTime}
+                    <Clock size={13} color="var(--brand-beige)" weight="duotone" /> {item.reportTime}
                   </span>
 
                   <span style={{ fontSize: '0.75rem', background: 'rgba(243, 235, 221, 0.1)', color: 'var(--brand-beige)', border: 'var(--glass-border-beige)', padding: '2px 7px', borderRadius: '5px', fontWeight: 700 }}>
@@ -80,7 +80,7 @@ export default function TruckHistoryTimeline({
 
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <AlertTriangle size={12} color="var(--brand-red)" /> ESTADO
+                    <Warning size={12} color="var(--brand-red)" weight="duotone" /> ESTADO
                   </div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     {item.status === 'DOWN' ? (

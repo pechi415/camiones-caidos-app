@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { CheckCircle, WarningCircle, Warning, Info, X } from '@phosphor-icons/react';
 
 const ICONS = {
-  success: CheckCircle2,
-  error: AlertCircle,
-  warning: AlertTriangle,
+  success: CheckCircle,
+  error: WarningCircle,
+  warning: Warning,
   info: Info
 };
 
@@ -74,7 +74,7 @@ export default function ToastItem({ toast, onRemove }) {
       onMouseLeave={handleMouseLeave}
     >
       <div className="toast-icon-wrapper" aria-hidden="true">
-        <IconComponent size={20} className="toast-icon" />
+        <IconComponent size={20} weight="duotone" className="toast-icon" />
       </div>
 
       <div className="toast-message">
@@ -87,7 +87,7 @@ export default function ToastItem({ toast, onRemove }) {
         onClick={triggerClose}
         aria-label="Cerrar notificación"
       >
-        <X size={16} />
+        <X size={16} weight="bold" />
       </button>
     </div>
   );

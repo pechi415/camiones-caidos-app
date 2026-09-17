@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, KeyRound, Trash2 } from 'lucide-react';
+import { PencilSimple, Key, Trash } from '@phosphor-icons/react';
 
 export default function UserActionButtons({
   user,
@@ -32,7 +32,7 @@ export default function UserActionButtons({
           cursor: 'pointer'
         }}
       >
-        <Edit size={15} />
+        <PencilSimple size={15} weight="duotone" />
       </button>
 
       <button
@@ -48,7 +48,7 @@ export default function UserActionButtons({
           cursor: 'pointer'
         }}
       >
-        <KeyRound size={15} />
+        <Key size={15} weight="duotone" />
       </button>
 
       <button
@@ -64,7 +64,7 @@ export default function UserActionButtons({
           cursor: 'pointer'
         }}
       >
-        <Trash2 size={15} />
+        <Trash size={15} weight="duotone" />
       </button>
     </div>
   );

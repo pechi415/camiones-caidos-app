@@ -1,15 +1,15 @@
 import React, { useState, useRef } from 'react';
 import {
   User,
-  ChevronDown,
-  LogOut,
+  CaretDown,
+  SignOut,
   Camera,
   MapPin,
   BookOpen,
   FileText,
-  Loader2,
-  AlertCircle
-} from 'lucide-react';
+  CircleNotch,
+  WarningCircle
+} from '@phosphor-icons/react';
 import { supabase } from '../../lib/supabase';
 import { getShortName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
@@ -141,7 +141,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
               justifyContent: 'center',
               color: '#FFFFFF'
             }}>
-              <User size={18} />
+              <User size={18} weight="duotone" />
             </div>
           )}
           <div style={{
@@ -157,7 +157,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
             justifyContent: 'center',
             border: '1px solid #000'
           }}>
-            <Camera size={8} color="#FFFFFF" />
+            <Camera size={8} weight="bold" color="#FFFFFF" />
           </div>
         </div>
 
@@ -187,10 +187,10 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
             </div>
             {/* Muestra Mina y Grupo en lugar del Rol */}
             <div style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-              <MapPin size={10} style={{ flexShrink: 0 }} /> {user?.mine || 'Pribbenow'} - {user?.group || 'Grupo 1'}
+              <MapPin size={10} weight="duotone" style={{ flexShrink: 0 }} /> {user?.mine || 'Pribbenow'} - {user?.group || 'Grupo 1'}
             </div>
           </div>
-          <ChevronDown size={15} color="rgba(255,255,255,0.7)" />
+          <CaretDown size={15} weight="bold" color="rgba(255,255,255,0.7)" />
         </button>
 
         {/* Dropdown menú de perfil y documentación */}
@@ -233,7 +233,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                 fontWeight: 700
               }}
             >
-              <Camera size={16} color="var(--brand-beige)" /> Cambiar Foto de Perfil
+              <Camera size={16} weight="duotone" color="var(--brand-beige)" /> Cambiar Foto de Perfil
             </button>
 
             {/* Sección Documentación */}
@@ -276,12 +276,12 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                  <BookOpen size={16} color="var(--brand-beige)" style={{ flexShrink: 0 }} />
+                  <BookOpen size={16} weight="duotone" color="var(--brand-beige)" style={{ flexShrink: 0 }} />
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Manual de Usuario</span>
                 </div>
                 {loadingDoc === 'user' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--brand-beige)', flexShrink: 0 }}>
-                    <Loader2 size={13} style={{ animation: 'docSpin 1s linear infinite' }} />
+                    <CircleNotch size={13} weight="bold" style={{ animation: 'docSpin 1s linear infinite' }} />
                     <span>Abriendo...</span>
                   </div>
                 )}
@@ -315,12 +315,12 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                    <FileText size={16} color="var(--brand-beige)" style={{ flexShrink: 0 }} />
+                    <FileText size={16} weight="duotone" color="var(--brand-beige)" style={{ flexShrink: 0 }} />
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Manual Administrativo</span>
                   </div>
                   {loadingDoc === 'admin' && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--brand-beige)', flexShrink: 0 }}>
-                      <Loader2 size={13} style={{ animation: 'docSpin 1s linear infinite' }} />
+                      <CircleNotch size={13} weight="bold" style={{ animation: 'docSpin 1s linear infinite' }} />
                       <span>Abriendo...</span>
                     </div>
                   )}
@@ -343,7 +343,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                   gap: '6px',
                   lineHeight: '1.25'
                 }}>
-                  <AlertCircle size={14} color="#EF4444" style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <WarningCircle size={14} weight="duotone" color="#EF4444" style={{ flexShrink: 0, marginTop: '1px' }} />
                   <div style={{ flex: 1 }}>{docError}</div>
                 </div>
               )}
@@ -373,7 +373,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                   fontSize: '0.85rem'
                 }}
               >
-                <LogOut size={16} /> Cerrar Sesión
+                <SignOut size={16} weight="duotone" /> Cerrar Sesión
               </button>
             </div>
           </div>

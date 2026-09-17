@@ -1,5 +1,5 @@
 import React from 'react';
-import { History, X, FileText } from 'lucide-react';
+import { ClockCounterClockwise, X, FileText } from '@phosphor-icons/react';
 import AnimatedSearchInput from '../../Common/AnimatedSearchInput';
 
 export default function TruckHistoryHeader({
@@ -30,7 +30,7 @@ export default function TruckHistoryHeader({
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <History size={22} />
+            <ClockCounterClockwise size={22} weight="duotone" />
           </div>
           <div>
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF' }}>
@@ -42,7 +42,7 @@ export default function TruckHistoryHeader({
           </div>
         </div>
         <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-          <X size={22} />
+          <X size={22} weight="bold" />
         </button>
       </div>
 
@@ -74,7 +74,7 @@ export default function TruckHistoryHeader({
               whiteSpace: 'nowrap'
             }}
           >
-            <FileText size={16} /> Exportar PDF
+            <FileText size={16} weight="duotone" /> Exportar PDF
           </button>
         )}
       </div>

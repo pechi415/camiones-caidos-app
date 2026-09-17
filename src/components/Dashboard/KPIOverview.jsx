@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Truck, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { Truck, Warning, CheckCircle, Pulse } from '@phosphor-icons/react';
 import { getLocalDateISO } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent } from '../../utils/truckUtils';
 
@@ -77,7 +77,7 @@ export default function KPIOverview({ reports, activeMine, activeShift }) {
             </h2>
           </div>
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(229, 46, 46, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Truck size={22} color="var(--brand-red)" />
+            <Truck size={22} weight="duotone" color="var(--brand-red)" />
           </div>
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--brand-beige)', marginTop: '8px', fontWeight: 500 }}>
@@ -90,14 +90,14 @@ export default function KPIOverview({ reports, activeMine, activeShift }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Actualmente Down
+               Actualmente Down
             </span>
             <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 800, color: 'var(--status-down)', marginTop: '4px' }}>
               {totalDown}
             </h2>
           </div>
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--status-down-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AlertTriangle size={22} color="var(--status-down)" />
+            <Warning size={22} weight="duotone" color="var(--status-down)" />
           </div>
         </div>
         <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -117,7 +117,7 @@ export default function KPIOverview({ reports, activeMine, activeShift }) {
             </h2>
           </div>
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--status-operativo-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckCircle size={22} color="var(--status-operativo)" />
+            <CheckCircle size={22} weight="duotone" color="var(--status-operativo)" />
           </div>
         </div>
         <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -137,7 +137,7 @@ export default function KPIOverview({ reports, activeMine, activeShift }) {
             </h2>
           </div>
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(229, 213, 188, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Activity size={22} color="var(--brand-beige)" />
+            <Pulse size={22} weight="duotone" color="var(--brand-beige)" />
           </div>
         </div>
         {/* Barra de progreso */}

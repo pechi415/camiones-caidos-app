@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Camera, IdCard, Shield } from 'lucide-react';
+import { Users, Camera, IdentificationCard, Shield } from '@phosphor-icons/react';
 import UserActionButtons from './UserActionButtons';
 
 export default function UserCardList({
@@ -42,7 +42,7 @@ export default function UserCardList({
                     <img src={u.avatar} alt={u.name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--brand-red)', flexShrink: 0 }} />
                   ) : (
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Users size={18} color="rgba(255, 255, 255, 0.6)" />
+                      <Users size={18} color="rgba(255, 255, 255, 0.6)" weight="duotone" />
                     </div>
                   )}
                   <div style={{
@@ -58,13 +58,13 @@ export default function UserCardList({
                     justifyContent: 'center',
                     border: '1px solid #1A1A1A'
                   }}>
-                    <Camera size={8} color="#FFFFFF" />
+                    <Camera size={8} color="#FFFFFF" weight="bold" />
                   </div>
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
                   <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-                    <IdCard size={12} color="var(--brand-beige)" /> {u.nationalId || 'N/A'}
+                    <IdentificationCard size={12} color="var(--brand-beige)" weight="bold" /> {u.nationalId || 'N/A'}
                   </div>
                 </div>
               </div>
@@ -90,7 +90,7 @@ export default function UserCardList({
                   gap: '4px',
                   whiteSpace: 'nowrap'
                 }}>
-                  <Shield size={12} />
+                  <Shield size={12} weight="duotone" />
                   {u.role === 'Administrador' ? 'Admin' : u.role === 'Encargado' ? 'Enc.' : u.role === 'Digitador' ? 'Dig.' : u.role}
                 </span>
               </div>

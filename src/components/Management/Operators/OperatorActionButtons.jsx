@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { PencilSimple, Trash } from '@phosphor-icons/react';
 
 export default function OperatorActionButtons({
   operator,
@@ -38,7 +38,7 @@ export default function OperatorActionButtons({
           } : {})
         }}
       >
-        <Edit size={showText ? 14 : 15} />
+        <PencilSimple size={showText ? 14 : 15} weight="duotone" />
         {showText && ' Editar'}
       </button>
 
@@ -61,7 +61,7 @@ export default function OperatorActionButtons({
           } : {})
         }}
       >
-        <Trash2 size={showText ? 14 : 15} />
+        <Trash size={showText ? 14 : 15} weight="duotone" />
         {showText && ' Eliminar'}
       </button>
     </div>

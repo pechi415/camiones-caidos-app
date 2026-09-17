@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Save } from 'lucide-react';
+import { UserPlus, FloppyDisk } from '@phosphor-icons/react';
 import UserFormFields from './UserFormFields';
 
 export default function UserAddForm({ onAddUser }) {
@@ -30,7 +30,7 @@ export default function UserAddForm({ onAddUser }) {
   return (
     <form onSubmit={handleSubmit} className="glass-card management-add-form" style={{ padding: '20px', marginBottom: '24px', background: 'rgba(229, 46, 46, 0.05)', border: 'var(--glass-border-red)' }}>
       <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <UserPlus size={18} color="var(--brand-red)" /> Registrar Nuevo Usuario
+        <UserPlus size={18} color="var(--brand-red)" weight="duotone" /> Registrar Nuevo Usuario
       </h4>
 
       <div className="management-form-grid user-form-grid">
@@ -41,7 +41,7 @@ export default function UserAddForm({ onAddUser }) {
         />
 
         <button type="submit" className="btn-beige" style={{ height: '42px', padding: '0 20px' }}>
-          <Save size={16} /> Guardar Usuario
+          <FloppyDisk size={16} weight="duotone" /> Guardar Usuario
         </button>
       </div>
     </form>

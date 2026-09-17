@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import useModalScrollLock from '../../hooks/useModalScrollLock';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldAlert, KeyRound, Check, AlertCircle } from 'lucide-react';
+import { ShieldWarning, Key, Check, WarningCircle } from '@phosphor-icons/react';
 
 export default function ChangePasswordModal({ isOpen }) {
   const { user, changePassword } = useAuth();
@@ -78,7 +78,7 @@ export default function ChangePasswordModal({ isOpen }) {
             border: '1px solid rgba(229, 46, 46, 0.4)',
             marginBottom: '12px'
           }}>
-            <ShieldAlert size={30} color="var(--brand-red)" />
+            <ShieldWarning size={30} weight="duotone" color="var(--brand-red)" />
           </div>
 
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 800, color: '#FFFFFF' }}>
@@ -103,7 +103,7 @@ export default function ChangePasswordModal({ isOpen }) {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <AlertCircle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
+            <WarningCircle size={16} weight="duotone" color="#EF4444" style={{ flexShrink: 0 }} />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -122,7 +122,7 @@ export default function ChangePasswordModal({ isOpen }) {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <Check size={16} color="var(--status-operativo)" />
+            <Check size={16} weight="bold" color="var(--status-operativo)" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -182,7 +182,7 @@ export default function ChangePasswordModal({ isOpen }) {
               <span>Actualizando contraseña...</span>
             ) : (
               <>
-                <KeyRound size={18} /> Guardar Contraseña y Continuar
+                <Key size={18} weight="duotone" /> Guardar Contraseña y Continuar
               </>
             )}
           </button>

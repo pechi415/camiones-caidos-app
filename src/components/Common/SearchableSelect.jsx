@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, Check, X, User } from 'lucide-react';
+import { MagnifyingGlass, CaretDown, Check, X, User } from '@phosphor-icons/react';
 
 export default function SearchableSelect({
   options = [],
@@ -104,7 +104,7 @@ export default function SearchableSelect({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-          <User size={15} color={selectedOption ? 'var(--brand-beige)' : 'rgba(255,255,255,0.4)'} />
+          <User size={15} weight="duotone" color={selectedOption ? 'var(--brand-beige)' : 'rgba(255,255,255,0.4)'} />
           <span
             style={{
               whiteSpace: 'nowrap',
@@ -119,8 +119,9 @@ export default function SearchableSelect({
           </span>
         </div>
 
-        <ChevronDown
+        <CaretDown
           size={16}
+          weight="bold"
           color="rgba(255,255,255,0.6)"
           style={{
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -160,8 +161,9 @@ export default function SearchableSelect({
               alignItems: 'center'
             }}
           >
-            <Search
+            <MagnifyingGlass
               size={15}
+              weight="duotone"
               color="rgba(255,255,255,0.5)"
               style={{
                 position: 'absolute',
@@ -208,7 +210,7 @@ export default function SearchableSelect({
                   justifyContent: 'center'
                 }}
               >
-                <X size={14} />
+                <X size={14} weight="bold" />
               </button>
             )}
           </div>
@@ -258,7 +260,7 @@ export default function SearchableSelect({
                   >
                     <span>{opt.name}</span>
 
-                    {isSelected && <Check size={14} color="var(--brand-red)" />}
+                    {isSelected && <Check size={14} weight="bold" color="var(--brand-red)" />}
                   </div>
                 );
               })

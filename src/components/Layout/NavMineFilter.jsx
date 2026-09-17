@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Lock } from 'lucide-react';
+import { MapPin, Lock } from '@phosphor-icons/react';
 
 export default function NavMineFilter({
   variant = 'desktop',
@@ -52,7 +52,7 @@ export default function NavMineFilter({
           whiteSpace: 'nowrap'
         }}
       >
-        {canSelectPribbenow ? <MapPin size={isMobile ? 12 : 13} /> : <Lock size={12} />}
+        {canSelectPribbenow ? <MapPin size={isMobile ? 12 : 13} weight="duotone" /> : <Lock size={12} weight="duotone" />}
         {isMobile ? (
           ' PB'
         ) : (
@@ -86,7 +86,7 @@ export default function NavMineFilter({
           whiteSpace: 'nowrap'
         }}
       >
-        {canSelectElDescanso ? <MapPin size={isMobile ? 12 : 13} /> : <Lock size={12} />}
+        {canSelectElDescanso ? <MapPin size={isMobile ? 12 : 13} weight="duotone" /> : <Lock size={12} weight="duotone" />}
         {isMobile ? (
           ' ED'
         ) : (

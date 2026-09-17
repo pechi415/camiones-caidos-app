@@ -2,21 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
-import { 
-  History, 
-  Search, 
-  Filter, 
-  Truck, 
-  FileSpreadsheet, 
+import {
+  ClockCounterClockwise,
+  Funnel,
+  Truck,
+  FileXls,
   FileText,
   Wrench,
-  Clock,
   MapPin,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
+  CaretDown,
+  CaretUp,
+  CaretLeft,
+  CaretRight
+} from '@phosphor-icons/react';
 import { getLocalDateISO, formatTimeTo24H } from '../../utils/dateUtils';
 import { getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import { getShortName } from '../../utils/aiCorrector';
@@ -268,7 +266,7 @@ const getShortSystemCategory = (name) => {
       <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'linear-gradient(135deg, var(--brand-red) 0%, #B91C1C 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(229,46,46,0.3)' }}>
-            <History size={24} color="#FFFFFF" />
+            <ClockCounterClockwise size={24} color="#FFFFFF" weight="duotone" />
           </div>
           <div>
             <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF' }}>
@@ -283,10 +281,10 @@ const getShortSystemCategory = (name) => {
         {/* Botones de Exportación General (Alineados a la derecha) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto', justifyContent: 'flex-end' }}>
           <button onClick={handleExportExcel} className="btn-beige" style={{ padding: '8px 14px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <FileSpreadsheet size={16} /> <span className="hidden-mobile">Exportar Excel</span>
+            <FileXls size={16} weight="duotone" /> <span className="hidden-mobile">Exportar Excel</span>
           </button>
           <button onClick={handleExportPDF} className="btn-primary" style={{ padding: '8px 14px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <FileText size={16} /> <span className="hidden-mobile">Exportar PDF</span>
+            <FileText size={16} weight="duotone" /> <span className="hidden-mobile">Exportar PDF</span>
           </button>
         </div>
       </div>
@@ -319,7 +317,7 @@ const getShortSystemCategory = (name) => {
       <div className="glass-panel" style={{ padding: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--brand-beige)', fontWeight: 700, fontSize: '0.88rem' }}>
-            <Filter size={16} /> Filtros de Búsqueda
+            <Funnel size={16} weight="duotone" /> Filtros de Búsqueda
           </div>
           <button 
             onClick={handleResetAllFilters} 
@@ -407,7 +405,7 @@ const getShortSystemCategory = (name) => {
       <div className="glass-panel" style={{ padding: '18px' }}>
         {filteredHistory.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '36px 20px' }}>
-            <Wrench size={34} color="rgba(255, 255, 255, 0.3)" style={{ marginBottom: '10px' }} />
+            <Wrench size={34} color="rgba(255, 255, 255, 0.3)" weight="duotone" style={{ marginBottom: '10px' }} />
             <h4 style={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 600 }}>No hay registros en el historial</h4>
             <p style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>
               No se encontraron coincidencias para los filtros aplicados.
@@ -492,7 +490,7 @@ const getShortSystemCategory = (name) => {
                           flexShrink: 0
                         }}
                       >
-                        <Truck size={14} color="var(--brand-red)" /> {report.truckId}
+                        <Truck size={14} color="var(--brand-red)" weight="duotone" /> {report.truckId}
                       </span>
 
                       {/* Centro: Contenedor de Badges */}
@@ -526,7 +524,7 @@ const getShortSystemCategory = (name) => {
 
                       {/* Derecha: Flecha Desplegable */}
                       <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-                        {isExpanded ? <ChevronUp size={18} color="var(--brand-beige)" /> : <ChevronDown size={18} color="rgba(255,255,255,0.6)" />}
+                        {isExpanded ? <CaretUp size={18} color="var(--brand-beige)" weight="bold" /> : <CaretDown size={18} color="rgba(255,255,255,0.6)" weight="bold" />}
                       </span>
                     </div>
 
@@ -624,7 +622,7 @@ const getShortSystemCategory = (name) => {
                             }}
                             title="Ver hoja de vida de este camión"
                           >
-                            <Truck size={14} color="var(--brand-red)" />
+                            <Truck size={14} color="var(--brand-red)" weight="duotone" />
                             {report.truckId}
                           </button>
                         </td>
@@ -653,7 +651,7 @@ const getShortSystemCategory = (name) => {
                         {/* Ubicación */}
                         <td style={{ padding: '14px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MapPin size={12} />
+                            <MapPin size={12} weight="duotone" />
                             {report.bayLocation || 'Sin asignación'}
                           </div>
                         </td>
@@ -670,7 +668,7 @@ const getShortSystemCategory = (name) => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justify: 'space-between',
+                  justifyContent: 'space-between',
                   gap: '10px',
                   marginTop: '16px',
                   paddingTop: '14px',
@@ -699,7 +697,7 @@ const getShortSystemCategory = (name) => {
                     gap: '6px'
                   }}
                 >
-                  <ChevronLeft size={16} /> Anterior
+                  <CaretLeft size={16} weight="bold" /> Anterior
                 </button>
 
                 {/* Indicador de Páginas */}
@@ -731,7 +729,7 @@ const getShortSystemCategory = (name) => {
                     gap: '6px'
                   }}
                 >
-                  Siguiente <ChevronRight size={16} />
+                  Siguiente <CaretRight size={16} weight="bold" />
                 </button>
               </div>
             )}

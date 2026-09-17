@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
+import { CalendarBlank } from '@phosphor-icons/react';
 
 export default function NavDateFilter({
   variant = 'desktop',
@@ -23,7 +23,7 @@ export default function NavDateFilter({
       }}
       title={isMobile ? undefined : 'Filtrar reporte por fecha de turno'}
     >
-      <Calendar size={isMobile ? 13 : 14} color="var(--brand-beige)" />
+      <CalendarBlank size={isMobile ? 13 : 14} weight="duotone" color="var(--brand-beige)" />
       <input
         type="date"
         value={selectedDate}

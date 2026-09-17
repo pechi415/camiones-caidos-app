@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Truck, LogIn, Eye, EyeOff, KeyRound, AlertCircle } from 'lucide-react';
+import { Truck, SignIn, Eye, EyeSlash, Key, WarningCircle } from '@phosphor-icons/react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -94,7 +94,7 @@ export default function Login() {
             boxShadow: '0 8px 24px rgba(229, 46, 46, 0.4)',
             marginBottom: '16px'
           }}>
-            <Truck size={34} color="#FFFFFF" />
+            <Truck size={34} weight="duotone" color="#FFFFFF" />
           </div>
 
           <h2 style={{
@@ -125,7 +125,7 @@ export default function Login() {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <AlertCircle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
+            <WarningCircle size={16} weight="duotone" color="#EF4444" style={{ flexShrink: 0 }} />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -187,7 +187,7 @@ export default function Login() {
                   padding: '4px'
                 }}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeSlash size={18} weight="duotone" /> : <Eye size={18} weight="duotone" />}
               </button>
             </div>
           </div>
@@ -204,7 +204,7 @@ export default function Login() {
             alignItems: 'flex-start',
             gap: '8px'
           }}>
-            <KeyRound size={16} color="var(--brand-beige)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <Key size={16} weight="duotone" color="var(--brand-beige)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <span>
               <b>Primer Ingreso:</b> Ingrese con su cédula y la contraseña inicial <b>caidos1234</b>. El sistema le pedirá crear una clave personal.
             </span>
@@ -230,7 +230,7 @@ export default function Login() {
               <span>Verificando credenciales...</span>
             ) : (
               <>
-                <LogIn size={18} /> Iniciar Sesión
+                <SignIn size={18} weight="duotone" /> Iniciar Sesión
               </>
             )}
           </button>
