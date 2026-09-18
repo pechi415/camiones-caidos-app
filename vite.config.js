@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'cat-header-logo.jpg', 'drummond-logo.png'],
