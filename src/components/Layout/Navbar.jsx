@@ -4,6 +4,7 @@ import { useReports } from '../../context/ReportContext';
 import NavBrand from './NavBrand';
 import NavOperationalFilters from './NavOperationalFilters';
 import NavUserProfile from './NavUserProfile';
+import NotificationBell from '../Notifications/NotificationBell';
 
 export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
   const {
@@ -58,11 +59,14 @@ export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
           userMine={user?.mine}
         />
 
-        <NavUserProfile
-          user={user}
-          logout={logout}
-          updateUserAvatar={updateUserAvatar}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <NotificationBell />
+          <NavUserProfile
+            user={user}
+            logout={logout}
+            updateUserAvatar={updateUserAvatar}
+          />
+        </div>
       </div>
 
       {/* Tira de Filtros Móvil (Mina, Turno, Fecha) - Solo visible en teléfonos móviles */}

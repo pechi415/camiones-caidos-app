@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ReportProvider, useReports } from './context/ReportContext';
+import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import Navbar from './components/Layout/Navbar';
 import Sidebar from './components/Layout/Sidebar';
 import MobileNav from './components/Layout/MobileNav';
@@ -16,6 +17,7 @@ const OperatorManager = React.lazy(() => import('./components/Management/Operato
 const UserManager = React.lazy(() => import('./components/Management/UserManager'));
 const ExportModal = React.lazy(() => import('./components/Reports/ExportModal'));
 const TruckHistoryModal = React.lazy(() => import('./components/Reports/TruckHistoryModal'));
+const NotificationDetail = React.lazy(() => import('./components/Notifications/NotificationDetail'));
 
 const ViewLoadingFallback = () => (
   <div style={{
@@ -41,8 +43,19 @@ const ViewLoadingFallback = () => (
 );
 
 function MainContent() {
-  const { user, isAdmin, activeMine, activeShift, loadingSession } = useAuth();
+  const {
+    user,
+    isAdmin,
+    activeMine,
+    setActiveMine,
+    activeShift,
+    setActiveShift,
+    selectedDate: _selectedDate,
+    setSelectedDate,
+    loadingSession
+  } = useAuth();
   const { reports, updateReportStatus, deleteReport } = useReports();
+  const { activeNotification, closeNotificationDetail } = useNotifications();
 
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | history | operators | users
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -50,6 +63,16 @@ function MainContent() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [historyTruckId, setHistoryTruckId] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  const handleNavigateFromNotification = (notif) => {
+    if (notif) {
+      if (notif.mine) setActiveMine(notif.mine);
+      if (notif.shift) setActiveShift(notif.shift);
+      if (notif.operational_date) setSelectedDate(notif.operational_date);
+      setActiveTab('dashboard');
+      closeNotificationDetail();
+    }
+  };
 
   const handleOpenHistory = (truckId) => {
     setHistoryTruckId(truckId);
@@ -217,6 +240,15 @@ function MainContent() {
             reports={reports}
           />
         )}
+
+        {activeNotification && (
+          <NotificationDetail
+            isOpen={!!activeNotification}
+            notification={activeNotification}
+            onClose={closeNotificationDetail}
+            onNavigateToDashboard={handleNavigateFromNotification}
+          />
+        )}
       </React.Suspense>
 
       {/* Modal Obligatorio de Cambio de Contraseña por Primer Ingreso */}
@@ -228,9 +260,11 @@ function MainContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <ReportProvider>
-        <MainContent />
-      </ReportProvider>
+      <NotificationProvider>
+        <ReportProvider>
+          <MainContent />
+        </ReportProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
