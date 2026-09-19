@@ -404,7 +404,7 @@ serve(async (req: Request) => {
           onConflict: 'user_id,mine,shift,operational_date,evaluation_moment',
           ignoreDuplicates: true
         })
-        .select('id');
+        .select('id, auth_user_id');
 
       if (upsertErr) {
         throw new Error(`Error insertando notificaciones para mina ${mine}: ${upsertErr.message}`);
@@ -413,12 +413,78 @@ serve(async (req: Request) => {
       const insertedCount = insertedData ? insertedData.length : 0;
       totalNotificationsInserted += insertedCount;
 
+      let pushSummary: any = null;
+
+      // Despacho de Web Push condicionado estrictamente a la inserción efectiva de nuevas notificaciones
+      if (insertedCount > 0 && Array.isArray(insertedData)) {
+        // Extraer únicamente los auth_user_id no nulos y sin duplicados correspondientes a las filas nuevas
+        const newAuthUserIds = Array.from(
+          new Set(
+            insertedData
+              .map((row: any) => row.auth_user_id)
+              .filter((id: any): id is string => typeof id === 'string' && id.trim().length > 0)
+          )
+        );
+
+        if (newAuthUserIds.length > 0 && schedulerSecret) {
+          const pushTitle = `Cambio de turno — ${mine}`;
+          const downCountText = carryoverCount === 1 ? '1 camión DOWN en campo' : `${carryoverCount} camiones DOWN en campo`;
+          const pushBody = `Turno ${shiftGroup.shift} · ${shiftGroup.group_name}\n${downCountText}`;
+          const pushTag = `shift-alert-${mine.replace(/\s+/g, '-').toLowerCase()}-${shiftGroup.shift.toLowerCase()}-${operationalDate}`;
+
+          const pushPayload = {
+            title: pushTitle,
+            body: pushBody,
+            tag: pushTag,
+            data: {
+              url: '/'
+            },
+            target_auth_user_ids: newAuthUserIds
+          };
+
+          try {
+            const pushResponse = await fetch(`${supabaseUrl}/functions/v1/send-web-push`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-scheduler-secret': schedulerSecret
+              },
+              body: JSON.stringify(pushPayload)
+            });
+
+            if (pushResponse.ok) {
+              const pushJson = await pushResponse.json().catch(() => ({}));
+              pushSummary = {
+                dispatched: true,
+                totalTargets: pushJson.total_targets ?? 0,
+                successful: pushJson.successful ?? 0,
+                expired: pushJson.expired ?? 0,
+                failed: pushJson.failed ?? 0
+              };
+            } else {
+              console.warn(`[PUSH WARNING] send-web-push respondió HTTP ${pushResponse.status} para mina ${mine}`);
+              pushSummary = {
+                dispatched: false,
+                statusCode: pushResponse.status
+              };
+            }
+          } catch (pushErr: any) {
+            console.warn(`[PUSH ERROR] Fallo no bloqueante al invocar send-web-push para mina ${mine}:`, pushErr?.message);
+            pushSummary = {
+              dispatched: false,
+              error: pushErr?.message || 'Error de red en despacho Push'
+            };
+          }
+        }
+      }
+
       resultsSummary.push({
         mine,
         carryoverCount,
         truckIds: carryoverTrucks,
         recipientsCount: validRecipients.length,
         notificationsCreated: insertedCount,
+        push: pushSummary,
         status: 'SUCCESS'
       });
     }
