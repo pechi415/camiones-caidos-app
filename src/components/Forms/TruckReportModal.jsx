@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useReports } from '../../context/ReportContext';
 import { X, Truck, FloppyDisk } from '@phosphor-icons/react';
@@ -123,8 +123,13 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
     }
   }, [editingReport, isOpen]);
 
+  const openedAtRef = useRef(0);
+  const overlayMouseDownRef = useRef(false);
+
   useEffect(() => {
     if (isOpen) {
+      openedAtRef.current = Date.now();
+      overlayMouseDownRef.current = false;
       document.body.style.overflow = 'hidden';
       document.body.classList.add('modal-open');
     } else {
@@ -136,6 +141,24 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
       document.body.classList.remove('modal-open');
     };
   }, [isOpen]);
+
+  const handleOverlayMouseDown = (e) => {
+    overlayMouseDownRef.current = (e.target === e.currentTarget);
+  };
+
+  const handleOverlayClick = (e) => {
+    // 1. Descartar si el clic no fue directamente sobre el fondo oscurecido
+    if (e.target !== e.currentTarget) return;
+
+    // 2. Descartar el clic fantasma residual del toque de apertura (< 300ms)
+    if (Date.now() - openedAtRef.current < 300) return;
+
+    // 3. Descartar si la pulsación no inició en el propio overlay
+    if (!overlayMouseDownRef.current) return;
+
+    overlayMouseDownRef.current = false;
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -228,7 +251,11 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      className="modal-overlay"
+      onMouseDown={handleOverlayMouseDown}
+      onClick={handleOverlayClick}
+    >
       <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '24px' }}>
         {/* Modal Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: 'var(--glass-border)', paddingBottom: '14px' }}>
