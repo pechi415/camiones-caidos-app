@@ -16,7 +16,6 @@ export default function ExportModal({ isOpen, onClose }) {
   const { user, activeMine, activeShift, selectedDate } = useAuth();
   const { reports } = useReports();
   const [downloading, setDownloading] = useState(false);
-  const [pdfFile, setPdfFile] = useState(null);
 
   // 1. Reportes creados en la fecha/turno activa
   const shiftReports = reports.filter(r => {
@@ -182,14 +181,6 @@ export default function ExportModal({ isOpen, onClose }) {
     return doc;
   };
 
-  const [cachedBlob, setCachedBlob] = useState(null);
-  const [shareBtnState, setShareBtnState] = useState('idle'); // 'idle' | 'preparing' | 'ready'
-
-  // Limpiar caché cuando cambie la mina, turno o fecha
-  useEffect(() => {
-    setCachedBlob(null);
-    setShareBtnState('idle');
-  }, [isOpen, activeMine, activeShift, selectedDate, reports]);
 
   // Bloqueo de Scroll de Fondo cuando el Modal está abierto
   useEffect(() => {

@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import { DRUMMOND_LOGO_BASE64 } from '../assets/drummondLogoBase64';
 import { CAT_HEADER_LOGO_BASE64 } from '../assets/catHeaderLogoBase64';
 

@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .vercel
 dev-dist
+scratch/
+supabase/.temp/

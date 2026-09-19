@@ -7,7 +7,6 @@ import { exportTruckHistoryPdf } from './History/truckHistoryPdfExport';
 
 export default function TruckHistoryModal({ isOpen, onClose, initialTruckId, reports = [] }) {
   const [searchTruckId, setSearchTruckId] = useState(initialTruckId || '');
-  const [isInputFocused, setIsInputFocused] = useState(false);
 
   useModalScrollLock(isOpen);
 

@@ -13,7 +13,7 @@ import {
   CheckCircle
 } from '@phosphor-icons/react';
 import { getLocalDateISO, formatTimeTo24H, formatTime12H } from '../../utils/dateUtils';
-import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
+import { isEquipmentInField, isReportPreviousToCurrent, sortReportsByPriority } from '../../utils/truckUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 import { notifyStatusChange } from '../../services/notificationService';
 
