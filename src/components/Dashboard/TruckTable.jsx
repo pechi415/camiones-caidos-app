@@ -15,6 +15,7 @@ import {
 import { getLocalDateISO, formatTimeTo24H, formatTime12H } from '../../utils/dateUtils';
 import { isEquipmentInField, isReportPreviousToCurrent, getReportPriority, sortReportsByPriority } from '../../utils/truckUtils';
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
+import { notifyStatusChange } from '../../services/notificationService';
 
 export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDeleteReport, onViewHistory, activeMine, activeShift }) {
   const { user, selectedDate, setSelectedDate, getTodayISO, setActiveMine, setActiveShift } = useAuth();
@@ -37,13 +38,26 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
     };
   }, [operativoConfirmReport, deleteConfirmReport]);
 
-  const handleStatusClick = (report) => {
+  const handleStatusClick = async (report) => {
     if (report.status === 'DOWN') {
       const now24 = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       setReturnTimeInput(formatTime12H(now24));
       setOperativoConfirmReport(report);
     } else {
-      onUpdateStatus(report.id, 'DOWN');
+      const previousStatus = report.status || 'OPERATIVO';
+      const newStatus = 'DOWN';
+      const mutationId = `mut-${Date.now()}`;
+      await onUpdateStatus(report.id, newStatus);
+      notifyStatusChange({
+        report_id: report.id,
+        truck_id: report.truckId || report.truck_id,
+        previous_status: previousStatus,
+        new_status: newStatus,
+        shift: report.shift,
+        mutation_id: mutationId
+      }).catch(err => {
+        console.warn('[NOTIFICATIONS] Fallo no bloqueante al notificar status_change:', err);
+      });
     }
   };
 
@@ -644,9 +658,23 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  onUpdateStatus(operativoConfirmReport.id, 'OPERATIVO', returnTimeInput);
+                onClick={async () => {
+                  const targetReport = operativoConfirmReport;
+                  const previousStatus = targetReport?.status || 'DOWN';
+                  const newStatus = 'OPERATIVO';
+                  const mutationId = `mut-${Date.now()}`;
                   setOperativoConfirmReport(null);
+                  await onUpdateStatus(targetReport.id, newStatus, returnTimeInput);
+                  notifyStatusChange({
+                    report_id: targetReport.id,
+                    truck_id: targetReport.truckId || targetReport.truck_id,
+                    previous_status: previousStatus,
+                    new_status: newStatus,
+                    shift: targetReport.shift,
+                    mutation_id: mutationId
+                  }).catch(err => {
+                    console.warn('[NOTIFICATIONS] Fallo no bloqueante al notificar status_change:', err);
+                  });
                 }}
                 className="btn-primary"
                 style={{ padding: '10px 20px', flex: 1, background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#FFFFFF', fontWeight: 700 }}

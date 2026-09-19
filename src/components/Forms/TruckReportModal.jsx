@@ -7,6 +7,7 @@ import SearchableSelect from '../Common/SearchableSelect';
 import { correctTextWithAI } from '../../utils/aiCorrector';
 import { getCurrentShiftByTime, getReportPriority } from '../../utils/truckUtils';
 import { formatTimeTo24H, formatTime12H } from '../../utils/dateUtils';
+import { notifyNewReport } from '../../services/notificationService';
 
 const SYSTEM_CATEGORIES = [
   'Aire Acondicionado',
@@ -176,7 +177,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.truckId || formData.truckId.length !== 4 || !formData.truckId.startsWith('2')) {
       setErrorMsg('El número del camión es obligatorio, de 4 dígitos y debe comenzar con 2 (Ej: 2014)');
@@ -200,10 +201,21 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
     if (editingReport) {
       editReport(editingReport.id, cleanedData);
     } else {
-      addReport({
+      const savedReport = await addReport({
         ...cleanedData,
         reportedBy: user?.name || 'Usuario'
       });
+
+      if (savedReport && savedReport.id) {
+        notifyNewReport({
+          report_id: savedReport.id,
+          truck_id: savedReport.truckId || savedReport.truck_id,
+          failure_system: savedReport.systemCategory || savedReport.system,
+          shift: savedReport.shift
+        }).catch(err => {
+          console.warn('[NOTIFICATIONS] Fallo no bloqueante al notificar new_report:', err);
+        });
+      }
     }
 
     // Sincronizar la vista activa para que el registro recién creado aparezca de inmediato en pantalla

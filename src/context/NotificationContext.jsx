@@ -156,9 +156,15 @@ export function NotificationProvider({ children }) {
           triggerBellPulse();
 
           // Alerta Toast no bloqueante
-          const count = newNotif.truck_count || 0;
-          const countText = `${count} ${count === 1 ? 'camión' : 'camiones'} DOWN en campo`;
-          toast.info(`Cambio de turno — ${newNotif.mine}: ${countText}`);
+          if (newNotif.event_type === 'new_report' || newNotif.event_type === 'status_change') {
+            const toastTitle = newNotif.title || 'Novedad operacional';
+            const toastBody = newNotif.message ? newNotif.message.replace(/\n/g, ' · ') : '';
+            toast.info(`${toastTitle}${toastBody ? `: ${toastBody}` : ''}`);
+          } else {
+            const count = newNotif.truck_count || 0;
+            const countText = `${count} ${count === 1 ? 'camión' : 'camiones'} DOWN en campo`;
+            toast.info(`Cambio de turno — ${newNotif.mine}: ${countText}`);
+          }
         }
       )
       .on(
