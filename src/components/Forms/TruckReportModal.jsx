@@ -282,6 +282,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
                 value={formData.truckId}
                 onChange={(e) => handleTruckIdChange(e.target.value)}
                 placeholderText="📢 Ingrese número de 4 dígitos (Ej: 2014, 2305)..."
+                inputStyle={{ height: '42px' }}
               />
             </div>
 

@@ -536,7 +536,9 @@ textarea.glass-input {
   .form-grid-2,
   .form-grid-3,
   .modal-content form > div[style*="gridTemplateColumns"],
-  .modal-content div[style*="gridTemplateColumns"] {
+  .modal-content form > div[style*="grid-template-columns"],
+  .modal-content div[style*="gridTemplateColumns"],
+  .modal-content div[style*="grid-template-columns"] {
     display: flex !important;
     flex-direction: column !important;
     gap: 12px !important;
