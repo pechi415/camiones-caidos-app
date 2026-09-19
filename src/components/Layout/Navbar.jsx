@@ -6,7 +6,7 @@ import NavOperationalFilters from './NavOperationalFilters';
 import NavUserProfile from './NavUserProfile';
 import NotificationBell from '../Notifications/NotificationBell';
 
-export default function Navbar({ onOpenNewReport, activeTab, setActiveTab }) {
+export default function Navbar({ activeTab }) {
   const {
     user,
     isAdmin,
