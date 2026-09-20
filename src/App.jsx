@@ -88,6 +88,70 @@ function MainContent() {
     }
   }, [user, isAdmin, activeTab]);
 
+  // Sincronización de parámetros URL / Push al abrir o enfocar la aplicación
+  useEffect(() => {
+    if (!user) return;
+
+    const processNavigationParams = (truckId, mine, shift, date) => {
+      if (!truckId) return;
+
+      // Si no vienen mina/turno/fecha, resolverlos defensivamente desde los reportes en memoria
+      if (!mine || !shift || !date) {
+        const cleanTruck = String(truckId).trim().toLowerCase();
+        const matchingReport = reports.find(
+          r => String(r.truckId || r.truck_id).trim().toLowerCase() === cleanTruck
+        );
+        if (matchingReport) {
+          if (!mine && matchingReport.mine) mine = matchingReport.mine;
+          if (!shift && matchingReport.shift) shift = matchingReport.shift;
+          if (!date && (matchingReport.date || matchingReport.createdAt)) {
+            date = matchingReport.date || matchingReport.createdAt.split('T')[0];
+          }
+        }
+      }
+
+      if (mine && setActiveMine) setActiveMine(mine);
+      if (shift && setActiveShift) setActiveShift(shift);
+      if (date && setSelectedDate) setSelectedDate(date);
+      setTargetTruckId(truckId);
+      setActiveTab('dashboard');
+    };
+
+    // 1. Detección en query params (apertura de URL)
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramTruckId = urlParams.get('truck_id');
+    const paramMine = urlParams.get('mine');
+    const paramShift = urlParams.get('shift');
+    const paramDate = urlParams.get('date');
+
+    if (paramTruckId) {
+      processNavigationParams(paramTruckId, paramMine, paramShift, paramDate);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // 2. Detección por postMessage del Service Worker (ventana ya enfocada)
+    const handleSwMessage = (event) => {
+      if (event.data?.type === 'OPERATIONAL_NOTIFICATION_CLICK' && event.data.truck_id) {
+        processNavigationParams(
+          event.data.truck_id,
+          event.data.mine,
+          event.data.shift,
+          event.data.date
+        );
+      }
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    }
+
+    return () => {
+      if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      }
+    };
+  }, [user, reports, setActiveMine, setActiveShift, setSelectedDate]);
+
   if (loadingSession) {
     return (
       <div style={{

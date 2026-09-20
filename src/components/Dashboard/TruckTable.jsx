@@ -135,17 +135,16 @@ export default function TruckTable({
       sortedCurrentShiftReports.some(r => String(r.truckId || r.truck_id).toLowerCase() === String(targetTruckId).toLowerCase()) ||
       sortedCarryoverFieldReports.some(r => String(r.truckId || r.truck_id).toLowerCase() === String(targetTruckId).toLowerCase());
 
-    let filtersReset = false;
     if (!isTargetVisible && (searchTerm || statusFilter !== 'ALL' || categoryFilter !== 'ALL')) {
       if (searchTerm) setSearchTerm('');
       if (statusFilter !== 'ALL') setStatusFilter('ALL');
       if (categoryFilter !== 'ALL') setCategoryFilter('ALL');
-      filtersReset = true;
     }
 
-    let rafId1 = null;
-    let rafId2 = null;
+    let intervalId = null;
     let timeoutId = null;
+    let attempts = 0;
+    const maxAttempts = 30; // 30 intentos * 100ms = 3000ms de sondeo prudencial
 
     const findAndHighlight = () => {
       const targetClean = String(targetTruckId).trim().toLowerCase();
@@ -154,7 +153,8 @@ export default function TruckTable({
 
       for (const el of candidates) {
         const truckAttr = (el.getAttribute('data-truck-id') || '').trim().toLowerCase();
-        if (truckAttr === targetClean && el.offsetParent !== null) {
+        const isElementVisible = el.offsetParent !== null || (el.getClientRects && el.getClientRects().length > 0);
+        if (truckAttr === targetClean && isElementVisible) {
           visibleElement = el;
           break;
         }
@@ -166,27 +166,29 @@ export default function TruckTable({
         timeoutId = setTimeout(() => {
           setHighlightedTruckId(null);
           if (onClearTargetTruck) onClearTargetTruck();
-        }, 2800);
+        }, 3000);
         return true;
       }
       return false;
     };
 
-    rafId1 = requestAnimationFrame(() => {
-      const found = findAndHighlight();
-      if (!found) {
-        rafId2 = requestAnimationFrame(() => {
-          const foundSecond = findAndHighlight();
-          if (!foundSecond && !filtersReset) {
-            if (onClearTargetTruck) onClearTargetTruck();
-          }
-        });
-      }
-    });
+    // Intentar inmediatamente en el frame actual
+    const immediateSuccess = findAndHighlight();
+    if (!immediateSuccess) {
+      intervalId = setInterval(() => {
+        attempts++;
+        const success = findAndHighlight();
+        if (success) {
+          if (intervalId) clearInterval(intervalId);
+        } else if (attempts >= maxAttempts) {
+          if (intervalId) clearInterval(intervalId);
+          if (onClearTargetTruck) onClearTargetTruck();
+        }
+      }, 100);
+    }
 
     return () => {
-      if (rafId1) cancelAnimationFrame(rafId1);
-      if (rafId2) cancelAnimationFrame(rafId2);
+      if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [

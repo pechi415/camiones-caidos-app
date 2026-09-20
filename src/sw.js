@@ -107,6 +107,21 @@ self.addEventListener('notificationclick', (event) => {
     }
   }
 
+  // Enriquecer URL con metadatos operacionales si están presentes
+  const notifData = event.notification.data || {};
+  const truckId = notifData.truck_id || (Array.isArray(notifData.truck_ids) ? notifData.truck_ids[0] : null);
+  if (truckId && targetPath === '/') {
+    const params = new URLSearchParams();
+    params.set('truck_id', String(truckId).trim());
+    if (notifData.mine) params.set('mine', String(notifData.mine).trim());
+    if (notifData.shift) params.set('shift', String(notifData.shift).trim());
+    if (notifData.operational_date) params.set('date', String(notifData.operational_date).trim());
+    const query = params.toString();
+    if (query) {
+      targetPath = `/?${query}`;
+    }
+  }
+
   const targetUrl = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
@@ -116,6 +131,14 @@ self.addEventListener('notificationclick', (event) => {
         if (client.url.startsWith(self.location.origin) && 'focus' in client) {
           if ('navigate' in client && client.url !== targetUrl) {
             client.navigate(targetUrl);
+          } else if ('postMessage' in client) {
+            client.postMessage({
+              type: 'OPERATIONAL_NOTIFICATION_CLICK',
+              truck_id: truckId,
+              mine: notifData.mine,
+              shift: notifData.shift,
+              date: notifData.operational_date
+            });
           }
           return client.focus();
         }
