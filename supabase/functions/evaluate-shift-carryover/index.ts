@@ -275,10 +275,23 @@ serve(async (req: Request) => {
     const shiftGroup = getShiftGroup(operationalDate, evaluationMoment);
 
     // ==========================================
-    // 4. EVALUACIÓN DE ARRASTRE POR MINA
+    // 4. EVALUACIÓN POR MINA
     // ==========================================
     const resultsSummary: any[] = [];
     let totalNotificationsInserted = 0;
+
+    // Obtención de Administradores globales (una sola vez antes del loop de minas)
+    // Cobertura transversal en todas las minas y grupos, activos y con auth_user_id válido
+    const { data: globalAdmins, error: adminsErr } = await adminClient
+      .from('app_users')
+      .select('id, auth_user_id, name, mine, group_name, role')
+      .eq('is_active', true)
+      .eq('role', 'Administrador')
+      .not('auth_user_id', 'is', null);
+
+    if (adminsErr) {
+      throw new Error(`Error consultando administradores globales en app_users: ${adminsErr.message}`);
+    }
 
     for (const mine of OFFICIAL_MINES) {
       // Consulta a Supabase:
@@ -320,7 +333,7 @@ serve(async (req: Request) => {
         seenTrucks.add(truckId);
 
         // SOLO tras seleccionar el reporte vigente del camión dentro del corte,
-        // evaluar si califica como arrastre: status DOWN y ubicación en campo
+        // evaluar si califica: status DOWN y ubicación en campo
         if (rep.status === 'DOWN' && isEquipmentInField(rep.location)) {
           carryoverTrucks.push(truckId);
         }
@@ -330,7 +343,7 @@ serve(async (req: Request) => {
       carryoverTrucks.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       const carryoverCount = carryoverTrucks.length;
 
-      // Si no hay camiones pendientes de arrastre en campo, no se crean notificaciones para esta mina
+      // Si no hay camiones caídos en campo, no se crean notificaciones para esta mina
       if (carryoverCount === 0) {
         resultsSummary.push({
           mine,
@@ -346,9 +359,8 @@ serve(async (req: Request) => {
       // ==========================================
       // 5. OBTENCIÓN DE DESTINATARIOS ACTIVOS
       // ==========================================
-      // Destinatarios: usuarios activos de la mina evaluada asignados al grupo activo del turno
-      // Sin filtrar por rol (Administrador, Encargado, Digitador son elegibles)
-      const { data: recipients, error: recErr } = await adminClient
+      // A) Destinatarios de turno: usuarios activos de la mina evaluada asignados al grupo activo
+      const { data: shiftPeers, error: peersErr } = await adminClient
         .from('app_users')
         .select('id, auth_user_id, name, mine, group_name, role')
         .eq('mine', mine)
@@ -356,11 +368,28 @@ serve(async (req: Request) => {
         .eq('is_active', true)
         .not('auth_user_id', 'is', null);
 
-      if (recErr) {
-        throw new Error(`Error consultando destinatarios en app_users para mina ${mine}: ${recErr.message}`);
+      if (peersErr) {
+        throw new Error(`Error consultando destinatarios de turno en app_users para mina ${mine}: ${peersErr.message}`);
       }
 
-      const validRecipients = (recipients || []).filter(u => u.auth_user_id && u.id);
+      // B) Deduplicación garantizada en memoria vía Map por auth_user_id
+      const recipientsMap = new Map<string, any>();
+
+      // 1. Incorporar compañeros de turno de la mina evaluada
+      for (const p of (shiftPeers || [])) {
+        if (p.auth_user_id && p.id) {
+          recipientsMap.set(p.auth_user_id, p);
+        }
+      }
+
+      // 2. Incorporar Administradores globales (cobertura transversal en ambas minas y todos los grupos)
+      for (const a of (globalAdmins || [])) {
+        if (a.auth_user_id && a.id) {
+          recipientsMap.set(a.auth_user_id, a);
+        }
+      }
+
+      const validRecipients = Array.from(recipientsMap.values());
 
       if (validRecipients.length === 0) {
         resultsSummary.push({
@@ -430,7 +459,7 @@ serve(async (req: Request) => {
           const pushTitle = `Cambio de turno — ${mine}`;
           const downCountText = carryoverCount === 1 ? '1 camión DOWN en campo' : `${carryoverCount} camiones DOWN en campo`;
           const pushBody = `Turno ${shiftGroup.shift} · ${shiftGroup.group_name}\n${downCountText}`;
-          const pushTag = `shift-alert-${mine.replace(/\s+/g, '-').toLowerCase()}-${shiftGroup.shift.toLowerCase()}-${operationalDate}`;
+          const pushTag = `shift-alert-${mine.replace(/\s+/g, '-').toLowerCase()}-${shiftGroup.shift.toLowerCase()}-${operationalDate}-${Date.now()}`;
 
           const pushPayload = {
             title: pushTitle,
