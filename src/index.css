@@ -1121,3 +1121,33 @@ textarea.glass-input {
   color: #38BDF8;
 }
 
+/* Resaltado temporal de camión enfocado desde notificaciones */
+@keyframes truckHighlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    outline: 2px solid rgba(245, 158, 11, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 24px 6px rgba(245, 158, 11, 0.45);
+    outline: 2px solid rgba(245, 158, 11, 1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    outline: 2px solid rgba(245, 158, 11, 0);
+  }
+}
+
+.highlight-truck-target {
+  animation: truckHighlightPulse 1.2s ease-in-out infinite;
+  position: relative;
+  z-index: 5;
+  transition: background-color 0.3s ease;
+}
+
+div.glass-card.highlight-truck-target {
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+tr.highlight-truck-target td {
+  background: rgba(245, 158, 11, 0.14) !important;
+}

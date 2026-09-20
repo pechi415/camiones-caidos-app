@@ -63,12 +63,15 @@ function MainContent() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [historyTruckId, setHistoryTruckId] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [targetTruckId, setTargetTruckId] = useState(null);
 
   const handleNavigateFromNotification = (notif) => {
     if (notif) {
       if (notif.mine) setActiveMine(notif.mine);
       if (notif.shift) setActiveShift(notif.shift);
       if (notif.operational_date) setSelectedDate(notif.operational_date);
+      const targetId = notif.metadata?.truck_id || notif.truck_ids?.[0] || null;
+      setTargetTruckId(targetId);
       setActiveTab('dashboard');
       closeNotificationDetail();
     }
@@ -176,6 +179,8 @@ function MainContent() {
                 onViewHistory={handleOpenHistory}
                 activeMine={activeMine}
                 activeShift={activeShift}
+                targetTruckId={targetTruckId}
+                onClearTargetTruck={() => setTargetTruckId(null)}
               />
             </>
           )}

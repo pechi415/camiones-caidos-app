@@ -17,7 +17,17 @@ import { isEquipmentInField, isReportPreviousToCurrent, sortReportsByPriority } 
 import AnimatedSearchInput from '../Common/AnimatedSearchInput';
 import { notifyStatusChange } from '../../services/notificationService';
 
-export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDeleteReport, onViewHistory, activeMine, activeShift }) {
+export default function TruckTable({
+  reports,
+  onUpdateStatus,
+  onEditReport,
+  onDeleteReport,
+  onViewHistory,
+  activeMine,
+  activeShift,
+  targetTruckId = null,
+  onClearTargetTruck
+}) {
   const { user, selectedDate, setSelectedDate, getTodayISO, setActiveMine, setActiveShift } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | DOWN | OPERATIVO
@@ -25,6 +35,7 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
   const [deleteConfirmReport, setDeleteConfirmReport] = useState(null);
   const [operativoConfirmReport, setOperativoConfirmReport] = useState(null);
   const [returnTimeInput, setReturnTimeInput] = useState('');
+  const [highlightedTruckId, setHighlightedTruckId] = useState(null);
 
   // Bloquear scroll de fondo cuando un modal de confirmación está abierto
   useEffect(() => {
@@ -115,22 +126,104 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
   const sortedCarryoverFieldReports = sortReportsByPriority(carryoverFieldReports);
   const categories = Array.from(new Set(reports.map(r => r.systemCategory)));
 
+  // Localización, scroll y resaltado temporal al navegar desde una notificación
+  useEffect(() => {
+    if (!targetTruckId || highlightedTruckId === targetTruckId) return;
+
+    // Verificar si algún filtro local activo oculta el camión objetivo
+    const isTargetVisible =
+      sortedCurrentShiftReports.some(r => String(r.truckId || r.truck_id).toLowerCase() === String(targetTruckId).toLowerCase()) ||
+      sortedCarryoverFieldReports.some(r => String(r.truckId || r.truck_id).toLowerCase() === String(targetTruckId).toLowerCase());
+
+    let filtersReset = false;
+    if (!isTargetVisible && (searchTerm || statusFilter !== 'ALL' || categoryFilter !== 'ALL')) {
+      if (searchTerm) setSearchTerm('');
+      if (statusFilter !== 'ALL') setStatusFilter('ALL');
+      if (categoryFilter !== 'ALL') setCategoryFilter('ALL');
+      filtersReset = true;
+    }
+
+    let rafId1 = null;
+    let rafId2 = null;
+    let timeoutId = null;
+
+    const findAndHighlight = () => {
+      const targetClean = String(targetTruckId).trim().toLowerCase();
+      const candidates = document.querySelectorAll('[data-truck-id]');
+      let visibleElement = null;
+
+      for (const el of candidates) {
+        const truckAttr = (el.getAttribute('data-truck-id') || '').trim().toLowerCase();
+        if (truckAttr === targetClean && el.offsetParent !== null) {
+          visibleElement = el;
+          break;
+        }
+      }
+
+      if (visibleElement) {
+        visibleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedTruckId(targetTruckId);
+        timeoutId = setTimeout(() => {
+          setHighlightedTruckId(null);
+          if (onClearTargetTruck) onClearTargetTruck();
+        }, 2800);
+        return true;
+      }
+      return false;
+    };
+
+    rafId1 = requestAnimationFrame(() => {
+      const found = findAndHighlight();
+      if (!found) {
+        rafId2 = requestAnimationFrame(() => {
+          const foundSecond = findAndHighlight();
+          if (!foundSecond && !filtersReset) {
+            if (onClearTargetTruck) onClearTargetTruck();
+          }
+        });
+      }
+    });
+
+    return () => {
+      if (rafId1) cancelAnimationFrame(rafId1);
+      if (rafId2) cancelAnimationFrame(rafId2);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [
+    targetTruckId,
+    highlightedTruckId,
+    sortedCurrentShiftReports,
+    sortedCarryoverFieldReports,
+    searchTerm,
+    statusFilter,
+    categoryFilter,
+    onClearTargetTruck
+  ]);
+
   // Renderizador para Celulares (Vista de Tarjetas Táctiles)
   const renderMobileCards = (list, isCarryover = false) => (
     <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-      {list.map(report => (
-        <div
-          key={report.id}
-          className="glass-card"
-          style={{
-            padding: '14px',
-            borderLeft: isCarryover ? '4px solid #EF4444' : '4px solid var(--brand-red)',
-            background: isCarryover ? 'rgba(239, 68, 68, 0.08)' : 'rgba(255, 255, 255, 0.04)',
-            borderRadius: '14px',
-            width: '100%',
-            boxSizing: 'border-box'
-          }}
-        >
+      {list.map(report => {
+        const isTargetHighlighted = Boolean(
+          highlightedTruckId &&
+          String(highlightedTruckId).trim().toLowerCase() === String(report.truckId || report.truck_id).trim().toLowerCase()
+        );
+
+        return (
+          <div
+            key={report.id}
+            data-truck-id={report.truckId || report.truck_id}
+            data-report-id={report.id}
+            className={`glass-card ${isTargetHighlighted ? 'highlight-truck-target' : ''}`}
+            style={{
+              padding: '14px',
+              borderLeft: isCarryover ? '4px solid #EF4444' : '4px solid var(--brand-red)',
+              background: isCarryover ? 'rgba(239, 68, 68, 0.08)' : 'rgba(255, 255, 255, 0.04)',
+              borderRadius: '14px',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
+          >
           {/* Header de la tarjeta */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <div
@@ -241,7 +334,8 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
             )}
           </div>
         </div>
-      ))}
+      );
+    })}
     </div>
   );
 
@@ -267,17 +361,25 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
             </tr>
           </thead>
           <tbody>
-            {list.map(report => (
-              <tr
-                key={report.id}
-                style={{
-                  background: isCarryover ? 'rgba(239, 68, 68, 0.08)' : 'rgba(255, 255, 255, 0.03)',
-                  borderLeft: isCarryover ? '4px solid #EF4444' : 'none',
-                  transition: 'all 0.2s ease',
-                  borderRadius: '12px'
-                }}
-                className="table-row-hover"
-              >
+            {list.map(report => {
+              const isTargetHighlighted = Boolean(
+                highlightedTruckId &&
+                String(highlightedTruckId).trim().toLowerCase() === String(report.truckId || report.truck_id).trim().toLowerCase()
+              );
+
+              return (
+                <tr
+                  key={report.id}
+                  data-truck-id={report.truckId || report.truck_id}
+                  data-report-id={report.id}
+                  style={{
+                    background: isCarryover ? 'rgba(239, 68, 68, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                    borderLeft: isCarryover ? '4px solid #EF4444' : 'none',
+                    transition: 'all 0.2s ease',
+                    borderRadius: '12px'
+                  }}
+                  className={`table-row-hover ${isTargetHighlighted ? 'highlight-truck-target' : ''}`}
+                >
                 {/* Número del Camión */}
                 <td style={{ padding: '14px', borderRadius: '12px 0 0 12px' }}>
                   <div
@@ -463,7 +565,8 @@ export default function TruckTable({ reports, onUpdateStatus, onEditReport, onDe
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+          })}
           </tbody>
         </table>
       </div>
