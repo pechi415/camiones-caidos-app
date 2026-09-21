@@ -95,25 +95,34 @@ function MainContent() {
     const processNavigationParams = (truckId, mine, shift, date) => {
       if (!truckId) return;
 
-      // Si no vienen mina/turno/fecha, resolverlos defensivamente desde los reportes en memoria
-      if (!mine || !shift || !date) {
+      // 1. Establecer activeMine con prioridad (la mina de la notificación es la fuente de verdad)
+      if (mine && setActiveMine) {
+        setActiveMine(mine);
+      } else if (!mine) {
+        // Fallback únicamente si la mina no viene provista en la notificación
         const cleanTruck = String(truckId).trim().toLowerCase();
         const matchingReport = reports.find(
           r => String(r.truckId || r.truck_id).trim().toLowerCase() === cleanTruck
         );
-        if (matchingReport) {
-          if (!mine && matchingReport.mine) mine = matchingReport.mine;
-          if (!shift && matchingReport.shift) shift = matchingReport.shift;
-          if (!date && (matchingReport.date || matchingReport.createdAt)) {
-            date = matchingReport.date || matchingReport.createdAt.split('T')[0];
-          }
+        if (matchingReport?.mine && setActiveMine) {
+          setActiveMine(matchingReport.mine);
         }
       }
 
-      if (mine && setActiveMine) setActiveMine(mine);
-      if (shift && setActiveShift) setActiveShift(shift);
-      if (date && setSelectedDate) setSelectedDate(date);
+      // 2. Establecer activeShift
+      if (shift && setActiveShift) {
+        setActiveShift(shift);
+      }
+
+      // 3. Establecer selectedDate
+      if (date && setSelectedDate) {
+        setSelectedDate(date);
+      }
+
+      // 4. Establecer targetTruckId
       setTargetTruckId(truckId);
+
+      // 5. Mostrar Dashboard
       setActiveTab('dashboard');
     };
 

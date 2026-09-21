@@ -331,7 +331,10 @@ serve(async (req: Request) => {
             url: '/',
             report_id: report_id.trim(),
             truck_id: truck_id.trim(),
-            event_type
+            event_type,
+            mine: reportMine,
+            shift: reportShift,
+            operational_date: reportDate
           },
           target_auth_user_ids: newAuthUserIds
         };

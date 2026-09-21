@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -36,6 +36,18 @@ export default function TruckTable({
   const [operativoConfirmReport, setOperativoConfirmReport] = useState(null);
   const [returnTimeInput, setReturnTimeInput] = useState('');
   const [highlightedTruckId, setHighlightedTruckId] = useState(null);
+  const highlightTimeoutRef = useRef(null);
+  const activeTargetRef = useRef(null);
+
+  // Limpieza defensiva del temporizador de highlight al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+        highlightTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Bloquear scroll de fondo cuando un modal de confirmación está abierto
   useEffect(() => {
@@ -128,7 +140,19 @@ export default function TruckTable({
 
   // Localización, scroll y resaltado temporal al navegar desde una notificación
   useEffect(() => {
-    if (!targetTruckId || highlightedTruckId === targetTruckId) return;
+    if (!targetTruckId) return;
+
+    // Si ya estamos procesando y resaltando este mismo camión con un temporizador activo, no reiniciar
+    if (activeTargetRef.current === targetTruckId && highlightTimeoutRef.current) {
+      return;
+    }
+
+    // Cancelar temporizador previo si llega un target diferente
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+    activeTargetRef.current = targetTruckId;
 
     // Verificar si algún filtro local activo oculta el camión objetivo
     const isTargetVisible =
@@ -142,7 +166,6 @@ export default function TruckTable({
     }
 
     let intervalId = null;
-    let timeoutId = null;
     let attempts = 0;
     const maxAttempts = 30; // 30 intentos * 100ms = 3000ms de sondeo prudencial
 
@@ -153,8 +176,9 @@ export default function TruckTable({
 
       for (const el of candidates) {
         const truckAttr = (el.getAttribute('data-truck-id') || '').trim().toLowerCase();
+        const mineAttr = (el.getAttribute('data-mine') || '').trim();
         const isElementVisible = el.offsetParent !== null || (el.getClientRects && el.getClientRects().length > 0);
-        if (truckAttr === targetClean && isElementVisible) {
+        if (truckAttr === targetClean && mineAttr === activeMine && isElementVisible) {
           visibleElement = el;
           break;
         }
@@ -163,10 +187,17 @@ export default function TruckTable({
       if (visibleElement) {
         visibleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setHighlightedTruckId(targetTruckId);
-        timeoutId = setTimeout(() => {
+
+        if (highlightTimeoutRef.current) {
+          clearTimeout(highlightTimeoutRef.current);
+        }
+        highlightTimeoutRef.current = setTimeout(() => {
           setHighlightedTruckId(null);
+          activeTargetRef.current = null;
           if (onClearTargetTruck) onClearTargetTruck();
+          highlightTimeoutRef.current = null;
         }, 3000);
+
         return true;
       }
       return false;
@@ -179,21 +210,30 @@ export default function TruckTable({
         attempts++;
         const success = findAndHighlight();
         if (success) {
-          if (intervalId) clearInterval(intervalId);
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
         } else if (attempts >= maxAttempts) {
-          if (intervalId) clearInterval(intervalId);
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+          activeTargetRef.current = null;
           if (onClearTargetTruck) onClearTargetTruck();
         }
       }, 100);
     }
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
-      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
     };
   }, [
     targetTruckId,
-    highlightedTruckId,
+    activeMine,
     sortedCurrentShiftReports,
     sortedCarryoverFieldReports,
     searchTerm,
@@ -215,6 +255,7 @@ export default function TruckTable({
           <div
             key={report.id}
             data-truck-id={report.truckId || report.truck_id}
+            data-mine={report.mine}
             data-report-id={report.id}
             className={`glass-card ${isTargetHighlighted ? 'highlight-truck-target' : ''}`}
             style={{
@@ -373,6 +414,7 @@ export default function TruckTable({
                 <tr
                   key={report.id}
                   data-truck-id={report.truckId || report.truck_id}
+                  data-mine={report.mine}
                   data-report-id={report.id}
                   style={{
                     background: isCarryover ? 'rgba(239, 68, 68, 0.08)' : 'rgba(255, 255, 255, 0.03)',

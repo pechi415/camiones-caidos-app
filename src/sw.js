@@ -107,7 +107,7 @@ self.addEventListener('notificationclick', (event) => {
     }
   }
 
-  // Enriquecer URL con metadatos operacionales si están presentes
+  // Enriquecer URL con metadatos operacionales estructurados (truck_id, mine, shift, operational_date)
   const notifData = event.notification.data || {};
   const truckId = notifData.truck_id || (Array.isArray(notifData.truck_ids) ? notifData.truck_ids[0] : null);
   if (truckId && targetPath === '/') {
