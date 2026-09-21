@@ -1151,3 +1151,191 @@ div.glass-card.highlight-truck-target {
 tr.highlight-truck-target td {
   background: rgba(245, 158, 11, 0.14) !important;
 }
+
+/* ==========================================================================
+   Historial de Novedades del Equipo (Modal Compact Header)
+   ========================================================================== */
+
+.truck-history-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  border-bottom: var(--glass-border);
+  padding-bottom: 12px;
+}
+
+.truck-history-toolbar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.truck-history-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.truck-history-pdf-btn {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 0.84rem;
+  background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%);
+  color: #000000;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.truck-history-pdf-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.truck-history-kpis {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 18px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.truck-history-kpi-card {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.truck-history-kpi-card.kpi-total {
+  border-left: 3px solid var(--brand-beige);
+}
+
+.truck-history-kpi-card.kpi-down {
+  border-left: 3px solid var(--status-down);
+}
+
+.truck-history-kpi-card.kpi-resolved {
+  border-left: 3px solid var(--status-operativo);
+}
+
+.truck-history-kpi-card.kpi-system {
+  border-left: 3px solid #FACC15;
+}
+
+.truck-history-kpi-label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.truck-history-kpi-value {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.truck-history-kpi-value.kpi-val-down {
+  color: var(--status-down);
+}
+
+.truck-history-kpi-value.kpi-val-resolved {
+  color: var(--status-operativo);
+}
+
+.truck-history-kpi-value.kpi-val-system {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #FACC15;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .truck-history-header-top {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .truck-history-header-top h3 {
+    font-size: 1.05rem !important;
+  }
+
+  .truck-history-header-top p {
+    font-size: 0.75rem !important;
+  }
+
+  .truck-history-toolbar {
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .truck-history-pdf-btn {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+    gap: 6px;
+  }
+
+  .truck-history-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.45fr) !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .truck-history-kpi-card {
+    padding: 6px 8px !important;
+    border-radius: 8px !important;
+  }
+
+  .truck-history-kpi-label {
+    font-size: 0.62rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .truck-history-kpi-value {
+    font-size: 1.15rem !important;
+    margin-top: 2px !important;
+    line-height: 1.1 !important;
+  }
+
+  .truck-history-kpi-value.kpi-val-system {
+    font-size: 0.8rem !important;
+    margin-top: 3px !important;
+    line-height: 1.15 !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .truck-history-pdf-btn {
+    padding: 0 8px;
+    font-size: 0.74rem;
+  }
+}

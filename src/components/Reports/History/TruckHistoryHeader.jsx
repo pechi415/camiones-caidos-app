@@ -17,7 +17,7 @@ export default function TruckHistoryHeader({
   return (
     <>
       {/* Encabezado Modal */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', borderBottom: 'var(--glass-border)', paddingBottom: '12px' }}>
+      <div className="truck-history-header-top">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '42px',
@@ -28,7 +28,8 @@ export default function TruckHistoryHeader({
             color: '#FACC15',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
             <ClockCounterClockwise size={22} weight="duotone" />
           </div>
@@ -41,76 +42,63 @@ export default function TruckHistoryHeader({
             </p>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+        <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
           <X size={22} weight="bold" />
         </button>
       </div>
 
       {/* Buscador de Camión con Texto Animado en Marquesina + Botón Exportar PDF */}
-      <div style={{ display: 'grid', gridTemplateColumns: hasHistory ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px', width: '100%' }}>
-        <AnimatedSearchInput
-          value={searchTruckId}
-          onChange={onSearchChange}
-          placeholderText="📢 Ingrese el Número del Camión para consultar su historial completo (ej: 2014)..."
-        />
+      <div className="truck-history-toolbar">
+        <div className="truck-history-search">
+          <AnimatedSearchInput
+            value={searchTruckId}
+            onChange={onSearchChange}
+            placeholderText="📢 Ingrese el Número del Camión para consultar su historial completo (ej: 2014)..."
+          />
+        </div>
 
         {hasHistory && (
           <button
             onClick={onExportPDF}
-            className="btn-primary"
-            style={{
-              height: '40px',
-              width: '100%',
-              padding: '0 16px',
-              fontSize: '0.84rem',
-              background: 'linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)',
-              color: '#000000',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxSizing: 'border-box',
-              whiteSpace: 'nowrap'
-            }}
+            className="btn-primary truck-history-pdf-btn"
+            title="Exportar Historial a PDF"
           >
-            <FileText size={16} weight="duotone" /> Exportar PDF
+            <FileText size={16} weight="duotone" />
+            <span>Exportar PDF</span>
           </button>
         )}
       </div>
 
       {/* KPIs Resumen del Camión */}
       {currentTruckId && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '12px',
-          marginBottom: '20px'
-        }}>
-          <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid var(--brand-beige)' }}>
-            <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>TOTAL REGISTROS</span>
-            <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginTop: '2px' }}>
+        <div className="truck-history-kpis">
+          <div className="glass-card truck-history-kpi-card kpi-total">
+            <span className="truck-history-kpi-label" title="TOTAL REGISTROS">TOTAL REGISTROS</span>
+            <h4 className="truck-history-kpi-value">
               {totalEvents}
             </h4>
           </div>
 
-          <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid var(--status-down)' }}>
-            <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>EVENTOS DOWN</span>
-            <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, color: 'var(--status-down)', marginTop: '2px' }}>
+          <div className="glass-card truck-history-kpi-card kpi-down">
+            <span className="truck-history-kpi-label" title="EVENTOS DOWN">EVENTOS DOWN</span>
+            <h4 className="truck-history-kpi-value kpi-val-down">
               {downEvents}
             </h4>
           </div>
 
-          <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid var(--status-operativo)' }}>
-            <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>RECUPERADOS</span>
-            <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, color: 'var(--status-operativo)', marginTop: '2px' }}>
+          <div className="glass-card truck-history-kpi-card kpi-resolved">
+            <span className="truck-history-kpi-label" title="RECUPERADOS">RECUPERADOS</span>
+            <h4 className="truck-history-kpi-value kpi-val-resolved">
               {resolvedEvents}
             </h4>
           </div>
 
-          <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid #FACC15' }}>
-            <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>SISTEMA MÁS AFECTADO</span>
-            <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '1rem', fontWeight: 700, color: '#FACC15', marginTop: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+          <div className="glass-card truck-history-kpi-card kpi-system">
+            <span className="truck-history-kpi-label" title="SISTEMA MÁS AFECTADO">SISTEMA MÁS AFECTADO</span>
+            <h4
+              className="truck-history-kpi-value kpi-val-system"
+              title={mostFrequentSystem}
+            >
               {mostFrequentSystem}
             </h4>
           </div>
