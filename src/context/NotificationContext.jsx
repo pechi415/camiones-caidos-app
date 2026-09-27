@@ -10,7 +10,8 @@ export function NotificationProvider({ children }) {
   const { toast } = useToast();
 
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // El contador se deriva de la lista: no puede incrementarse por un evento duplicado.
+  const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -92,10 +93,6 @@ export function NotificationProvider({ children }) {
             return timeB - timeA;
           });
 
-          // 4. Calcular unreadCount coherente con la lista fusionada
-          const unread = merged.filter((n) => !n.is_read).length;
-          setUnreadCount(unread);
-
           return merged;
         });
       }
@@ -117,7 +114,6 @@ export function NotificationProvider({ children }) {
     if (!authId) {
       // Limpieza de estado al cerrar sesión para aislar datos entre usuarios
       setNotifications([]);
-      setUnreadCount(0);
       setIsPanelOpen(false);
       setActiveNotification(null);
       setError(null);
@@ -148,10 +144,6 @@ export function NotificationProvider({ children }) {
             return [newNotif, ...prev];
           });
 
-          if (!newNotif.is_read) {
-            setUnreadCount((prev) => prev + 1);
-          }
-
           // Animación visual de campana
           triggerBellPulse();
 
@@ -181,8 +173,6 @@ export function NotificationProvider({ children }) {
 
           setNotifications((prev) => {
             const next = prev.map((n) => (n.id === updatedNotif.id ? updatedNotif : n));
-            const unread = next.filter((n) => !n.is_read).length;
-            setUnreadCount(unread);
             return next;
           });
 
@@ -209,28 +199,18 @@ export function NotificationProvider({ children }) {
     if (!notificationId) return;
 
     let previousNotifications = null;
-    let previousUnreadCount = null;
-    let wasUnread = false;
 
     // Mutación optimista inmediata en memoria guardando snapshot para rollback
     setNotifications((prev) => {
       previousNotifications = prev;
       const target = prev.find((n) => n.id === notificationId);
       if (!target || target.is_read) return prev;
-      wasUnread = true;
       return prev.map((n) =>
         n.id === notificationId
           ? { ...n, is_read: true, read_at: new Date().toISOString() }
           : n
       );
     });
-
-    if (wasUnread) {
-      setUnreadCount((prev) => {
-        previousUnreadCount = prev;
-        return Math.max(0, prev - 1);
-      });
-    }
 
     try {
       const { error: updateErr } = await supabase
@@ -247,16 +227,12 @@ export function NotificationProvider({ children }) {
       if (previousNotifications) {
         setNotifications(previousNotifications);
       }
-      if (previousUnreadCount !== null) {
-        setUnreadCount(previousUnreadCount);
-      }
     }
   }, []);
 
   // Marcar todas las notificaciones pendientes como leídas con rollback en caso de fallo
   const markAllAsRead = useCallback(async () => {
     let previousNotifications = null;
-    let previousUnreadCount = null;
 
     // Mutación optimista inmediata guardando snapshot para rollback
     setNotifications((prev) => {
@@ -266,11 +242,6 @@ export function NotificationProvider({ children }) {
         is_read: true,
         read_at: n.read_at || new Date().toISOString()
       }));
-    });
-
-    setUnreadCount((prev) => {
-      previousUnreadCount = prev;
-      return 0;
     });
 
     try {
@@ -287,9 +258,6 @@ export function NotificationProvider({ children }) {
       // Revertir exactamente al snapshot anterior
       if (previousNotifications) {
         setNotifications(previousNotifications);
-      }
-      if (previousUnreadCount !== null) {
-        setUnreadCount(previousUnreadCount);
       }
     }
   }, []);

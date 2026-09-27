@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   User,
   CaretDown,
@@ -16,88 +16,129 @@ import {
   Info
 } from '@phosphor-icons/react';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../context/ToastContext';
 import { getShortName } from '../../utils/aiCorrector';
 import { compressImage } from '../../utils/imageUtils';
 import {
-  isPushSupported,
-  isIOS,
-  isStandalone,
-  getNotificationPermission,
-  getExistingPushSubscription,
+  getPushSubscriptionState,
   subscribeUserToPush,
   unsubscribeUserFromPush
 } from '../../utils/pushUtils';
 
 export default function NavUserProfile({ user, logout, updateUserAvatar }) {
+  const { toast } = useToast();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [loadingDoc, setLoadingDoc] = useState(null); // 'user' | 'admin' | null
   const [docError, setDocError] = useState(null);
-  const [pushStatus, setPushStatus] = useState('checking'); // 'active' | 'inactive' | 'denied' | 'unsupported' | 'ios_not_standalone' | 'checking'
+  const [pushStatus, setPushStatus] = useState('checking'); // Incluye estados verificables, desconocidos y limpieza parcial.
   const [pushLoading, setPushLoading] = useState(false);
   const [pushError, setPushError] = useState(null);
   const avatarInputRef = useRef(null);
 
-  const checkPushState = async () => {
-    if (!isPushSupported()) {
-      setPushStatus('unsupported');
+  const pushBusyRef = useRef(false);
+  const pushCleanupRef = useRef(null);
+  const pushCheckRef = useRef(0);
+  const accountRef = useRef(null);
+  const accountId = `${user?.id || ''}:${user?.authUserId || user?.auth_user_id || ''}`;
+  accountRef.current = accountId;
+
+  const checkPushState = useCallback(async () => {
+    if (pushBusyRef.current) return;
+    if (pushCleanupRef.current?.accountId === accountId) {
+      setPushStatus('partial');
       return;
     }
-    if (isIOS() && !isStandalone()) {
-      setPushStatus('ios_not_standalone');
-      return;
-    }
-    const perm = getNotificationPermission();
-    if (perm === 'denied') {
-      setPushStatus('denied');
-      return;
-    }
-    const sub = await getExistingPushSubscription();
-    if (sub) {
-      setPushStatus('active');
-    } else {
-      setPushStatus('inactive');
+    const requestId = ++pushCheckRef.current;
+    setPushStatus('checking');
+    const state = await getPushSubscriptionState(user);
+    if (accountRef.current !== accountId || requestId !== pushCheckRef.current) return;
+    setPushStatus(state.status);
+    setPushError(state.message || (state.status === 'repair'
+      ? 'La suscripción cambió o no está vinculada a esta cuenta. Pulse Activar Alertas para volver a configurarla.'
+      : null));
+  }, [user, accountId]);
+
+  useEffect(() => {
+    // Renovación: comprobar, sin pedir permisos ni reactivar alertas automáticamente.
+    const checkGeneration = pushCheckRef;
+    const refresh = () => { void checkPushState(); };
+    const onMessage = event => {
+      if (event.data?.type === 'PUSH_SUBSCRIPTION_CHANGED') refresh();
+    };
+    if (showRoleMenu) refresh();
+    window.addEventListener('online', refresh);
+    window.addEventListener('focus', refresh);
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    return () => {
+      ++checkGeneration.current;
+      window.removeEventListener('online', refresh);
+      window.removeEventListener('focus', refresh);
+      navigator.serviceWorker?.removeEventListener('message', onMessage);
+    };
+  }, [showRoleMenu, checkPushState]);
+
+  const handleTogglePush = async () => {
+    if (pushBusyRef.current) return;
+    if (pushStatus === 'unknown') { await checkPushState(); return; }
+    pushBusyRef.current = true;
+    ++pushCheckRef.current;
+    setPushLoading(true);
+    setPushError(null);
+    try {
+      const removing = pushStatus === 'active' || pushStatus === 'partial';
+      const pendingEndpoint = pushCleanupRef.current?.accountId === accountId
+        ? pushCleanupRef.current.endpoint : null;
+      const res = removing
+        ? await unsubscribeUserFromPush(user, pendingEndpoint)
+        : await subscribeUserToPush(user);
+      if (accountRef.current !== accountId) return;
+      if (res.success) {
+        pushCleanupRef.current = null;
+        if (removing) {
+          const state = await getPushSubscriptionState(user);
+          if (accountRef.current !== accountId) return;
+          setPushStatus(state.status);
+          setPushError(state.message || null);
+        } else setPushStatus('active');
+      } else {
+        setPushError(res.error || res.message || 'No se pudo confirmar la operación.');
+        if (removing) {
+          pushCleanupRef.current = { accountId, endpoint: res.endpoint };
+          setPushStatus('partial');
+        } else {
+          setPushStatus(res.code === 'PERMISSION_DENIED' ? 'denied'
+            : res.code === 'IOS_NOT_STANDALONE' ? 'ios_not_standalone'
+              : res.code === 'UNSUPPORTED' ? 'unsupported' : 'repair');
+        }
+      }
+    } catch {
+      if (accountRef.current === accountId) {
+        setPushStatus('unknown');
+        setPushError('No se pudo confirmar el estado de las alertas.');
+      }
+    } finally {
+      pushBusyRef.current = false;
+      setPushLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (showRoleMenu) {
-      setPushError(null);
-      checkPushState();
-    }
-  }, [showRoleMenu]);
-
-  const handleTogglePush = async () => {
-    if (pushLoading) return;
+  const handleLogout = async () => {
+    if (pushBusyRef.current) return;
+    pushBusyRef.current = true;
+    ++pushCheckRef.current;
     setPushLoading(true);
-    setPushError(null);
-
+    setShowRoleMenu(false);
     try {
-      if (pushStatus === 'active') {
-        const res = await unsubscribeUserFromPush(user);
-        if (res.success) {
-          setPushStatus('inactive');
-        } else {
-          setPushError(res.error || 'No fue posible desactivar en este dispositivo.');
-        }
-      } else {
-        const res = await subscribeUserToPush(user);
-        if (res.success) {
-          setPushStatus('active');
-        } else {
-          if (res.code === 'PERMISSION_DENIED') {
-            setPushStatus('denied');
-          } else if (res.code === 'IOS_NOT_STANDALONE') {
-            setPushStatus('ios_not_standalone');
-          } else {
-            setPushError(res.message || 'Error al activar notificaciones.');
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error al cambiar estado de push:', err);
-      setPushError('Error inesperado al gestionar notificaciones.');
+      const pendingEndpoint = pushCleanupRef.current?.accountId === accountId
+        ? pushCleanupRef.current.endpoint : null;
+      const result = await unsubscribeUserFromPush(user, pendingEndpoint);
+      if (!result.success) toast.warning('Se cerrará la sesión, pero no se pudo confirmar la desactivación de las alertas de este dispositivo.');
+    } catch {
+      toast.warning('No se pudo confirmar la desactivación de las alertas antes de cerrar sesión.');
     } finally {
-      setPushLoading(false);
+      // Las esperas de limpieza están acotadas. Un fallo push no impide cerrar sesión.
+      try { await logout(); }
+      finally { pushBusyRef.current = false; setPushLoading(false); }
     }
   };
 
@@ -342,7 +383,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
               {pushStatus === 'checking' ? (
                 <div style={{ padding: '8px 10px', fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <CircleNotch size={14} weight="bold" style={{ animation: 'docSpin 1s linear infinite' }} />
-                  <span>Comprobando soporte...</span>
+                  <span>Comprobando alertas...</span>
                 </div>
               ) : pushStatus === 'unsupported' ? (
                 <div style={{
@@ -422,7 +463,7 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
                       <BellRinging size={16} weight="duotone" color="var(--brand-beige)" style={{ flexShrink: 0 }} />
                     )}
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {pushStatus === 'active' ? 'Desactivar Alertas' : 'Activar Alertas de Turno'}
+                      {pushStatus === 'active' ? 'Desactivar Alertas' : pushStatus === 'partial' ? 'Reintentar desactivación' : pushStatus === 'unknown' ? 'Comprobar de nuevo' : 'Activar Alertas'}
                     </span>
                   </div>
                   {pushLoading && (
@@ -567,17 +608,8 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '6px', paddingTop: '6px' }}>
               <button
                 type="button"
-                onClick={async () => {
-                  setDocError(null);
-                  setPushError(null);
-                  setShowRoleMenu(false);
-                  try {
-                    await unsubscribeUserFromPush(user);
-                  } catch (err) {
-                    console.warn('Error desuscribiendo push en logout:', err);
-                  }
-                  logout();
-                }}
+                disabled={pushLoading}
+                onClick={handleLogout}
                 style={{
                   width: '100%',
                   textAlign: 'left',

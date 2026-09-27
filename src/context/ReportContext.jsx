@@ -248,75 +248,53 @@ export function ReportProvider({ children }) {
       ...newReportData
     };
 
-    setReports(prev => [newReport, ...prev]);
-
-    try {
-      const payload = mapAppReportToSupabase(newReport);
-      const { error } = await supabase.from('truck_reports').upsert([payload]);
-      if (error) {
-        console.error('Error guardando en Supabase:', error.message);
-      } else {
-        setTimeout(loadInitialData, 200);
-      }
-    } catch (e) {
-      console.warn('Excepción insertando reporte en Supabase:', e);
-    }
-    return newReport;
+    // Confirmar persistencia antes de incorporar el reporte a la interfaz y la caché.
+    const { data, error } = await supabase.from('truck_reports')
+      .insert([mapAppReportToSupabase(newReport)])
+      .select('*').single();
+    if (error) throw error;
+    if (!data) throw new Error('No se pudo confirmar el guardado del reporte.');
+    const savedReport = mapSupabaseReport(data);
+    setReports(prev => [savedReport, ...prev.filter(rep => rep.id !== savedReport.id)]);
+    return savedReport;
   };
 
   const updateReportStatus = async (id, newStatus, returnTime = null) => {
-    let updatedTarget = null;
+    const current = reports.find(rep => rep.id === id);
+    if (!current) throw new Error('El reporte ya no está disponible. Actualice la lista.');
+    if (!['DOWN', 'OPERATIVO'].includes(newStatus)) throw new Error('Estado no válido.');
+    if (current.status === newStatus) throw new Error('El reporte ya tiene ese estado. Actualice la lista.');
 
-    setReports(prev => prev.map(rep => {
-      if (rep.id === id) {
-        updatedTarget = {
-          ...rep,
-          status: newStatus,
-          actualReturnTime: newStatus === 'OPERATIVO' ? (returnTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : rep.actualReturnTime,
-          updatedAt: new Date().toISOString()
-        };
-        return updatedTarget;
-      }
-      return rep;
-    }));
-
-    if (updatedTarget) {
-      try {
-        const { error } = await supabase.from('truck_reports').upsert([mapAppReportToSupabase(updatedTarget)]);
-        if (error) {
-          console.error('Error actualizando en Supabase:', error.message);
-        } else {
-          setTimeout(loadInitialData, 200);
-        }
-      } catch (e) {
-        console.warn('Error actualizando estado en Supabase:', e);
-      }
-    }
+    // Actualizar solo el estado y su hora; no sobrescribir otros datos del reporte.
+    const { data, error } = await supabase.from('truck_reports')
+      .update({
+        status: newStatus,
+        actual_return_time: newStatus === 'OPERATIVO'
+          ? (returnTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+          : current.actualReturnTime,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('status', current.status)
+      .select('*').single();
+    if (error) throw error;
+    if (!data) throw new Error('No se pudo confirmar el cambio. Actualice la lista.');
+    const savedReport = mapSupabaseReport(data);
+    setReports(prev => prev.map(rep => rep.id === id ? savedReport : rep));
+    return savedReport;
   };
 
   const editReport = async (id, updatedFields) => {
-    let updatedTarget = null;
-
-    setReports(prev => prev.map(rep => {
-      if (rep.id === id) {
-        updatedTarget = { ...rep, ...updatedFields, updatedAt: new Date().toISOString() };
-        return updatedTarget;
-      }
-      return rep;
-    }));
-
-    if (updatedTarget) {
-      try {
-        const { error } = await supabase.from('truck_reports').upsert([mapAppReportToSupabase(updatedTarget)]);
-        if (error) {
-          console.error('Error editando en Supabase:', error.message);
-        } else {
-          setTimeout(loadInitialData, 200);
-        }
-      } catch (e) {
-        console.warn('Error editando reporte en Supabase:', e);
-      }
-    }
+    const current = reports.find(rep => rep.id === id);
+    if (!current) throw new Error('El reporte ya no está disponible. Actualice la lista.');
+    const payload = mapAppReportToSupabase({ ...current, ...updatedFields, updatedAt: new Date().toISOString() });
+    const { data, error } = await supabase.from('truck_reports')
+      .update(payload).eq('id', id).select('*').single();
+    if (error) throw error;
+    if (!data) throw new Error('No se pudo confirmar la edición del reporte.');
+    const savedReport = mapSupabaseReport(data);
+    setReports(prev => prev.map(rep => rep.id === id ? savedReport : rep));
+    return savedReport;
   };
 
   const deleteReport = async (id) => {

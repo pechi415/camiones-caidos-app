@@ -56,6 +56,8 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
   });
 
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
 
   // Operadores filtrados por la mina y el grupo del usuario logeado
   const filteredOperators = operators.filter(op => {
@@ -147,6 +149,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
   };
 
   const handleOverlayClick = (e) => {
+    if (savingRef.current) return;
     // 1. Descartar si el clic no fue directamente sobre el fondo oscurecido
     if (e.target !== e.currentTarget) return;
 
@@ -202,6 +205,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (savingRef.current) return;
     if (!formData.truckId || formData.truckId.length !== 4 || !formData.truckId.startsWith('2')) {
       setErrorMsg('El número del camión es obligatorio, de 4 dígitos y debe comenzar con 2 (Ej: 2014)');
       return;
@@ -221,24 +225,27 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
       bayLocation: correctTextWithAI(formData.bayLocation, 'location')
     };
 
-    if (editingReport) {
-      editReport(editingReport.id, cleanedData);
-    } else {
-      const savedReport = await addReport({
-        ...cleanedData,
-        reportedBy: user?.name || 'Usuario'
-      });
-
-      if (savedReport && savedReport.id) {
+    savingRef.current = true;
+    setIsSaving(true);
+    setErrorMsg('');
+    try {
+      if (editingReport) {
+        await editReport(editingReport.id, cleanedData);
+      } else {
+        const savedReport = await addReport({ ...cleanedData, reportedBy: user?.name || 'Usuario' });
         notifyNewReport({
           report_id: savedReport.id,
-          truck_id: savedReport.truckId || savedReport.truck_id,
-          failure_system: savedReport.systemCategory || savedReport.system,
+          truck_id: savedReport.truckId,
+          failure_system: savedReport.systemCategory,
           shift: savedReport.shift
-        }).catch(err => {
-          console.warn('[NOTIFICATIONS] Fallo no bloqueante al notificar new_report:', err);
-        });
+        }).catch(err => console.warn('[NOTIFICATIONS] Fallo no bloqueante:', err));
       }
+    } catch (err) {
+      setErrorMsg(`No se pudo confirmar el guardado. ${err.message || 'Revise la conexión e intente nuevamente.'}`);
+      return;
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
 
     // Sincronizar la vista activa para que el registro recién creado aparezca de inmediato en pantalla
@@ -273,7 +280,7 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
             </div>
           </div>
 
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
+          <button disabled={isSaving} onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}>
             <X size={22} weight="bold" />
           </button>
         </div>
@@ -486,11 +493,11 @@ export default function TruckReportModal({ isOpen, onClose, editingReport, onSuc
 
           {/* Actions */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
-            <button type="button" onClick={onClose} className="btn-glass">
+            <button type="button" disabled={isSaving} onClick={onClose} className="btn-glass">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary">
-              <FloppyDisk size={18} weight="duotone" /> {editingReport ? 'Guardar Cambios' : 'Guardar Registro'}
+            <button type="submit" className="btn-primary" disabled={isSaving}>
+              <FloppyDisk size={18} weight="duotone" /> {isSaving ? 'Guardando…' : editingReport ? 'Guardar Cambios' : 'Guardar Registro'}
             </button>
           </div>
         </form>

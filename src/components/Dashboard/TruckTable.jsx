@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import {
   Wrench,
   PencilSimple,
@@ -29,6 +30,9 @@ export default function TruckTable({
   onClearTargetTruck
 }) {
   const { user, selectedDate, setSelectedDate, getTodayISO, setActiveMine, setActiveShift } = useAuth();
+  const { toast } = useToast();
+  const statusSavingRef = useRef(false);
+  const [isStatusSaving, setIsStatusSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | DOWN | OPERATIVO
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -61,26 +65,40 @@ export default function TruckTable({
     };
   }, [operativoConfirmReport, deleteConfirmReport]);
 
+  const saveStatus = async (report, newStatus, returnTime = null) => {
+    if (!report || statusSavingRef.current) return;
+    statusSavingRef.current = true;
+    setIsStatusSaving(true);
+    try {
+      const savedReport = await onUpdateStatus(report.id, newStatus, returnTime);
+      if (!savedReport?.id || savedReport.status !== newStatus) {
+        throw new Error('No se pudo confirmar el nuevo estado.');
+      }
+      setOperativoConfirmReport(null);
+      notifyStatusChange({
+        report_id: savedReport.id,
+        truck_id: savedReport.truckId,
+        previous_status: report.status,
+        new_status: savedReport.status,
+        shift: savedReport.shift,
+        mutation_id: savedReport.updatedAt
+      }).catch(err => console.warn('[NOTIFICATIONS] Fallo no bloqueante:', err));
+    } catch (err) {
+      toast.error(`No se pudo confirmar el cambio de estado. ${err.message || 'Revise la conexión.'}`);
+    } finally {
+      statusSavingRef.current = false;
+      setIsStatusSaving(false);
+    }
+  };
+
   const handleStatusClick = async (report) => {
+    if (statusSavingRef.current) return;
     if (report.status === 'DOWN') {
       const now24 = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       setReturnTimeInput(formatTime12H(now24));
       setOperativoConfirmReport(report);
     } else {
-      const previousStatus = report.status || 'OPERATIVO';
-      const newStatus = 'DOWN';
-      const mutationId = `mut-${Date.now()}`;
-      await onUpdateStatus(report.id, newStatus);
-      notifyStatusChange({
-        report_id: report.id,
-        truck_id: report.truckId || report.truck_id,
-        previous_status: previousStatus,
-        new_status: newStatus,
-        shift: report.shift,
-        mutation_id: mutationId
-      }).catch(err => {
-        console.warn('[NOTIFICATIONS] Fallo no bloqueante al notificar status_change:', err);
-      });
+      await saveStatus(report, 'DOWN');
     }
   };
 
@@ -738,7 +756,7 @@ export default function TruckTable({
 
       {/* Modal Confirmación para Marcar Equipo como OPERATIVO */}
       {operativoConfirmReport && createPortal(
-        <div className="modal-overlay" onClick={() => setOperativoConfirmReport(null)}>
+        <div className="modal-overlay" onClick={() => { if (!statusSavingRef.current) setOperativoConfirmReport(null); }}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px', textAlign: 'center' }}>
             <div style={{
               width: '56px',
@@ -797,7 +815,7 @@ export default function TruckTable({
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button
                 type="button"
-                onClick={() => setOperativoConfirmReport(null)}
+                onClick={() => { if (!statusSavingRef.current) setOperativoConfirmReport(null); }}
                 className="btn-glass"
                 style={{ padding: '10px 20px', flex: 1 }}
               >
@@ -805,28 +823,12 @@ export default function TruckTable({
               </button>
               <button
                 type="button"
-                onClick={async () => {
-                  const targetReport = operativoConfirmReport;
-                  const previousStatus = targetReport?.status || 'DOWN';
-                  const newStatus = 'OPERATIVO';
-                  const mutationId = `mut-${Date.now()}`;
-                  setOperativoConfirmReport(null);
-                  await onUpdateStatus(targetReport.id, newStatus, returnTimeInput);
-                  notifyStatusChange({
-                    report_id: targetReport.id,
-                    truck_id: targetReport.truckId || targetReport.truck_id,
-                    previous_status: previousStatus,
-                    new_status: newStatus,
-                    shift: targetReport.shift,
-                    mutation_id: mutationId
-                  }).catch(err => {
-                    console.warn('[NOTIFICATIONS] Fallo no bloqueante al notificar status_change:', err);
-                  });
-                }}
+                disabled={isStatusSaving}
+                onClick={() => saveStatus(operativoConfirmReport, 'OPERATIVO', returnTimeInput)}
                 className="btn-primary"
                 style={{ padding: '10px 20px', flex: 1, background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#FFFFFF', fontWeight: 700 }}
               >
-                Sí, Marcar Operativo
+                {isStatusSaving ? 'Guardando…' : 'Sí, Marcar Operativo'}
               </button>
             </div>
           </div>

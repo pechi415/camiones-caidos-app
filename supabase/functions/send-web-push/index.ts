@@ -84,6 +84,12 @@ serve(async (req: Request) => {
       );
     }
 
+    if (!bodyData || typeof bodyData !== 'object' || Array.isArray(bodyData)) {
+      return new Response(JSON.stringify({ success: false, error: 'El cuerpo debe ser un objeto JSON.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const {
       title,
       body,
@@ -120,6 +126,41 @@ serve(async (req: Request) => {
       );
     }
 
+    // Destinos explícitos: nunca convertir una lista vacía o inválida en un envío global.
+    const rejectTargets = (error: string) => new Response(JSON.stringify({ success: false, error }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+    const targetLists = [target_user_ids, target_auth_user_ids, target_subscription_ids];
+    for (const list of targetLists) {
+      if (list !== undefined && (!Array.isArray(list) || list.some(id => typeof id !== 'string' || !id.trim()))) {
+        return rejectTargets('Los destinatarios deben ser listas de identificadores de texto no vacíos.');
+      }
+    }
+    const [userIds, authUserIds, subscriptionIds] = targetLists.map(list =>
+      Array.isArray(list) ? [...new Set(list.map(id => id.trim()))] : []
+    );
+    let directSubscription: { endpoint: string; keys: { p256dh: string; auth: string } } | null = null;
+    if (target_subscription !== undefined) {
+      const sub = target_subscription;
+      if (!sub || typeof sub.endpoint !== 'string' || !sub.endpoint.trim()
+        || typeof sub.keys?.p256dh !== 'string' || !sub.keys.p256dh.trim()
+        || typeof sub.keys?.auth !== 'string' || !sub.keys.auth.trim()) {
+        return rejectTargets('La suscripción de destino está incompleta.');
+      }
+      try {
+        if (new URL(sub.endpoint).protocol !== 'https:') return rejectTargets('El destino push debe usar HTTPS.');
+      } catch {
+        return rejectTargets('La dirección de la suscripción no es válida.');
+      }
+      directSubscription = {
+        endpoint: sub.endpoint.trim(),
+        keys: { p256dh: sub.keys.p256dh.trim(), auth: sub.keys.auth.trim() }
+      };
+    }
+    if (!directSubscription && !userIds.length && !authUserIds.length && !subscriptionIds.length) {
+      return rejectTargets('Debe indicar al menos un destinatario explícito. No se permiten envíos globales implícitos.');
+    }
+
     // 4. Obtención de suscripciones objetivo
     let subscriptionsToNotify: Array<{
       id?: string;
@@ -128,11 +169,11 @@ serve(async (req: Request) => {
       auth: string;
     }> = [];
 
-    if (target_subscription && target_subscription.endpoint && target_subscription.keys) {
+    if (directSubscription) {
       subscriptionsToNotify.push({
-        endpoint: target_subscription.endpoint,
-        p256dh: target_subscription.keys.p256dh,
-        auth: target_subscription.keys.auth
+        endpoint: directSubscription.endpoint,
+        p256dh: directSubscription.keys.p256dh,
+        auth: directSubscription.keys.auth
       });
     } else {
       let query = adminClient
@@ -140,14 +181,14 @@ serve(async (req: Request) => {
         .select('id, user_id, auth_user_id, endpoint, p256dh, auth')
         .eq('is_active', true);
 
-      if (Array.isArray(target_user_ids) && target_user_ids.length > 0) {
-        query = query.in('user_id', target_user_ids);
+      if (userIds.length > 0) {
+        query = query.in('user_id', userIds);
       }
-      if (Array.isArray(target_auth_user_ids) && target_auth_user_ids.length > 0) {
-        query = query.in('auth_user_id', target_auth_user_ids);
+      if (authUserIds.length > 0) {
+        query = query.in('auth_user_id', authUserIds);
       }
-      if (Array.isArray(target_subscription_ids) && target_subscription_ids.length > 0) {
-        query = query.in('id', target_subscription_ids);
+      if (subscriptionIds.length > 0) {
+        query = query.in('id', subscriptionIds);
       }
 
       const { data: dbSubs, error: dbErr } = await query;

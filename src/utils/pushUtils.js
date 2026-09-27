@@ -77,163 +77,165 @@ export function getNotificationPermission() {
   return Notification.permission; // 'default' | 'granted' | 'denied'
 }
 
-/**
- * Obtiene la suscripción Push activa existente en el navegador, si la hay.
- */
+// Acotar esperas técnicas; el diálogo de permiso depende de la decisión del usuario.
+const PUSH_TIMEOUT_MS = 5000;
+async function waitForPush(promise) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('No se pudo confirmar la operación a tiempo. Revise la conexión e intente nuevamente.')), PUSH_TIMEOUT_MS);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Abortar la espera HTTP no revierte una escritura que el servidor ya haya aceptado.
+async function queryPush(query) {
+  const controller = new AbortController();
+  try {
+    return await waitForPush(query.abortSignal(controller.signal));
+  } finally {
+    controller.abort();
+  }
+}
+
+async function getPushIdentity(user) {
+  const expectedAuthId = user?.authUserId || user?.auth_user_id;
+  const { data, error } = await waitForPush(supabase.auth.getSession());
+  const authId = data?.session?.user?.id;
+  if (error || !user?.id || !expectedAuthId || authId !== expectedAuthId) {
+    throw new Error('La sesión cambió o no está disponible. Inicie sesión nuevamente.');
+  }
+  return authId;
+}
+
 export async function getExistingPushSubscription() {
   if (!isPushSupported()) return null;
+  const registration = await waitForPush(navigator.serviceWorker.ready);
+  return await waitForPush(registration.pushManager.getSubscription());
+}
 
+// Consultar no solicita permisos, no crea suscripciones y no cambia su propietario.
+export async function getPushSubscriptionState(user) {
+  if (!isPushSupported()) return { status: 'unsupported' };
+  if (isIOS() && !isStandalone()) return { status: 'ios_not_standalone' };
+  if (Notification.permission === 'denied') return { status: 'denied' };
   try {
-    const registration = await navigator.serviceWorker.ready;
-    return await registration.pushManager.getSubscription();
+    const authId = await getPushIdentity(user);
+    const subscription = await getExistingPushSubscription();
+    if (!subscription) return { status: 'inactive' };
+    const { data, error } = await queryPush(supabase.from('push_subscriptions')
+      .select('user_id, auth_user_id, is_active').eq('endpoint', subscription.endpoint)
+      .eq('auth_user_id', authId).maybeSingle());
+    if (error) throw new Error('No se pudo verificar la activación en el servidor.');
+    const active = Notification.permission === 'granted' && data?.is_active === true
+      && data.user_id === user.id && data.auth_user_id === authId;
+    return { status: active ? 'active' : 'repair' };
   } catch (err) {
-    console.warn('No se pudo verificar la suscripción Push existente:', err);
-    return null;
+    return { status: 'unknown', message: err.message || 'No se pudo comprobar el estado de las alertas.' };
   }
 }
 
-/**
- * Suscribe al usuario autenticado a Web Push y persiste el endpoint en public.push_subscriptions.
- */
+/** Activa solo por una acción explícita del usuario. */
 export async function subscribeUserToPush(user) {
-  if (!isPushSupported()) {
-    return {
-      success: false,
-      code: 'UNSUPPORTED',
-      message: 'Este navegador no es compatible con notificaciones Web Push.'
-    };
-  }
-
-  // Validación para iOS: Safari exige instalación en pantalla de inicio para Web Push (iOS 16.4+)
-  if (isIOS() && !isStandalone()) {
-    return {
-      success: false,
-      code: 'IOS_NOT_STANDALONE',
-      message: 'En iPhone, primero debes agregar la aplicación a tu Pantalla de Inicio desde el menú Compartir para activar notificaciones.'
-    };
-  }
-
+  if (!isPushSupported()) return { success: false, code: 'UNSUPPORTED', message: 'Este navegador no es compatible con notificaciones Web Push.' };
+  if (isIOS() && !isStandalone()) return { success: false, code: 'IOS_NOT_STANDALONE', message: 'En iPhone, primero agrega la aplicación a la Pantalla de Inicio desde Compartir.' };
   const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!vapidPublicKey) {
-    console.error('Variable VITE_VAPID_PUBLIC_KEY no configurada en el cliente.');
-    return {
-      success: false,
-      code: 'CONFIG_ERROR',
-      message: 'Error de configuración en el servidor de notificaciones.'
-    };
-  }
+  if (!vapidPublicKey) return { success: false, code: 'CONFIG_ERROR', message: 'Falta la configuración del servidor de notificaciones.' };
 
   try {
-    // 1. Solicitar permiso explícito al usuario
     let permission = Notification.permission;
-    if (permission !== 'granted') {
-      permission = await Notification.requestPermission();
-    }
-
-    if (permission !== 'granted') {
-      return {
-        success: false,
-        code: 'PERMISSION_DENIED',
-        message: 'El permiso de notificaciones fue denegado. Puedes habilitarlo desde la configuración de tu navegador.'
-      };
-    }
-
-    // 2. Obtener el registro del Service Worker
-    const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
-
-    // Si no existe suscripción, crear una nueva con la clave VAPID pública
-    if (!subscription) {
-      const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: convertedKey
-      });
-    }
-
-    const subJson = subscription.toJSON();
-    if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
-      throw new Error('La suscripción generada por el navegador carece de credenciales completas.');
-    }
-
-    // 3. Persistir o sincronizar en Supabase push_subscriptions
-    // Validar sesión actual en Supabase Auth
-    const { data: { session } } = await supabase.auth.getSession();
-    const authUserId = session?.user?.id || user?.auth_user_id;
-    const appUserId = user?.id;
-
-    if (!authUserId || !appUserId) {
-      throw new Error('No hay sesión de usuario válida para registrar la suscripción.');
-    }
-
-    const subscriptionRecord = {
-      user_id: appUserId,
-      auth_user_id: authUserId,
-      endpoint: subJson.endpoint,
-      p256dh: subJson.keys.p256dh,
-      auth: subJson.keys.auth,
-      platform: getDevicePlatform(),
-      user_agent: window.navigator.userAgent.slice(0, 500),
-      is_active: true,
-      last_used_at: new Date().toISOString()
-    };
-
-    const { error: dbError } = await supabase
-      .from('push_subscriptions')
-      .upsert(subscriptionRecord, { onConflict: 'endpoint' });
-
-    if (dbError) {
-      console.error('Error al persistir push_subscription en base de datos:', dbError);
-      throw new Error('No se pudo guardar la suscripción en el servidor.');
-    }
-
-    return {
-      success: true,
-      subscription
-    };
-  } catch (err) {
-    console.error('Excepción al suscribir a notificaciones push:', err);
-    return {
-      success: false,
-      code: 'SUBSCRIPTION_FAILED',
-      message: err.message || 'Ocurrió un error al activar las notificaciones en este dispositivo.'
-    };
-  }
-}
-
-/**
- * Desactiva y elimina la suscripción del dispositivo tanto en el navegador como en Supabase.
- */
-export async function unsubscribeUserFromPush(user) {
-  if (!isPushSupported()) return { success: true };
-
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    if (permission === 'default') permission = await Notification.requestPermission();
+    if (permission !== 'granted') return { success: false, code: 'PERMISSION_DENIED', message: 'No se concedió el permiso. Puede habilitarlo desde la configuración del navegador.' };
+    const authId = await getPushIdentity(user);
+    const registration = await waitForPush(navigator.serviceWorker.ready);
+    let subscription = await waitForPush(registration.pushManager.getSubscription());
+    await getPushIdentity(user);
 
     if (subscription) {
-      const endpoint = subscription.endpoint;
-
-      // 1. Eliminar la suscripción en Supabase para este endpoint
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentAuthId = session?.user?.id || user?.auth_user_id;
-
-      if (currentAuthId && endpoint) {
-        await supabase
-          .from('push_subscriptions')
-          .delete()
-          .eq('auth_user_id', currentAuthId)
-          .eq('endpoint', endpoint);
+      const { data, error } = await queryPush(supabase.from('push_subscriptions')
+        .select('user_id, auth_user_id').eq('endpoint', subscription.endpoint)
+        .eq('auth_user_id', authId).maybeSingle());
+      if (error) throw new Error('No se pudo verificar la suscripción existente.');
+      if (!data || data.user_id !== user.id || data.auth_user_id !== authId) {
+        // No transferir una suscripción de otra cuenta: retirar la del navegador y crear otra.
+        await getPushIdentity(user);
+        await waitForPush(subscription.unsubscribe());
+        if (await waitForPush(registration.pushManager.getSubscription())) {
+          throw new Error('No se pudo retirar la suscripción anterior. Intente nuevamente.');
+        }
+        subscription = null;
       }
-
-      // 2. Anular la suscripción en el navegador
-      await subscription.unsubscribe();
     }
-
+    if (!subscription) {
+      await getPushIdentity(user);
+      subscription = await waitForPush(registration.pushManager.subscribe({
+        userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+      }));
+    }
+    const subJson = subscription.toJSON();
+    if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) throw new Error('La suscripción del navegador está incompleta.');
+    await getPushIdentity(user);
+    const { error } = await queryPush(supabase.from('push_subscriptions').upsert({
+      user_id: user.id, auth_user_id: authId, endpoint: subJson.endpoint,
+      p256dh: subJson.keys.p256dh, auth: subJson.keys.auth,
+      platform: getDevicePlatform(), user_agent: window.navigator.userAgent.slice(0, 500),
+      is_active: true, last_used_at: new Date().toISOString()
+    }, { onConflict: 'endpoint' }));
+    if (error) throw new Error('La suscripción del navegador existe, pero no se pudo activar en el servidor. Intente nuevamente.');
+    const state = await getPushSubscriptionState(user);
+    if (state.status !== 'active') throw new Error(state.message || 'No se pudo confirmar la activación de las alertas.');
     return { success: true };
   } catch (err) {
-    console.warn('Error al desuscribir de notificaciones push:', err);
-    // Intentar purgar en base de datos de todos modos si se conoce el endpoint
-    return { success: false, error: err.message };
+    return { success: false, code: 'SUBSCRIPTION_FAILED', message: err.message || 'No se pudo activar las alertas.' };
+  }
+}
+
+/** Retira ambos registros; informa cada resultado, incluso cuando solo uno falla. */
+export async function unsubscribeUserFromPush(user, pendingEndpoint = null) {
+  if (!isPushSupported()) return { success: true };
+  let endpoint = pendingEndpoint;
+  let browserRemoved = false;
+  let serverRemoved = false;
+  try {
+    const authId = await getPushIdentity(user);
+    const registration = await waitForPush(navigator.serviceWorker.ready);
+    const subscription = await waitForPush(registration.pushManager.getSubscription());
+    endpoint = endpoint || subscription?.endpoint;
+    // Un reintento de limpieza nunca cancela una nueva suscripción del navegador.
+    if (!subscription || (pendingEndpoint && subscription.endpoint !== pendingEndpoint)) {
+      browserRemoved = true;
+    } else {
+      try {
+        await waitForPush(subscription.unsubscribe());
+        browserRemoved = !(await waitForPush(registration.pushManager.getSubscription()));
+      } catch {
+        browserRemoved = false;
+      }
+    }
+    if (!endpoint) serverRemoved = true;
+    else {
+      try {
+        await getPushIdentity(user);
+        const { error } = await queryPush(supabase.from('push_subscriptions').delete()
+          .eq('auth_user_id', authId).eq('endpoint', endpoint));
+        serverRemoved = !error;
+      } catch {
+        serverRemoved = false;
+      }
+    }
+    if (browserRemoved && serverRemoved) return { success: true };
+    const error = browserRemoved
+      ? 'Las alertas se retiraron del navegador, pero falta confirmar la limpieza en el servidor. Reintente la desactivación.'
+      : serverRemoved
+        ? 'Se retiró el registro del servidor, pero el navegador no confirmó la desactivación. Reintente.'
+        : 'No se pudo confirmar la desactivación. Revise la conexión y vuelva a intentarlo.';
+    return { success: false, code: 'PARTIAL_DEACTIVATION', error, endpoint, browserRemoved, serverRemoved };
+  } catch (err) {
+    return { success: false, code: 'DEACTIVATION_FAILED', error: err.message || 'No se pudo desactivar las alertas.', endpoint, browserRemoved, serverRemoved };
   }
 }

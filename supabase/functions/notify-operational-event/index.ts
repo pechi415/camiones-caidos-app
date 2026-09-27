@@ -77,6 +77,11 @@ serve(async (req: Request) => {
     const actorMine = profile.mine;
     const actorGroup = profile.group_name || 'Grupo 1';
     const actorRole = profile.role;
+    if (!['Administrador', 'Encargado', 'Digitador'].includes(actorRole)) {
+      return new Response(JSON.stringify({ success: false, error: 'Rol no autorizado.' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // 5. Parsear y validar el cuerpo de la solicitud
     let body: any = {};
@@ -93,10 +98,8 @@ serve(async (req: Request) => {
       event_type,
       report_id,
       truck_id,
-      failure_system,
       previous_status,
-      new_status,
-      event_id
+      new_status
     } = body;
 
     if (!event_type || (event_type !== 'new_report' && event_type !== 'status_change')) {
@@ -124,7 +127,7 @@ serve(async (req: Request) => {
     }
 
     // 6. Validar existencia del reporte en truck_reports
-    const { data: reportRecord, error: reportErr } = await adminClient
+    const { data: reportRecord, error: reportErr } = await callerClient
       .from('truck_reports')
       .select('id, truck_id, mine, shift, date, status, system, created_at, updated_at')
       .eq('id', report_id.trim())
@@ -137,15 +140,37 @@ serve(async (req: Request) => {
       );
     }
 
-    const reportMine = reportRecord.mine || actorMine;
+    // Verificación explícita además de la visibilidad RLS del solicitante.
+    if (actorRole !== 'Administrador' && (!actorMine || reportRecord.mine !== actorMine)) {
+      return new Response(JSON.stringify({ success: false, error: 'No tiene permiso sobre este reporte.' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const reportTruckId = String(reportRecord.truck_id || '').trim();
+    if (!reportTruckId || truck_id.trim() !== reportTruckId) {
+      return new Response(JSON.stringify({ success: false, error: 'El camión no coincide con el reporte guardado.' }), {
+        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const reportMine = reportRecord.mine;
     const reportShift = reportRecord.shift || 'Diurno';
     const reportDate = reportRecord.date || new Date().toISOString().split('T')[0];
-    const failureSystemResolved = (failure_system || reportRecord.system || '').trim() || 'No especificada';
+    const failureSystemResolved = String(reportRecord.system || '').trim() || 'No especificada';
 
     // 7. Validaciones específicas según el tipo de evento
     if (event_type === 'status_change') {
-      const prevStatus = (previous_status || '').trim();
-      const nextStatus = (new_status || reportRecord.status || '').trim();
+      const prevStatus = typeof previous_status === 'string' ? previous_status.trim() : '';
+      const nextStatus = typeof new_status === 'string' ? new_status.trim() : '';
+      if (!['DOWN', 'OPERATIVO'].includes(prevStatus)) {
+        return new Response(JSON.stringify({ success: false, error: 'Estado anterior no válido.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (nextStatus !== reportRecord.status) {
+        return new Response(JSON.stringify({ success: false, error: 'El estado no coincide con el reporte guardado.' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
       if (!nextStatus || (nextStatus !== 'OPERATIVO' && nextStatus !== 'DOWN')) {
         return new Response(
@@ -178,23 +203,27 @@ serve(async (req: Request) => {
 
     if (event_type === 'new_report') {
       title = `Nuevo reporte — ${reportMine}`;
-      message = `${actorFirstName} registró el camión ${truck_id.trim()}\nFalla: ${failureSystemResolved}`;
+      message = `${actorFirstName} registró el camión ${reportTruckId}\nFalla: ${failureSystemResolved}`;
       calculatedEventKey = `new_report:${report_id.trim()}`;
     } else {
       // status_change
-      const effectiveNextStatus = (new_status || reportRecord.status || '').trim();
+      const effectiveNextStatus = reportRecord.status;
       title = `Cambio de estado — ${reportMine}`;
       if (effectiveNextStatus === 'OPERATIVO') {
-        message = `${actorFirstName} marcó OPERATIVO el camión ${truck_id.trim()}`;
+        message = `${actorFirstName} marcó OPERATIVO el camión ${reportTruckId}`;
       } else {
-        message = `${actorFirstName} reportó DOWN el camión ${truck_id.trim()}`;
+        message = `${actorFirstName} reportó DOWN el camión ${reportTruckId}`;
       }
 
       // Identificador de mutación para soportar múltiples transiciones reales (DOWN -> OPERATIVO -> DOWN)
       // mientras se garantiza idempotencia contra dobles clics y reintentos de red
-      const mutationId = (event_id && typeof event_id === 'string' && event_id.trim().length > 0)
-        ? event_id.trim()
-        : (reportRecord.updated_at || reportRecord.created_at || new Date().toISOString());
+      // La clave usa la versión persistida, no un identificador arbitrario del cliente.
+      const mutationId = reportRecord.updated_at || reportRecord.created_at;
+      if (!mutationId) {
+        return new Response(JSON.stringify({ success: false, error: 'El reporte no tiene una versión verificable.' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
       calculatedEventKey = `status_change:${report_id.trim()}:${effectiveNextStatus}:${mutationId}`;
     }
@@ -264,7 +293,7 @@ serve(async (req: Request) => {
     const metadataPayload = {
       event_key: calculatedEventKey,
       event_type,
-      truck_id: truck_id.trim(),
+      truck_id: reportTruckId,
       actor_id: actorId,
       actor_name: actorName,
       actor_role: actorRole,
@@ -272,7 +301,7 @@ serve(async (req: Request) => {
       actor_group: actorGroup,
       failure_system: event_type === 'new_report' ? failureSystemResolved : null,
       previous_status: event_type === 'status_change' ? (previous_status || null) : null,
-      new_status: event_type === 'status_change' ? (new_status || reportRecord.status) : null
+      new_status: event_type === 'status_change' ? reportRecord.status : null
     };
 
     const notificationRows = validRecipients.map((r: any) => ({
@@ -290,7 +319,7 @@ serve(async (req: Request) => {
       title,
       message,
       truck_count: 1,
-      truck_ids: [truck_id.trim()],
+      truck_ids: [reportTruckId],
       is_read: false,
       read_at: null
     }));
@@ -326,11 +355,11 @@ serve(async (req: Request) => {
         const pushPayload = {
           title,
           body: message,
-          tag: `operational-${event_type}-${truck_id.trim()}-${Date.now()}`,
+          tag: `operational-${event_type}-${reportTruckId}-${Date.now()}`,
           data: {
             url: '/',
             report_id: report_id.trim(),
-            truck_id: truck_id.trim(),
+            truck_id: reportTruckId,
             event_type,
             mine: reportMine,
             shift: reportShift,
@@ -380,7 +409,7 @@ serve(async (req: Request) => {
         success: true,
         event_type,
         report_id: report_id.trim(),
-        truck_id: truck_id.trim(),
+        truck_id: reportTruckId,
         event_key: calculatedEventKey,
         actor: {
           id: actorId,
