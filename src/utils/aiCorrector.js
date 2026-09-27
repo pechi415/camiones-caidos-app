@@ -168,7 +168,9 @@ export function normalizeLocation(locationStr) {
   }
 
   // 3. Normalización de Botaderos
-  const botaderoMatch = locLower.match(/^(?:botaderos|botadero|btdr|btd|bot)[\s\-_]*([a-z0-9]+.*)?$/i);
+  // Exigir un límite evita interpretar "botadero" como "bot" + "adero".
+  // El sufijo puede comenzar con "+" (por ejemplo, una cota del botadero).
+  const botaderoMatch = locLower.match(/^(?:botaderos|botadero|btdr|btd|bot)(?=$|[\s\-_+0-9])[\s\-_]*(.*)$/i);
   if (botaderoMatch) {
     const suffix = botaderoMatch[1] ? botaderoMatch[1].trim() : '';
     if (suffix) {
