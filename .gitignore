@@ -26,3 +26,6 @@ dist-ssr
 dev-dist
 scratch/
 supabase/.temp/
+# Environment
+.env
+.env*.local
