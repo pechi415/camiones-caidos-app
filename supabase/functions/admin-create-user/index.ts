@@ -3,7 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
 import { corsHeaders } from '../_shared/cors.ts';
 
 const AUTH_DOMAIN = 'camionescaidos.internal';
-const TEMP_PASSWORD = 'caidos1234';
 const VALID_ROLES = ['Administrador', 'Encargado', 'Digitador'];
 const VALID_MINES = ['El Descanso', 'Pribbenow'];
 
@@ -24,8 +23,9 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const defaultTempPassword = Deno.env.get('DEFAULT_TEMP_PASSWORD') || '';
 
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
+    if (!supabaseUrl || !supabaseServiceRoleKey || !defaultTempPassword) {
       return new Response(JSON.stringify({ success: false, error: 'Configuración interna del servidor incompleta.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -153,7 +153,7 @@ serve(async (req: Request) => {
     const newUserId = `u-${Date.now()}`;
     const { data: newAuthData, error: createAuthErr } = await adminClient.auth.admin.createUser({
       email: technicalEmail,
-      password: TEMP_PASSWORD,
+      password: defaultTempPassword,
       email_confirm: true,
       user_metadata: {
         name,

@@ -2,8 +2,6 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const TEMP_PASSWORD = 'caidos1234';
-
 serve(async (req: Request) => {
   // Manejo de preflight CORS
   if (req.method === 'OPTIONS') {
@@ -21,8 +19,9 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const defaultTempPassword = Deno.env.get('DEFAULT_TEMP_PASSWORD') || '';
 
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
+    if (!supabaseUrl || !supabaseServiceRoleKey || !defaultTempPassword) {
       return new Response(JSON.stringify({ success: false, error: 'Configuración interna del servidor incompleta.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -114,7 +113,7 @@ serve(async (req: Request) => {
     // 5. Restablecer contraseña en Supabase Auth
     const { error: resetAuthErr } = await adminClient.auth.admin.updateUserById(
       targetUser.auth_user_id,
-      { password: TEMP_PASSWORD }
+      { password: defaultTempPassword }
     );
 
     if (resetAuthErr) {
