@@ -10,9 +10,9 @@
  * - No resuelve destinatarios ni permisos en frontend.
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseUrl } from '../lib/supabase';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://zagiwbgajnxrdgruhthm.supabase.co';
+const SUPABASE_URL = supabaseUrl;
 
 /**
  * Notifica la creación exitosa de un nuevo reporte de camión.
