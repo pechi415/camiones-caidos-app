@@ -25,6 +25,34 @@ import {
   unsubscribeUserFromPush
 } from '../../utils/pushUtils';
 
+/**
+ * Obtiene las iniciales exactas del usuario:
+ * Primera letra del nombre + primera letra del primer apellido.
+ * Ejemplo: "Alexander Francisco Ramirez Cordoba" -> "AR"
+ * SIN puntos, SIN espacios, SIN separadores.
+ */
+function getUserInitials(fullName) {
+  if (!fullName || typeof fullName !== 'string') return '';
+  const shortName = getShortName(fullName);
+  const parts = shortName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+}
+
+/**
+ * Obtiene el formato de nombre corto: primera letra del primer nombre + ". " + primer apellido.
+ * Ejemplo: "Alexander Francisco Ramirez Cordoba" -> "A. Ramirez"
+ */
+function getCompactName(fullName) {
+  if (!fullName || typeof fullName !== 'string') return '';
+  const shortName = getShortName(fullName);
+  const parts = shortName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  return `${parts[0].charAt(0).toUpperCase()}. ${parts[1]}`;
+}
+
 export default function NavUserProfile({ user, logout, updateUserAvatar }) {
   const { toast } = useToast();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -217,6 +245,12 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
     }
   };
 
+  const userInitials = getUserInitials(user?.name);
+  const compactName = getCompactName(user?.name);
+  const mineCode = user?.mine === 'El Descanso' ? 'ED' : (user?.mine === 'Pribbenow' || !user?.mine ? 'PB' : user.mine);
+  const groupCode = (user?.group || 'Grupo 1').replace(/^Grupo\s*/i, 'G');
+  const shortLocation = `${mineCode} · ${groupCode}`;
+
   if (!user) return null;
 
   return (
@@ -301,15 +335,24 @@ export default function NavUserProfile({ user, logout, updateUserAvatar }) {
           }}
         >
           <div style={{ textAlign: 'left', minWidth: 0 }} className="user-profile-info">
-            <div className="user-name-full" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '240px' }}>
+            <div className="user-name-full" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '360px' }}>
               {user.name}
             </div>
             <div className="user-name-short" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
-              {getShortName(user.name)}
+              {compactName}
+            </div>
+            <div className="user-name-initials" title={user.name} style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap' }}>
+              {userInitials}
             </div>
             {/* Muestra Mina y Grupo en lugar del Rol */}
-            <div style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+            <div className="user-location-full" style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
               <MapPin size={10} weight="duotone" style={{ flexShrink: 0 }} /> {user?.mine || 'Pribbenow'} - {user?.group || 'Grupo 1'}
+            </div>
+            <div className="user-location-short" title={`${user?.mine || 'Pribbenow'} - ${user?.group || 'Grupo 1'}`} style={{ fontSize: '0.68rem', color: 'var(--brand-beige)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              {shortLocation}
+            </div>
+            <div className="user-compact-inline" title={`${user.name} (${user?.mine || 'Pribbenow'} - ${user?.group || 'Grupo 1'})`} style={{ fontSize: '0.72rem', color: '#FFFFFF', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              {`${userInitials} · ${shortLocation}`}
             </div>
           </div>
           <CaretDown size={15} weight="bold" color="rgba(255,255,255,0.7)" />

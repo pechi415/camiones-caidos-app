@@ -577,75 +577,269 @@ textarea.glass-input {
   }
 }
 
-/* Control de Visibilidad y Abreviado del Nombre del Usuario en Navbar:
-   - En PC / Pantallas Grandes (> 1024px): Muestra el nombre completo.
-   - En Tablets y Pantallas Medianas (<= 1024px): Muestra el nombre abreviado (ej. Alexander Ramirez).
-   - En Teléfonos en Orientación Vertical (< 600px portrait): Se oculta el texto dejando solo el avatar. */
-.user-name-full {
-  display: block;
+/* ==========================================================================
+   COMPRESIÓN PROGRESIVA DEL HEADER EN UNA SOLA FILA
+   ========================================================================== */
+
+.navbar-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
-.user-name-short {
+.navbar-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.user-profile-info {
+  min-width: 0;
+  text-align: left;
+}
+
+/* Ocultar todas las variantes textuales por defecto; cada nivel activa exclusivamente la suya */
+.user-name-short,
+.user-name-initials,
+.user-location-short,
+.user-compact-inline {
   display: none;
 }
 
-@media (max-width: 1024px) {
-  .user-name-full {
-    display: none !important;
-  }
-  .user-name-short {
-    display: block !important;
-  }
-}
-
-@media (min-width: 1025px) {
+/* NIVEL 1 — FULL (>= 1220px): Todo completo en una sola fila */
+@media (min-width: 1220px) {
   .user-name-full {
     display: block !important;
   }
-  .user-name-short {
+  .user-name-short,
+  .user-name-initials,
+  .user-compact-inline,
+  .user-location-short {
     display: none !important;
   }
-}
-
-@media (max-width: 600px) and (orientation: portrait) {
-  .user-profile-info {
-    display: none !important;
-  }
-}
-
-@media (orientation: landscape), (min-width: 601px) {
-  .user-profile-info {
-    display: block !important;
-  }
-}
-
-/* Ajuste de Filtros en Navbar para Tablets (ancho <= 1024px):
-   Oculta los textos completos dejando únicamente los ÍCONOS y abreviados para no saturar el Navbar,
-   y mantiene Mina, Turno y Fecha perfectamente CENTRADOS en 1 sola fila sin saltos. */
-@media (max-width: 1024px) {
-  .nav-center-filters {
-    gap: 4px !important;
-    justify-content: center !important;
+  .user-location-full {
+    display: flex !important;
   }
 
   .nav-filter-text {
-    display: none !important;
-  }
-
-  .nav-filter-short {
     display: inline !important;
   }
-
-  .nav-date-input {
-    max-width: 110px !important;
-    font-size: 0.72rem !important;
-    padding: 0 !important;
+  .nav-filter-short {
+    display: none !important;
   }
 }
 
-@media (min-width: 1025px) {
-  .nav-filter-short {
+/* NIVEL 2 — SHORT (840px–1219px): Una sola fila con filtros compactos y perfil "A. Ramirez" + "ED · G1" */
+@media (min-width: 840px) and (max-width: 1219px) {
+  .navbar-main-row > div:first-child p {
     display: none !important;
+  }
+  .navbar-main-row > div:first-child h1 {
+    font-size: 1.02rem !important;
+  }
+
+  .nav-center-filters {
+    gap: 4px !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  .nav-filter-text {
+    display: none !important;
+  }
+  .nav-filter-short {
+    display: inline !important;
+  }
+  .nav-date-input {
+    max-width: 105px !important;
+    font-size: 0.72rem !important;
+    padding: 0 !important;
+  }
+
+  .user-name-full,
+  .user-name-initials,
+  .user-location-full,
+  .user-compact-inline {
+    display: none !important;
+  }
+  .user-name-short {
+    display: block !important;
+  }
+  .user-location-short {
+    display: block !important;
+  }
+}
+
+/* NIVEL 3 — INITIALS (701px–839px): Una sola fila con Brand compacto, filtros estrechos y perfil "AR" + "ED · G1" */
+@media (min-width: 701px) and (max-width: 839px) {
+  .navbar-floating {
+    margin: 8px 12px 10px 12px !important;
+    padding: 10px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .navbar-main-row {
+    gap: 6px !important;
+  }
+
+  .navbar-main-row > div:first-child p {
+    display: none !important;
+  }
+  .navbar-main-row > div:first-child h1 {
+    font-size: 0.88rem !important;
+    letter-spacing: -0.2px;
+  }
+  .navbar-main-row > div:first-child > div:first-child {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .navbar-main-row > div:first-child button {
+    padding: 2px 4px !important;
+    font-size: 0.60rem !important;
+  }
+
+  .nav-center-filters {
+    gap: 3px !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  .nav-filter-text {
+    display: none !important;
+  }
+  .nav-filter-short {
+    display: inline !important;
+  }
+  .nav-date-input {
+    max-width: 82px !important;
+    font-size: 0.70rem !important;
+    padding: 0 !important;
+  }
+  .nav-center-filters button {
+    padding: 3px 5px !important;
+  }
+
+  #notification-bell-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .navbar-user-actions {
+    gap: 6px !important;
+  }
+
+  .navbar-user-actions button[aria-label="Menú de perfil y documentación"] {
+    padding: 4px 7px !important;
+  }
+
+  .user-name-full,
+  .user-name-short,
+  .user-location-full,
+  .user-compact-inline {
+    display: none !important;
+  }
+  .user-name-initials {
+    display: block !important;
+  }
+  .user-location-short {
+    display: block !important;
+  }
+}
+
+/* NIVEL 4 — DOS FILAS (601px–700px): Fila 1 (Brand + Campana + Perfil AR); Fila 2 (Tira móvil de filtros existente) */
+@media (min-width: 601px) and (max-width: 700px) {
+  .navbar-floating {
+    margin: 8px 12px 10px 12px !important;
+    padding: 10px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Fila 1: Ocultar filtros centrales de la primera fila */
+  .nav-center-filters {
+    display: none !important;
+  }
+
+  /* Fila 1: Brand compacto */
+  .navbar-main-row > div:first-child p {
+    display: none !important;
+  }
+  .navbar-main-row > div:first-child h1 {
+    font-size: 0.92rem !important;
+    letter-spacing: -0.2px;
+  }
+  .navbar-main-row > div:first-child > div:first-child {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .navbar-main-row > div:first-child button {
+    padding: 2px 4px !important;
+    font-size: 0.60rem !important;
+  }
+
+  /* Fila 1: Campana 36px */
+  #notification-bell-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Fila 1: Perfil muestra AR */
+  .user-name-full,
+  .user-name-short,
+  .user-location-full,
+  .user-location-short,
+  .user-compact-inline {
+    display: none !important;
+  }
+  .user-name-initials {
+    display: block !important;
+  }
+
+  /* Fila 2: Activar la tira de filtros existente (variant="mobile") */
+  .navbar-floating .mobile-only {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+}
+
+/* MÓVIL VERTICAL (<= 600px): Fila 1 (Brand + Campana + Avatar + Flecha); Fila 2 (Tira móvil de filtros existente) */
+@media (max-width: 600px) {
+  .user-profile-info {
+    display: none !important;
+  }
+
+  .navbar-main-row > div:first-child p {
+    display: none !important;
+  }
+  .navbar-main-row > div:first-child h1 {
+    font-size: 0.95rem !important;
+    letter-spacing: -0.2px;
+  }
+  .navbar-main-row > div:first-child > div:first-child {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  #notification-bell-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar-floating {
+    margin: 6px 6px 10px 6px !important;
+    padding: 8px 10px !important;
+  }
+  .navbar-main-row {
+    gap: 6px !important;
+  }
+  .navbar-user-actions {
+    gap: 6px !important;
   }
 }
 
